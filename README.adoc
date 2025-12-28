@@ -1,0 +1,60 @@
+= PILAF
+
+Paper Integration Layer for Automation Functions - Integration testing framework for PaperMC/Bukkit plugins.
+
+== Purpose
+
+PILAF enables automated testing of Minecraft plugins against real or mocked server environments using a YAML-based DSL for test scenarios.
+
+== Installation
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.cavarest</groupId>
+    <artifactId>pilaf</artifactId>
+    <version>0.1.0</version>
+    <scope>test</scope>
+</dependency>
+----
+
+== Usage
+
+[source,java]
+----
+PilafBackend backend = new RconBackend("localhost", 25575, "password");
+TestOrchestrator orchestrator = new TestOrchestrator(backend);
+orchestrator.loadStory("test-stories/my-test.yaml");
+TestResult result = orchestrator.execute();
+assertTrue(result.isSuccess());
+----
+
+== YAML DSL Example
+
+[source,yaml]
+----
+name: "Lightning Ability Test"
+backend: "real-server"
+
+setup:
+  - action: spawn_entity
+    name: zombie
+    type: ZOMBIE
+    location: [100, 64, 100]
+
+steps:
+  - action: player_command
+    player: test_player
+    command: ability
+    args: [lightning, zombie]
+
+assertions:
+  - type: entity_health
+    entity: zombie
+    condition: less_than
+    value: 20.0
+----
+
+== License
+
+MIT License
