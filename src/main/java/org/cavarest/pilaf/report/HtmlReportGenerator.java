@@ -195,7 +195,7 @@ public class HtmlReportGenerator {
             Matcher m = entityPattern.matcher(json);
 
             int count = 0;
-            while (m.find() && count < 20) { // Limit to 20 entities
+            while (m.find()) { // Show all entities
                 String type = m.group(2);
                 String name = m.group(3);
                 String x = String.format("%.1f", Double.parseDouble(m.group(4)));
@@ -213,13 +213,9 @@ public class HtmlReportGenerator {
                 count++;
             }
 
-            // Count remaining
-            Pattern countPattern = Pattern.compile("\\{\"id\":");
-            Matcher countMatcher = countPattern.matcher(json);
-            int total = 0;
-            while (countMatcher.find()) total++;
-            if (total > 20) {
-                sb.append("    <div class=\"entity-more\">... and ").append(total - 20).append(" more entities</div>\n");
+            // Show total count
+            if (count > 0) {
+                sb.append("    <div class=\"entity-more\">Total: ").append(count).append(" entities</div>\n");
             }
 
             sb.append("  </div>\n");
