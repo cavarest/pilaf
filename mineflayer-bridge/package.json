@@ -1,0 +1,15 @@
+{
+  "name": "pilaf-mineflayer-bridge",
+  "version": "0.1.0",
+  "description": "PILAF Mineflayer Bridge - HTTP server bridging Java tests to Minecraft",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mineflayer": "^4.33.0",
+    "mineflayer-pathfinder": "^2.4.4"
+  }
+}
