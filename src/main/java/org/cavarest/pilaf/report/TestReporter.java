@@ -90,6 +90,7 @@ public class TestReporter {
         generateDetailedTextReport();
         generateDetailedJsonReport();
         generateDetailedJUnitXml();
+        HtmlReportGenerator.generate(testName, passed, startTime, endTime, steps, serverLogs.toString(), clientLogs.toString(), outputDir);
         printSummary();
     }
 
