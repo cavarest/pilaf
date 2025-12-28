@@ -1,60 +1,463 @@
-= PILAF
+= PILAF: Paper Integration Layer for Automation Functions
+:toc:
+:toclevels: 3
+:icons: font
 
-Paper Integration Layer for Automation Functions - Integration testing framework for PaperMC/Bukkit plugins.
+image:https://img.shields.io/badge/license-MIT-blue.svg[License]
+image:https://img.shields.io/badge/java-21-orange.svg[Java 21]
 
 == Purpose
 
-PILAF enables automated testing of Minecraft plugins against real or mocked server environments using a YAML-based DSL for test scenarios.
+PILAF (Paper Integration Layer for Automation Functions) is a testing framework for
+PaperMC/Bukkit plugins that enables end-to-end integration testing against real
+Minecraft servers using a Mineflayer bot bridge.
+
+== Features
+
+* **Real Server Testing** - Test plugins against actual Minecraft servers
+* **YAML Test Stories** - Define tests in human-readable YAML format
+* **Mineflayer Integration** - Use Node.js Mineflayer bots for client automation
+* **RCON Support** - Execute server commands via RCON protocol
+* **JUnit Integration** - Seamlessly integrate with existing test suites
+* **Docker Support** - Pre-configured Docker Compose for CI/CD
+
+== Architecture
+
+.PILAF System Architecture
+[source]
+----
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           PILAF FRAMEWORK                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌───────────────┐     ┌─────────────────┐     ┌──────────────────────┐    │
+│  │  Test Story   │────▶│ Test Orchestrator│────▶│    Test Reporter     │    │
+│  │  (YAML DSL)   │     │                 │     │  (JUnit XML/JSON)    │    │
+│  └───────────────┘     └────────┬────────┘     └──────────────────────┘    │
+│                                 │                                          │
+│                    ┌────────────┴────────────┐                             │
+│                    ▼                         ▼                             │
+│           ┌──────────────┐          ┌──────────────┐                       │
+│           │ RCON Backend │          │  Mineflayer  │                       │
+│           │              │          │   Backend    │                       │
+│           └──────┬───────┘          └──────┬───────┘                       │
+│                  │                         │                               │
+└──────────────────│─────────────────────────│───────────────────────────────┘
+                   │                         │
+                   │    ┌────────────────────┘
+                   │    │
+                   ▼    ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│   ┌──────────────────┐              ┌─────────────────────────────────────┐  │
+│   │  Minecraft Server │◀────────────│      Mineflayer Bridge (HTTP)       │  │
+│   │   (PaperMC)       │  WebSocket  │        Node.js + Express            │  │
+│   │   Port: 25565     │             │         Port: 3000                  │  │
+│   │   RCON: 25575     │             └─────────────────────────────────────┘  │
+│   │                   │                                                      │
+│   │  ┌─────────────┐  │                                                      │
+│   │  │ Your Plugin │  │                                                      │
+│   │  └─────────────┘  │                                                      │
+│   └──────────────────┘                                                       │
+│                                                                              │
+│                           DOCKER NETWORK                                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+----
+
+.Data Flow
+[source]
+----
+                        Test Execution Flow
+                        ═══════════════════
+
+    ┌────────────┐      ┌──────────────┐      ┌─────────────────┐
+    │   YAML     │      │    Parser    │      │  TestOrchestrator│
+    │ Test Story │─────▶│              │─────▶│                 │
+    │            │      │              │      │                 │
+    └────────────┘      └──────────────┘      └────────┬────────┘
+                                                       │
+                        ┌──────────────────────────────┤
+                        │                              │
+                        ▼                              ▼
+               ┌────────────────┐            ┌────────────────┐
+               │   Execute      │            │   Assert       │
+               │   Actions      │            │   Conditions   │
+               │                │            │                │
+               └───────┬────────┘            └───────┬────────┘
+                       │                             │
+        ┌──────────────┴──────────────┐              │
+        │                             │              │
+        ▼                             ▼              ▼
+┌──────────────┐            ┌──────────────┐  ┌─────────────┐
+│ RCON Backend │            │  Mineflayer  │  │   Generate  │
+│ - give items │            │  - connect   │  │   Report    │
+│ - summon     │            │  - inventory │  │             │
+│ - execute    │            │  - entities  │  └─────────────┘
+└──────────────┘            └──────────────┘
+----
 
 == Installation
+
+=== Maven Dependency
+
+Add PILAF to your project's `pom.xml`:
 
 [source,xml]
 ----
 <dependency>
-    <groupId>io.cavarest</groupId>
+    <groupId>org.cavarest</groupId>
     <artifactId>pilaf</artifactId>
     <version>0.1.0</version>
     <scope>test</scope>
 </dependency>
 ----
 
-== Usage
+=== Build from Source
 
-[source,java]
+[source,shell]
 ----
-PilafBackend backend = new RconBackend("localhost", 25575, "password");
-TestOrchestrator orchestrator = new TestOrchestrator(backend);
-orchestrator.loadStory("test-stories/my-test.yaml");
-TestResult result = orchestrator.execute();
-assertTrue(result.isSuccess());
+git clone https://github.com/cavarest/pilaf.git
+cd pilaf
+mvn install
 ----
 
-== YAML DSL Example
+== Quick Start
+
+=== 1. Create a YAML Test Story
+
+Create a test story in `src/test/resources/test-stories/my-test.yaml`:
 
 [source,yaml]
 ----
 name: "Lightning Ability Test"
-backend: "real-server"
+description: "Test that lightning ability strikes nearby entities"
 
 setup:
-  - action: spawn_entity
-    name: zombie
-    type: ZOMBIE
-    location: [100, 64, 100]
+  - action: "connect_bot"
+    username: "test_player"
+  - action: "give_item"
+    player: "test_player"
+    item: "dragon_egg"
+    count: 1
+  - action: "summon"
+    entity: "zombie"
+    near: "test_player"
 
 steps:
-  - action: player_command
-    player: test_player
-    command: ability
-    args: [lightning, zombie]
+  - name: "Use lightning ability"
+    action: "execute_command"
+    command: "/ability lightning @e[type=zombie,limit=1]"
 
 assertions:
-  - type: entity_health
-    entity: zombie
-    condition: less_than
-    value: 20.0
+  - type: "entity_affected"
+    entity: "zombie"
+    effect: "damaged"
 ----
+
+=== 2. Create Integration Test
+
+[source,java]
+----
+package com.example.plugin;
+
+import org.cavarest.pilaf.PilafRunner;
+import org.cavarest.pilaf.backend.PilafBackendFactory;
+import org.junit.jupiter.api.Test;
+
+public class MyPluginIntegrationTest {
+
+    @Test
+    void testLightningAbility() throws Exception {
+        PilafRunner runner = new PilafRunner.Builder()
+            .withStoryFile("src/test/resources/test-stories/my-test.yaml")
+            .withBackend(PilafBackendFactory.createMineflayerBackend(
+                "http://localhost:3000",
+                "localhost", 25575, "rcon_password"
+            ))
+            .build();
+
+        runner.run();
+    }
+}
+----
+
+=== 3. Start Services with Docker
+
+[source,shell]
+----
+docker compose -f docker/docker-compose-example.yml up -d
+----
+
+=== 4. Run Tests
+
+[source,shell]
+----
+mvn test -Dtest=MyPluginIntegrationTest
+----
+
+== Components
+
+=== Test Story (YAML DSL)
+
+Test stories define the test scenario in human-readable YAML:
+
+[source,yaml]
+----
+name: "Test Name"
+description: "What this test verifies"
+
+setup:           # Actions to prepare the test environment
+  - action: "..."
+
+steps:           # Test actions to execute
+  - name: "Step name"
+    action: "..."
+
+assertions:      # Conditions to verify
+  - type: "..."
+----
+
+==== Available Actions
+
+[cols="1,2,2"]
+|===
+| Action | Description | Parameters
+
+| `connect_bot`
+| Connect a Mineflayer bot to the server
+| `username`
+
+| `disconnect_bot`
+| Disconnect a bot from the server
+| `username`
+
+| `give_item`
+| Give an item to a player via RCON
+| `player`, `item`, `count`
+
+| `summon`
+| Spawn an entity near a player
+| `entity`, `near`, `name` (optional)
+
+| `execute_command`
+| Execute a command via RCON or bot
+| `command`
+
+| `wait`
+| Wait for a duration (milliseconds)
+| `duration`
+|===
+
+==== Assertion Types
+
+[cols="1,2"]
+|===
+| Type | Description
+
+| `inventory_contains`
+| Verify player inventory has item
+
+| `entity_exists`
+| Verify entity is present
+
+| `entity_affected`
+| Verify entity was affected (damaged, killed)
+
+| `player_position`
+| Verify player location
+|===
+
+=== Backends
+
+==== RCON Backend
+
+Direct server command execution via RCON protocol.
+
+[source,java]
+----
+RconBackend backend = new RconBackend("localhost", 25575, "password");
+backend.executeCommand("give player diamond 1");
+----
+
+==== Mineflayer Backend
+
+Client automation via Node.js Mineflayer bridge.
+
+[source,java]
+----
+MineflayerBackend backend = new MineflayerBackend(
+    "http://localhost:3000",
+    "localhost", 25575, "password"
+);
+backend.connectBot("test_player");
+String inventory = backend.getInventory("test_player");
+----
+
+=== Test Reporter
+
+Generates comprehensive test reports:
+
+* **JUnit XML** - For CI/CD integration
+* **JSON** - For programmatic parsing
+* **Text** - Human-readable with logs
+
+[source,java]
+----
+TestReporter reporter = new TestReporter("MyTest");
+reporter.step("Give dragon egg")
+    .action("RCON: give player dragon_egg 1")
+    .expected("Player has dragon egg")
+    .actual("Inventory contains dragon_egg")
+    .pass();
+reporter.complete();  // Generates reports in target/pilaf-reports/
+----
+
+== Docker Setup
+
+=== docker-compose.yml
+
+[source,yaml]
+----
+version: '3.8'
+services:
+  minecraft:
+    image: marctv/minecraft-papermc-server:1.21.8
+    ports:
+      - "25565:25565"
+      - "25575:25575"
+    environment:
+      - EULA=true
+      - ENABLE_RCON=true
+      - RCON_PASSWORD=your_password
+    volumes:
+      - ./plugins:/data/plugins
+
+  mineflayer:
+    build: ./mineflayer-bridge
+    ports:
+      - "3000:3000"
+    environment:
+      - MINECRAFT_HOST=minecraft
+      - MINECRAFT_PORT=25565
+    depends_on:
+      - minecraft
+----
+
+=== Building Mineflayer Bridge
+
+[source,shell]
+----
+cd mineflayer-bridge
+npm install
+node server.js
+----
+
+== API Reference
+
+=== PilafRunner
+
+Main entry point for running tests.
+
+[source,java]
+----
+PilafRunner runner = new PilafRunner.Builder()
+    .withStoryFile("path/to/story.yaml")      // YAML test story
+    .withBackend(backend)                      // PilafBackend implementation
+    .withReporter(reporter)                    // Optional TestReporter
+    .build();
+
+TestResult result = runner.run();
+----
+
+=== PilafBackend Interface
+
+[source,java]
+----
+public interface PilafBackend {
+    void connect() throws Exception;
+    void disconnect() throws Exception;
+    String executeCommand(String command) throws Exception;
+    String connectBot(String username) throws Exception;
+    void disconnectBot(String username) throws Exception;
+    String getInventory(String username) throws Exception;
+    String getNearbyEntities(String username) throws Exception;
+    String getPlayerPosition(String username) throws Exception;
+}
+----
+
+== Example: DragonEgg Lightning Plugin
+
+Here's a complete example testing a lightning ability plugin:
+
+[source,java]
+----
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+public class DragonEggLightningIntegrationTest {
+
+    private static MineflayerBackend backend;
+
+    @BeforeAll
+    static void setup() throws Exception {
+        backend = new MineflayerBackend(
+            "http://localhost:3000",
+            "localhost", 25575, "dragon123"
+        );
+        backend.connect();
+        backend.connectBot("pilaf_tester");
+        Thread.sleep(2000);
+    }
+
+    @Test
+    @Order(1)
+    void testGiveDragonEgg() throws Exception {
+        backend.executeCommand("give pilaf_tester dragon_egg 1");
+        String inventory = backend.getInventory("pilaf_tester");
+        assertTrue(inventory.contains("dragon_egg"));
+    }
+
+    @Test
+    @Order(2)
+    void testSpawnZombie() throws Exception {
+        backend.executeCommand("execute as pilaf_tester at @s run summon zombie ~ ~1 ~");
+        String entities = backend.getNearbyEntities("pilaf_tester");
+        assertTrue(entities.contains("zombie"));
+    }
+
+    @Test
+    @Order(3)
+    void testLightningAbility() throws Exception {
+        backend.executePlayerCommand("pilaf_tester", "ability lightning @e[type=zombie,limit=1]");
+        // Lightning strikes the zombie
+    }
+
+    @AfterAll
+    static void cleanup() throws Exception {
+        backend.disconnectBot("pilaf_tester");
+        backend.disconnect();
+    }
+}
+----
+
+== Troubleshooting
+
+=== Bot cannot connect to server
+
+* Verify server is running and accepting connections
+* Check `online-mode=false` in server.properties for offline bots
+* Ensure Mineflayer bridge can reach the Minecraft server
+
+=== RCON authentication failed
+
+* Verify RCON is enabled in server.properties
+* Check RCON password matches
+* Ensure RCON port (25575) is accessible
+
+=== Tests timeout
+
+* Increase wait times after server actions
+* Check Docker container health
+* Verify server has finished loading
 
 == License
 
-MIT License
+MIT License - see LICENSE file for details.
