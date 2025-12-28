@@ -14,6 +14,9 @@ public class PilafBackendFactory {
             case "rcon":
             case "real-server":
                 return new RconBackend(host, port, password);
+            case "mineflayer":
+            case "real-client":
+                return new MineflayerBackend("localhost", 3000, host, port, password);
             default:
                 throw new IllegalArgumentException("Unknown backend type: " + type);
         }
@@ -21,5 +24,10 @@ public class PilafBackendFactory {
 
     public static RconBackend createRcon(String host, int port, String password) {
         return new RconBackend(host, port, password);
+    }
+
+    public static MineflayerBackend createMineflayer(String bridgeHost, int bridgePort,
+            String rconHost, int rconPort, String rconPassword) {
+        return new MineflayerBackend(bridgeHost, bridgePort, rconHost, rconPort, rconPassword);
     }
 }
