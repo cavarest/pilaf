@@ -98,15 +98,17 @@ public class HtmlReportGenerator {
         map.put("stateAfter", step.stateAfter);
 
         // Detect action type and add emoji
+        Map<String, String> actionType = null;
         if (step.action != null) {
             map.put("action", step.action);
-            map.put("actionType", detectCommandType(step.action));
+            actionType = detectCommandType(step.action);
+            map.put("actionType", actionType);
         }
 
-        // Detect actual result type and add emoji
+        // Actual result type inherits from action type for better labeling
         if (step.actual != null) {
             map.put("actual", step.actual);
-            map.put("actualType", detectResultType(step.actual));
+            map.put("actualType", detectResultType(step.actual, actionType));
             map.put("actualHtml", renderState(step.actual));
         }
 
@@ -160,26 +162,48 @@ public class HtmlReportGenerator {
     }
 
     /**
-     * Detects result type from actual string and returns appropriate icon/label.
+     * Detects result type using action type context for accurate labeling.
+     * The result type inherits from the action type when available.
      */
-    private static Map<String, String> detectResultType(String actual) {
+    private static Map<String, String> detectResultType(String actual, Map<String, String> actionType) {
         Map<String, String> type = new HashMap<>();
         String lowerActual = actual.toLowerCase();
 
-        if (lowerActual.contains("response:") || lowerActual.contains("result:")) {
-            if (lowerActual.contains("chatmessages") || lowerActual.contains("\"status\"")) {
+        // If we know the action type, use it to determine the response type
+        if (actionType != null) {
+            String actionLabel = actionType.get("label");
+            if ("RCON".equals(actionLabel) || "OP".equals(actionLabel)) {
+                type.put("icon", "🖥️");
+                type.put("label", "RCON RESPONSE");
+                type.put("cssClass", "rcon");
+                return type;
+            } else if ("PLAYER".equals(actionLabel)) {
+                type.put("icon", "👤");
+                type.put("label", "PLAYER RESULT");
+                type.put("cssClass", "player");
+                return type;
+            } else if ("CLIENT".equals(actionLabel)) {
                 type.put("icon", "🤖");
                 type.put("label", "CLIENT RESPONSE");
                 type.put("cssClass", "client");
-            } else {
-                type.put("icon", "📡");
-                type.put("label", "SERVER RESPONSE");
-                type.put("cssClass", "server");
+                return type;
             }
+        }
+
+        // Fallback: detect from content
+        if (lowerActual.contains("chatmessages") || lowerActual.contains("\"status\"")) {
+            type.put("icon", "🤖");
+            type.put("label", "CLIENT RESPONSE");
+            type.put("cssClass", "client");
         } else if (lowerActual.contains("entities") || lowerActual.contains("inventory")) {
             type.put("icon", "🤖");
             type.put("label", "CLIENT STATE");
             type.put("cssClass", "client");
+        } else if (lowerActual.contains("§")) {
+            // Minecraft color codes indicate server response
+            type.put("icon", "🖥️");
+            type.put("label", "SERVER RESPONSE");
+            type.put("cssClass", "server");
         } else {
             type.put("icon", "📄");
             type.put("label", "RESULT");
