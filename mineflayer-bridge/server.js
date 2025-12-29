@@ -15,6 +15,9 @@ const MC_PORT = parseInt(process.env.MC_PORT || '25565');
 
 // Store active bots by player name
 const bots = new Map();
+// Store recent chat messages per bot (circular buffer)
+const chatHistory = new Map();
+const MAX_CHAT_HISTORY = 50;
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -48,6 +51,26 @@ app.post('/connect', async (req, res) => {
             setTimeout(() => reject(new Error('Connection timeout')), 30000);
         });
 
+        // Initialize chat history for this bot
+        chatHistory.set(username, []);
+
+        // Listen for chat messages
+        bot.on('message', (jsonMsg, position) => {
+            const history = chatHistory.get(username) || [];
+            const msg = {
+                timestamp: Date.now(),
+                text: jsonMsg.toString(),
+                json: jsonMsg.json || jsonMsg,
+                position
+            };
+            history.push(msg);
+            // Keep only last MAX_CHAT_HISTORY messages
+            if (history.length > MAX_CHAT_HISTORY) {
+                history.shift();
+            }
+            console.log(`📨 [${username}] Chat: ${msg.text}`);
+        });
+
         bots.set(username, bot);
         console.log(`✅ Bot ${username} connected to ${host}:${port}`);
         res.json({ status: 'connected', username, host, port });
@@ -72,9 +95,9 @@ app.post('/disconnect', (req, res) => {
     res.json({ status: 'disconnected', username });
 });
 
-// Execute chat command as player
-app.post('/command', (req, res) => {
-    const { username, command } = req.body;
+// Execute chat command as player and capture response
+app.post('/command', async (req, res) => {
+    const { username, command, waitForChat = true, chatTimeout = 2000 } = req.body;
     const bot = bots.get(username);
 
     if (!bot) {
@@ -82,9 +105,65 @@ app.post('/command', (req, res) => {
     }
 
     const fullCommand = command.startsWith('/') ? command : `/${command}`;
+
+    // Record current chat history size
+    const history = chatHistory.get(username) || [];
+    const beforeCount = history.length;
+
     bot.chat(fullCommand);
     console.log(`💬 ${username} executed: ${fullCommand}`);
-    res.json({ status: 'executed', username, command: fullCommand });
+
+    if (waitForChat) {
+        // Wait for chat response
+        await new Promise(resolve => setTimeout(resolve, chatTimeout));
+
+        // Get new messages since command was sent
+        const newMessages = history.slice(beforeCount).map(m => m.text);
+        res.json({
+            status: 'executed',
+            username,
+            command: fullCommand,
+            chatMessages: newMessages
+        });
+    } else {
+        res.json({ status: 'executed', username, command: fullCommand });
+    }
+});
+
+// Get recent chat messages for a bot
+app.get('/chat/:username', (req, res) => {
+    const username = req.params.username;
+    const limit = parseInt(req.query.limit || '10');
+    const since = parseInt(req.query.since || '0');
+
+    if (!bots.has(username)) {
+        return res.status(404).json({ error: `Bot ${username} not found` });
+    }
+
+    const history = chatHistory.get(username) || [];
+    const filtered = since > 0
+        ? history.filter(m => m.timestamp > since)
+        : history.slice(-limit);
+
+    res.json({
+        username,
+        messages: filtered.map(m => ({
+            timestamp: m.timestamp,
+            text: m.text
+        }))
+    });
+});
+
+// Clear chat history for a bot
+app.delete('/chat/:username', (req, res) => {
+    const username = req.params.username;
+
+    if (!bots.has(username)) {
+        return res.status(404).json({ error: `Bot ${username} not found` });
+    }
+
+    chatHistory.set(username, []);
+    res.json({ status: 'cleared', username });
 });
 
 // Send chat message

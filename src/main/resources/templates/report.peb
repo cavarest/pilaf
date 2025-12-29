@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PILAF Test Report - {{ suiteName }}</title>
+  <style>{{ css | raw }}</style>
+</head>
+<body>
+  <div class="app">
+    {# Sidebar Navigation #}
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <h2>🧪 PILAF</h2>
+        <div class="suite-name">{{ suiteName }}</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-title">📊 Overview</div>
+        <a href="#summary" class="nav-link active">Summary</a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-title">📖 Stories ({{ stories | length }})</div>
+        {% for story in stories %}
+        <a href="#story-{{ loop.index - 1 }}" class="nav-link">
+          {{ story.passed ? '✅' : '❌' }} {{ story.name | truncate(25) }}
+          <span class="step-count">({{ story.steps | length }})</span>
+        </a>
+        {% endfor %}
+      </div>
+    </nav>
+
+    {# Main Content #}
+    <main class="content">
+      {# Summary Section #}
+      <section id="summary" class="section">
+        <div class="section-header">
+          <h1>{{ suiteName }}</h1>
+          <span class="overall-badge {{ passed ? 'passed' : 'failed' }}">
+            {{ passed ? '✅ ALL PASSED' : '❌ FAILURES' }}
+          </span>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">{{ stories | length }}</div>
+            <div class="stat-label">Stories</div>
+          </div>
+          <div class="stat-card passed">
+            <div class="stat-value">{{ storiesPassed }}</div>
+            <div class="stat-label">Passed</div>
+          </div>
+          <div class="stat-card failed">
+            <div class="stat-value">{{ storiesFailed }}</div>
+            <div class="stat-label">Failed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ totalSteps }}</div>
+            <div class="stat-label">Steps</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">{{ durationSeconds }}s</div>
+            <div class="stat-label">Duration</div>
+          </div>
+        </div>
+
+        <div class="time-info">
+          <span>Started: {{ startTime }}</span>
+          <span>Ended: {{ endTime }}</span>
+        </div>
+
+        <div class="stories-overview">
+          <h3>Stories Overview</h3>
+          {% for story in stories %}
+          <div class="story-row {{ story.passed ? 'passed' : 'failed' }}">
+            <span class="story-status">{{ story.passed ? '✅' : '❌' }}</span>
+            <a href="#story-{{ loop.index - 1 }}" class="story-name">{{ story.name }}</a>
+            <span class="story-stats">{{ story.passedCount }}/{{ story.steps | length }} steps</span>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      {# Story Sections #}
+      {% for story in stories %}
+      <section id="story-{{ loop.index - 1 }}" class="section story-section">
+        <div class="story-header {{ story.passed ? 'passed' : 'failed' }}">
+          <div class="story-title">
+            <span class="story-badge">{{ story.passed ? '✅' : '❌' }}</span>
+            <h2>{{ story.name }}</h2>
+          </div>
+          <div class="story-meta">
+            <span class="meta-item passed">✓ {{ story.passedCount }} passed</span>
+            <span class="meta-item failed">✗ {{ story.failedCount }} failed</span>
+          </div>
+        </div>
+
+        <div class="steps-container">
+          {% for step in story.steps %}
+          <div class="step {{ step.passed ? 'passed' : 'failed' }}" data-collapsed="true">
+            <div class="step-header" onclick="toggleStep(this)">
+              <span class="step-num">{{ loop.index }}</span>
+              <span class="step-name">{{ step.name }}</span>
+              <span class="step-badge {{ step.passed ? 'passed' : 'failed' }}">
+                {{ step.passed ? 'PASSED' : 'FAILED' }}
+              </span>
+              <span class="collapse-icon">▼</span>
+            </div>
+
+            <div class="step-details">
+              {% if step.action is not empty %}
+              <div class="detail-row">
+                <span class="detail-label">{{ step.actionType.icon }} {{ step.actionType.label }}</span>
+                <div class="detail-value {{ step.actionType.cssClass }}">{{ step.action }}</div>
+              </div>
+              {% endif %}
+
+              {% if step.expected is not empty %}
+              <div class="detail-row">
+                <span class="detail-label">📎 Expected</span>
+                <div class="detail-value">{{ step.expected }}</div>
+              </div>
+              {% endif %}
+
+              {# State Diff View - check diffHtml exists (set when both stateBefore and stateAfter are present) #}
+              {% if step.diffHtml is not empty %}
+              <div class="state-diff-container">
+                <div class="diff-header">🔄 State Changes</div>
+                <div class="diff-view">
+                  {{ step.diffHtml | raw }}
+                </div>
+                <details class="full-state-toggle">
+                  <summary>📋 See full before/after</summary>
+                  <div class="full-state-comparison">
+                    <div class="state-box before">
+                      <div class="state-label">📤 Before</div>
+                      <div class="state-content">{{ step.stateBeforeHtml | raw }}</div>
+                    </div>
+                    <div class="state-box after">
+                      <div class="state-label">📥 After</div>
+                      <div class="state-content">{{ step.stateAfterHtml | raw }}</div>
+                    </div>
+                  </div>
+                </details>
+              </div>
+              {% elseif step.stateBeforeHtml is not empty or step.stateAfterHtml is not empty %}
+              <div class="state-comparison">
+                {% if step.stateBeforeHtml is not empty %}
+                <div class="state-box before">
+                  <div class="state-label">📤 State Before</div>
+                  <div class="state-content">{{ step.stateBeforeHtml | raw }}</div>
+                </div>
+                {% endif %}
+                {% if step.stateAfterHtml is not empty %}
+                <div class="state-box after">
+                  <div class="state-label">📥 State After</div>
+                  <div class="state-content">{{ step.stateAfterHtml | raw }}</div>
+                </div>
+                {% endif %}
+              </div>
+              {% elseif step.actual is not empty %}
+              <div class="detail-row">
+                <span class="detail-label">{{ step.actualType.icon }} {{ step.actualType.label }}</span>
+                <div class="detail-value {{ step.actualType.cssClass }}">{{ step.actualHtml | raw }}</div>
+              </div>
+              {% endif %}
+
+              {% if step.evidence is not empty %}
+              <div class="evidence-section">
+                <span class="detail-label">🔍 Evidence</span>
+                <ul class="evidence-list">
+                  {% for e in step.evidence %}
+                  <li>{{ e.icon }} {{ e.text }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+
+          {# Per-story Activity Logs - hidden by default #}
+          {% if story.logs is not empty %}
+          <div class="story-logs" data-collapsed="true">
+            <div class="logs-header" onclick="toggleLogs(this)">
+              <span>📋 Activity Log ({{ story.logs | length }} entries)</span>
+              <span class="collapse-icon">▼</span>
+            </div>
+            <div class="interleaved-log-content">
+              {% for log in story.logs %}
+              <div class="log-line {{ log.type.cssClass }}">
+                <span class="log-timestamp">[{{ log.timestamp }}]</span>
+                <span class="log-type">{{ log.label }}</span>
+                <span class="log-text">{{ log.message }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+      {% endfor %}
+
+      <footer class="footer">
+        Generated by PILAF at {{ generatedAt }}
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    function toggleStep(header) {
+      const step = header.parentElement;
+      const collapsed = step.dataset.collapsed === 'true';
+      step.dataset.collapsed = collapsed ? 'false' : 'true';
+    }
+
+    function toggleLogs(header) {
+      const logsContainer = header.parentElement;
+      const collapsed = logsContainer.dataset.collapsed === 'true';
+      logsContainer.dataset.collapsed = collapsed ? 'false' : 'true';
+    }
+
+    // Expand failed steps by default
+    document.querySelectorAll('.step.failed').forEach(step => {
+      step.dataset.collapsed = 'false';
+    });
+
+    // Update active nav link on scroll
+    const sections = document.querySelectorAll('.section');
+    const navLinks = document.querySelectorAll('.nav-link');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop - 100;
+        if (scrollY >= sectionTop) {
+          current = section.getAttribute('id');
+        }
+      });
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    });
+
+    // Smooth scroll
+    navLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.querySelector(link.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
