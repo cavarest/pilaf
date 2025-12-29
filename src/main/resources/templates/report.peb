@@ -90,7 +90,9 @@
           </div>
           <div class="story-meta">
             <span class="meta-item passed">✓ {{ story.passedCount }} passed</span>
+            {% if story.failedCount > 0 %}
             <span class="meta-item failed">✗ {{ story.failedCount }} failed</span>
+            {% endif %}
           </div>
         </div>
 
