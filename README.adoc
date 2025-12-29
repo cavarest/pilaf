@@ -297,6 +297,7 @@ String inventory = backend.getInventory("test_player");
 
 Generates comprehensive test reports:
 
+* **HTML** - Beautiful SPA-style interactive reports with JSON diff
 * **JUnit XML** - For CI/CD integration
 * **JSON** - For programmatic parsing
 * **Text** - Human-readable with logs
@@ -310,6 +311,66 @@ reporter.step("Give dragon egg")
     .actual("Inventory contains dragon_egg")
     .pass();
 reporter.complete();  // Generates reports in target/pilaf-reports/
+----
+
+==== HTML Report Features
+
+The HTML report (`*_report.html`) includes:
+
+* **Story-based navigation** - Sidebar with all test stories
+* **Collapsible steps** - Click to expand/collapse step details
+* **Action type indicators** - Emojis show command source:
+** 🖥️ RCON - Server RCON commands
+** 👤 PLAYER - Player-executed commands
+** 🤖 CLIENT - Mineflayer client actions
+** 📡 SERVER - Server responses
+* **JSON State Diff** - Semantic diff using RFC 6902 JSON Patch:
+** `+` Added (green)
+** `−` Removed (red)
+** `~` Changed (orange)
+* **Activity Log** - Interleaved command/response log (hidden by default)
+
+==== State Before/After Tracking
+
+To enable JSON diff for a step, explicitly set both `stateBefore()` and `stateAfter()`:
+
+[source,java]
+----
+String entitiesBefore = backend.getNearbyEntities("test_player");
+
+TestStep step = reporter.step("Spawn zombie")
+    .action("RCON: summon zombie")
+    .expected("Zombie spawned")
+    .stateBefore(entitiesBefore);  // Capture state before action
+
+// Execute the action
+backend.executeCommand("summon zombie ~ ~ ~");
+
+String entitiesAfter = backend.getNearbyEntities("test_player");
+
+step.stateAfter(entitiesAfter)    // Capture state after action
+    .assertContains(entitiesAfter, "zombie");
+----
+
+The report will show a semantic JSON diff highlighting what changed:
+
+[source]
+----
++ entities[0] = {"type":"zombie","name":"Zombie","health":20}
+----
+
+==== Per-Story Activity Logging
+
+Log commands and responses to the current story:
+
+[source,java]
+----
+TestStory story = reporter.story("Lightning Test");
+
+story.logRcon("give player dragon_egg 1");       // 🖥️ RCON command
+story.logServer("Gave 1 dragon_egg to player");  // 📡 Server response
+story.logPlayerCommand("test_player", "/ability 1");  // 👤 Player command
+story.logClient("Bot received chat message");    // 🤖 Client action
 ----
 
 == Docker Setup
