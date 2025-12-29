@@ -321,10 +321,9 @@ public class HtmlReportGenerator {
             }
 
         } catch (Exception e) {
-            // Fallback to simple line diff if JSON parsing fails
-            sb.append("<div class=\"diff-line unchanged\">")
-              .append("Unable to parse JSON: ").append(escapeHtml(e.getMessage()))
-              .append("</div>\n");
+            // Return null if JSON parsing fails - don't show diff section
+            // This happens when states are not valid JSON (e.g., truncated responses)
+            return null;
         }
 
         return sb.toString();
