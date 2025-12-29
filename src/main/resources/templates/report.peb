@@ -121,7 +121,15 @@
               </div>
               {% endif %}
 
-              {# State Diff View - check diffHtml exists (set when both stateBefore and stateAfter are present) #}
+              {# Show actual result when available #}
+              {% if step.actual is not empty %}
+              <div class="detail-row">
+                <span class="detail-label">{{ step.actualType.icon }} {{ step.actualType.label }}</span>
+                <div class="detail-value {{ step.actualType.cssClass }}">{{ step.actualHtml | raw }}</div>
+              </div>
+              {% endif %}
+
+              {# State Diff View - only show when both states exist #}
               {% if step.diffHtml is not empty %}
               <div class="state-diff-container">
                 <div class="diff-header">🔄 State Changes</div>
@@ -156,11 +164,6 @@
                   <div class="state-content">{{ step.stateAfterHtml | raw }}</div>
                 </div>
                 {% endif %}
-              </div>
-              {% elseif step.actual is not empty %}
-              <div class="detail-row">
-                <span class="detail-label">{{ step.actualType.icon }} {{ step.actualType.label }}</span>
-                <div class="detail-value {{ step.actualType.cssClass }}">{{ step.actualHtml | raw }}</div>
               </div>
               {% endif %}
 
