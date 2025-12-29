@@ -22,7 +22,7 @@
         <div class="nav-title">📖 Stories ({{ stories | length }})</div>
         {% for story in stories %}
         <a href="#story-{{ loop.index - 1 }}" class="nav-link">
-          {{ story.passed ? '✅' : '❌' }} {{ story.name | truncate(25) }}
+          {{ story.passed ? '✅' : '❌' }} {{ story.name | abbreviate(25) }}
           <span class="step-count">({{ story.steps | length }})</span>
         </a>
         {% endfor %}
