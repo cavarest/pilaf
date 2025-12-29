@@ -232,10 +232,11 @@ public class HtmlReportGenerator {
 
     /**
      * Renders state content as HTML (JSON or plain text).
+     * Returns null for empty/null states so template can skip them.
      */
     private static String renderState(String state) {
         if (state == null || state.trim().isEmpty()) {
-            return "<span class=\"empty-state\">Empty</span>";
+            return null;  // Return null so template skips empty state boxes
         }
 
         String trimmed = state.trim();
@@ -243,14 +244,14 @@ public class HtmlReportGenerator {
             (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
             String formatted = prettyPrintJson(trimmed);
             if (formatted.trim().isEmpty()) {
-                return "<span class=\"empty-state\">Empty JSON</span>";
+                return null;  // Skip empty JSON
             }
             return "<pre class=\"state-json\">" + formatted + "</pre>";
         }
 
         String escaped = escapeHtml(state);
         if (escaped.trim().isEmpty()) {
-            return "<span class=\"empty-state\">Empty</span>";
+            return null;  // Skip empty text
         }
         return "<span class=\"state-text\">" + escaped + "</span>";
     }
