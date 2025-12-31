@@ -94,6 +94,14 @@ public class MineflayerClient {
         return get("/entities/" + username);
     }
 
+    public Map<String, Object> getEntity(String entityName, String username) throws Exception {
+        return get("/entity/" + entityName + "/" + username);
+    }
+
+    public Map<String, Object> getEquipment(String username) throws Exception {
+        return get("/equipment/" + username);
+    }
+
     public boolean isHealthy() {
         try {
             Map<String, Object> result = get("/health");

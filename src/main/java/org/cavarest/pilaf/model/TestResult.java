@@ -35,6 +35,27 @@ public class TestResult {
         if (result.isPassed()) assertionsPassed++; else assertionsFailed++;
     }
 
+    public void pass() { this.success = true; }
+    public void fail(String message) {
+        this.success = false;
+        if (message != null) addLog("FAILURE: " + message);
+    }
+
+    public boolean isPassed() { return success; }
+    public String getMessage() { return error != null ? error.getMessage() : null; }
+    public void setPassed(boolean passed) { this.success = passed; }
+    public void setMessage(String message) {
+        if (message != null) addLog("INFO: " + message);
+    }
+
+    // Additional methods for YAML test runner
+    public void setTestName(String testName) {
+        this.storyName = testName;
+    }
+    public void setStoryFile(String storyFile) {
+        addLog("Story file: " + storyFile);
+    }
+
     public static class AssertionResult {
         private Assertion assertion;
         private boolean passed;

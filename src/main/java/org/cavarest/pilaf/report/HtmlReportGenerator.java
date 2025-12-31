@@ -225,7 +225,7 @@ public class HtmlReportGenerator {
             .collect(Collectors.toList());
     }
 
-    private static List<Map<String, Object>> transformLogs(List<TestReporter.LogEntry> logs) {
+    private static List<Map<String, Object>> transformLogs(List<?> logs) {
         return logs.stream()
             .map(log -> {
                 Map<String, Object> map = new HashMap<>();

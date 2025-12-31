@@ -28,6 +28,10 @@ public class TestStory {
     public List<Action> getCleanup() { return cleanup; }
     public void setCleanup(List<Action> cleanup) { this.cleanup = cleanup; }
 
+    // Alias methods for consistency with StoryExecutor
+    public List<Action> getSetupActions() { return setup; }
+    public List<Action> getCleanupActions() { return cleanup; }
+
     public TestStory addSetupAction(Action action) { setup.add(action); return this; }
     public TestStory addStep(Action action) { steps.add(action); return this; }
     public TestStory addAssertion(Assertion assertion) { assertions.add(assertion); return this; }
