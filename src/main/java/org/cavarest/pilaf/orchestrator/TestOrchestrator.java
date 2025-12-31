@@ -8,6 +8,8 @@ import org.cavarest.pilaf.model.TestStory;
 import org.cavarest.pilaf.parser.YamlStoryParser;
 
 import java.util.Collections;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Orchestrates the execution of PILAF test stories.
@@ -20,6 +22,7 @@ public class TestOrchestrator {
     private TestStory currentStory;
     private TestResult result;
     private boolean verbose;
+    private Map<String, Object> storedStates = new HashMap<>();
 
     public TestOrchestrator(PilafBackend backend) {
         this.backend = backend;
@@ -95,6 +98,7 @@ public class TestOrchestrator {
 
         try {
             switch (action.getType()) {
+                // Existing actions
                 case SPAWN_ENTITY:
                     backend.spawnEntity(action.getName(), action.getEntityType(),
                         action.getLocation(), action.getEquipment());
@@ -117,8 +121,15 @@ public class TestOrchestrator {
                     backend.movePlayer(action.getPlayer(), "destination", action.getDestination());
                     break;
                 case WAIT:
-                    log("    ⏳ Waiting " + action.getDuration() + "ms...");
-                    Thread.sleep(action.getDuration());
+                    // Safe null handling for duration
+                    Long waitDuration = action.getDuration();
+                    if (waitDuration != null && waitDuration > 0) {
+                        log("    ⏳ Waiting " + waitDuration + "ms...");
+                        Thread.sleep(waitDuration);
+                    } else {
+                        log("    ⏳ Waiting 1000ms...");
+                        Thread.sleep(1000);
+                    }
                     break;
                 case REMOVE_ENTITIES:
                     backend.removeAllTestEntities();
@@ -126,6 +137,167 @@ public class TestOrchestrator {
                 case REMOVE_PLAYERS:
                     backend.removeAllTestPlayers();
                     break;
+
+                // Player Management Commands
+                case MAKE_OPERATOR:
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        ((org.cavarest.pilaf.backend.MineflayerBackend) backend).makeOperator(action.getPlayer());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        ((org.cavarest.pilaf.backend.RconBackend) backend).makeOperator(action.getPlayer());
+                    }
+                    break;
+                case GET_PLAYER_INVENTORY:
+                    Object inventory = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        inventory = ((org.cavarest.pilaf.backend.MineflayerBackend) backend).getPlayerInventory(action.getPlayer());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        inventory = ((org.cavarest.pilaf.backend.RconBackend) backend).getPlayerInventory(action.getPlayer());
+                    }
+                    if (action.getStoreAs() != null) {
+                        storedStates.put(action.getStoreAs(), inventory);
+                    }
+                    break;
+                case GET_PLAYER_POSITION:
+                    Object position = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        position = ((org.cavarest.pilaf.backend.MineflayerBackend) backend).getPlayerPosition(action.getPlayer());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        position = ((org.cavarest.pilaf.backend.RconBackend) backend).getPlayerPosition(action.getPlayer());
+                    }
+                    if (action.getStoreAs() != null) {
+                        storedStates.put(action.getStoreAs(), position);
+                    }
+                    break;
+                case GET_PLAYER_HEALTH:
+                    Double health = 0.0;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        health = ((org.cavarest.pilaf.backend.MineflayerBackend) backend).getPlayerHealth(action.getPlayer());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        health = ((org.cavarest.pilaf.backend.RconBackend) backend).getPlayerHealth(action.getPlayer());
+                    }
+                    if (action.getStoreAs() != null) {
+                        storedStates.put(action.getStoreAs(), health);
+                    }
+                    break;
+                case SEND_CHAT_MESSAGE:
+                    backend.sendChat(action.getPlayer(), action.getMessage());
+                    break;
+
+                // Entity Management Commands
+                case GET_ENTITIES:
+                    Object entities = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        entities = ((org.cavarest.pilaf.backend.MineflayerBackend) backend).getEntities(action.getPlayer());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        entities = ((org.cavarest.pilaf.backend.RconBackend) backend).getEntitiesInView(action.getPlayer());
+                    }
+                    if (action.getStoreAs() != null) {
+                        storedStates.put(action.getStoreAs(), entities);
+                    }
+                    break;
+                case GET_ENTITIES_IN_VIEW:
+                    Object entitiesInView = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        entitiesInView = ((org.cavarest.pilaf.backend.MineflayerBackend) backend).getEntitiesInView(action.getPlayer());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        entitiesInView = ((org.cavarest.pilaf.backend.RconBackend) backend).getEntitiesInView(action.getPlayer());
+                    }
+                    if (action.getStoreAs() != null) {
+                        storedStates.put(action.getStoreAs(), entitiesInView);
+                    }
+                    break;
+                case GET_ENTITY_BY_NAME:
+                    Object entityData = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        entityData = ((org.cavarest.pilaf.backend.MineflayerBackend) backend).getEntityByName(action.getEntity(), action.getPlayer());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        entityData = ((org.cavarest.pilaf.backend.RconBackend) backend).getEntityByName(action.getEntity(), action.getPlayer());
+                    }
+                    if (action.getStoreAs() != null) {
+                        storedStates.put(action.getStoreAs(), entityData);
+                    }
+                    break;
+
+                // Command Execution Commands
+                case EXECUTE_PLAYER_COMMAND:
+                    backend.executePlayerCommand(action.getPlayer(), action.getCommand(), Collections.emptyList());
+                    break;
+                case EXECUTE_RCON_COMMAND:
+                    backend.executeServerCommand(action.getCommand(), Collections.emptyList());
+                    break;
+                case EXECUTE_RCON_WITH_CAPTURE:
+                    String result = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        result = ((org.cavarest.pilaf.backend.MineflayerBackend) backend).executeRconWithCapture(action.getCommand());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        result = ((org.cavarest.pilaf.backend.RconBackend) backend).executeRconWithCapture(action.getCommand());
+                    }
+                    if (action.getStoreAs() != null) {
+                        storedStates.put(action.getStoreAs(), result);
+                    }
+                    break;
+
+                // Inventory Management Commands
+                case REMOVE_ITEM:
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        ((org.cavarest.pilaf.backend.MineflayerBackend) backend).removeItem(action.getPlayer(), action.getItem(), action.getCount());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        ((org.cavarest.pilaf.backend.RconBackend) backend).removeItem(action.getPlayer(), action.getItem(), action.getCount());
+                    }
+                    break;
+                case GET_PLAYER_EQUIPMENT:
+                    Object equipment = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        equipment = ((org.cavarest.pilaf.backend.MineflayerBackend) backend).getPlayerEquipment(action.getPlayer());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        equipment = ((org.cavarest.pilaf.backend.RconBackend) backend).getPlayerEquipment(action.getPlayer());
+                    }
+                    if (action.getStoreAs() != null) {
+                        storedStates.put(action.getStoreAs(), equipment);
+                    }
+                    break;
+
+                // State Management Commands
+                case STORE_STATE:
+                    Object stateToStore = null;
+                    if (action.getFromCommandResult() != null) {
+                        stateToStore = storedStates.get(action.getFromCommandResult());
+                    } else {
+                        stateToStore = action.getVariableName();
+                    }
+                    storedStates.put(action.getVariableName(), stateToStore);
+                    break;
+                case PRINT_STORED_STATE:
+                    Object storedState = storedStates.get(action.getVariableName());
+                    log("    📄 " + action.getVariableName() + ": " + storedState);
+                    break;
+                case COMPARE_STATES:
+                    Object state1 = storedStates.get(action.getState1());
+                    Object state2 = storedStates.get(action.getState2());
+                    Map<String, Object> comparison = new HashMap<>();
+                    comparison.put("state1_name", action.getState1());
+                    comparison.put("state2_name", action.getState2());
+                    comparison.put("state1", state1);
+                    comparison.put("state2", state2);
+                    comparison.put("equal", state1 != null && state1.equals(state2));
+                    if (action.getStoreAs() != null) {
+                        storedStates.put(action.getStoreAs(), comparison);
+                    }
+                    break;
+                case PRINT_STATE_COMPARISON:
+                    Object comparisonResult = storedStates.get(action.getVariableName());
+                    log("    📊 " + action.getVariableName() + ": " + comparisonResult);
+                    break;
+
+                // Utility Commands
+                case CLEAR_COOLDOWN:
+                    backend.executeServerCommand("dragonlightning clearcooldown", Collections.singletonList(action.getPlayer()));
+                    break;
+                case SET_COOLDOWN:
+                    backend.executeServerCommand("dragonlightning setcooldown",
+                        java.util.Arrays.asList(action.getPlayer(), action.getDuration().toString()));
+                    break;
+
                 default:
                     log("    ⚠️ Unknown action type: " + action.getType());
             }
@@ -164,7 +336,26 @@ public class TestOrchestrator {
             case GIVE_ITEM: return "Give " + action.getCount() + "x " + action.getItem() + " to " + action.getPlayer();
             case EQUIP_ITEM: return "Equip " + action.getItem() + " to " + action.getPlayer() + "'s " + action.getSlot();
             case PLAYER_COMMAND: return action.getPlayer() + " executes: " + action.getCommand();
-            case WAIT: return "Wait " + action.getDuration() + "ms";
+            case WAIT:
+                Long duration = action.getDuration();
+                return "Wait " + (duration != null ? duration : 0) + "ms";
+            case MAKE_OPERATOR: return "Make " + action.getPlayer() + " an operator";
+            case GET_PLAYER_INVENTORY: return "Get inventory of " + action.getPlayer();
+            case GET_PLAYER_POSITION: return "Get position of " + action.getPlayer();
+            case GET_PLAYER_HEALTH: return "Get health of " + action.getPlayer();
+            case SEND_CHAT_MESSAGE: return action.getPlayer() + " sends: " + action.getMessage();
+            case GET_ENTITIES: return "Get entities near " + action.getPlayer();
+            case GET_ENTITIES_IN_VIEW: return "Get entities in view of " + action.getPlayer();
+            case GET_ENTITY_BY_NAME: return "Get entity '" + action.getEntity() + "' near " + action.getPlayer();
+            case EXECUTE_RCON_WITH_CAPTURE: return "Execute RCON: " + action.getCommand();
+            case REMOVE_ITEM: return "Remove " + action.getCount() + "x " + action.getItem() + " from " + action.getPlayer();
+            case GET_PLAYER_EQUIPMENT: return "Get equipment of " + action.getPlayer();
+            case STORE_STATE: return "Store state as " + action.getVariableName();
+            case PRINT_STORED_STATE: return "Print state " + action.getVariableName();
+            case COMPARE_STATES: return "Compare " + action.getState1() + " and " + action.getState2();
+            case PRINT_STATE_COMPARISON: return "Print comparison " + action.getVariableName();
+            case CLEAR_COOLDOWN: return "Clear cooldown for " + action.getPlayer();
+            case SET_COOLDOWN: return "Set cooldown for " + action.getPlayer() + " to " + action.getDuration() + "ms";
             default: return action.toString();
         }
     }

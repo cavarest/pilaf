@@ -131,4 +131,179 @@ public class RconBackend implements PilafBackend {
     public void removeAllTestPlayers() {
         // Can't remove players via RCON, just clear tracking
     }
+
+    // Extended Player Management Commands
+    public void makeOperator(String player) throws Exception {
+        rcon.executeCommand("op " + player);
+    }
+
+    public Map<String, Object> getPlayerInventory(String player) throws Exception {
+        String result = rcon.executeCommand("data get entity " + player + " Inventory");
+        return parseInventoryData(result);
+    }
+
+    public Map<String, Object> getPlayerPosition(String player) throws Exception {
+        String result = rcon.executeCommand("data get entity " + player + " Pos");
+        return parsePositionData(result);
+    }
+
+    public double getPlayerHealth(String player) throws Exception {
+        String result = rcon.executeCommand("data get entity " + player + " Health");
+        return parseHealthData(result);
+    }
+
+    // Extended Entity Management Commands
+    public Map<String, Object> getEntitiesInView(String player) throws Exception {
+        String result = rcon.executeCommand("execute at " + player + " run data get entity @e[distance=..10]");
+        return parseEntitiesData(result);
+    }
+
+    public Map<String, Object> getEntityByName(String entityName, String player) throws Exception {
+        String result = rcon.executeCommand("execute at " + player + " run data get entity @e[name=" + entityName + ",limit=1]");
+        return parseEntityData(result);
+    }
+
+    public double getEntityDistance(String entityName, String player) throws Exception {
+        String result = rcon.executeCommand("execute at " + player + " run data get entity @e[name=" + entityName + ",limit=1] Pos");
+        Map<String, Object> entityPos = parsePositionData(result);
+        Map<String, Object> playerPos = getPlayerPosition(player);
+        return calculateDistance(entityPos, playerPos);
+    }
+
+    // Extended Command Execution Commands
+    public String executeRconWithCapture(String command) throws Exception {
+        return rcon.executeCommand(command);
+    }
+
+    // Extended Inventory Management Commands
+    public void removeItem(String player, String item, int count) throws Exception {
+        rcon.executeCommand("clear " + player + " " + item + " " + count);
+    }
+
+    public Map<String, Object> getPlayerEquipment(String player) throws Exception {
+        String result = rcon.executeCommand("data get entity " + player + " HandItems");
+        return parseEquipmentData(result);
+    }
+
+    // Extended World & Environment Commands
+    public Map<String, Object> getBlockAtPosition(String position) throws Exception {
+        String result = rcon.executeCommand("data get block " + position);
+        return parseBlockData(result);
+    }
+
+    public long getWorldTime() throws Exception {
+        String result = rcon.executeCommand("time query gametime");
+        return Long.parseLong(result.trim());
+    }
+
+    public String getWeather() throws Exception {
+        String result = rcon.executeCommand("weather query");
+        return result != null ? result.trim() : "clear";
+    }
+
+    // State Management Commands
+    private Map<String, Object> storedStates = new HashMap<>();
+
+    public void storeState(String variableName, Object state) {
+        storedStates.put(variableName, state);
+    }
+
+    public Object getStoredState(String variableName) {
+        return storedStates.get(variableName);
+    }
+
+    public Map<String, Object> compareStates(String state1Name, String state2Name) {
+        Object state1 = storedStates.get(state1Name);
+        Object state2 = storedStates.get(state2Name);
+
+        Map<String, Object> comparison = new HashMap<>();
+        comparison.put("state1_name", state1Name);
+        comparison.put("state2_name", state2Name);
+        comparison.put("state1", state1);
+        comparison.put("state2", state2);
+        comparison.put("equal", Objects.equals(state1, state2));
+
+        return comparison;
+    }
+
+    // Data Extraction Commands
+    public Object extractWithJsonPath(String jsonData, String jsonPath) {
+        // JSONPath implementation would go here
+        // For now, return the original data
+        return jsonData;
+    }
+
+    public List<Map<String, Object>> filterEntities(String entitiesData, String filterType, String filterValue) {
+        // Filter implementation would go here
+        // For now, return empty list
+        return new ArrayList<>();
+    }
+
+    // Utility method for distance calculation
+    private double calculateDistance(Map<String, Object> entity1, Map<String, Object> entity2) {
+        try {
+            double x1 = ((Number) entity1.get("x")).doubleValue();
+            double y1 = ((Number) entity1.get("y")).doubleValue();
+            double z1 = ((Number) entity1.get("z")).doubleValue();
+            double x2 = ((Number) entity2.get("x")).doubleValue();
+            double y2 = ((Number) entity2.get("y")).doubleValue();
+            double z2 = ((Number) entity2.get("z")).doubleValue();
+
+            return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2) + Math.pow(z2 - z1, 2));
+        } catch (Exception e) {
+            return -1.0;
+        }
+    }
+
+    // Parsing methods for Minecraft data
+    private Map<String, Object> parseInventoryData(String data) {
+        Map<String, Object> inventory = new HashMap<>();
+        // Simplified parsing
+        inventory.put("raw", data);
+        return inventory;
+    }
+
+    private Map<String, Object> parsePositionData(String data) {
+        Map<String, Object> position = new HashMap<>();
+        // Simplified parsing
+        position.put("raw", data);
+        return position;
+    }
+
+    private double parseHealthData(String data) {
+        try {
+            String num = data.replaceAll("[^0-9.]", "");
+            return Double.parseDouble(num);
+        } catch (Exception e) {
+            return 20.0;
+        }
+    }
+
+    private Map<String, Object> parseEntitiesData(String data) {
+        Map<String, Object> entities = new HashMap<>();
+        // Simplified parsing
+        entities.put("raw", data);
+        return entities;
+    }
+
+    private Map<String, Object> parseEntityData(String data) {
+        Map<String, Object> entity = new HashMap<>();
+        // Simplified parsing
+        entity.put("raw", data);
+        return entity;
+    }
+
+    private Map<String, Object> parseEquipmentData(String data) {
+        Map<String, Object> equipment = new HashMap<>();
+        // Simplified parsing
+        equipment.put("raw", data);
+        return equipment;
+    }
+
+    private Map<String, Object> parseBlockData(String data) {
+        Map<String, Object> block = new HashMap<>();
+        // Simplified parsing
+        block.put("raw", data);
+        return block;
+    }
 }

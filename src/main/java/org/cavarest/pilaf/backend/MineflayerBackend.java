@@ -171,4 +171,83 @@ public class MineflayerBackend implements PilafBackend {
         }
         connectedPlayers.clear();
     }
+
+    // Extended Player Management Commands
+    public void makeOperator(String player) throws Exception {
+        rcon.executeCommand("op " + player);
+    }
+
+    public Map<String, Object> getPlayerInventory(String player) throws Exception {
+        return mineflayer.getInventory(player);
+    }
+
+    public Map<String, Object> getPlayerPosition(String player) throws Exception {
+        return mineflayer.getPosition(player);
+    }
+
+    public Map<String, Object> getPlayerHealth(String player) throws Exception {
+        return mineflayer.getHealth(player);
+    }
+
+    // Extended Entity Management Commands
+    public Map<String, Object> getEntitiesInView(String player) throws Exception {
+        return mineflayer.getEntities(player);
+    }
+
+    public Map<String, Object> getEntityByName(String entityName, String player) throws Exception {
+        return mineflayer.getEntity(entityName, player);
+    }
+
+    public double getEntityDistance(String entityName, String player) throws Exception {
+        Map<String, Object> entity = mineflayer.getEntity(entityName, player);
+        Map<String, Object> playerPos = mineflayer.getPosition(player);
+        // Calculate distance based on entity and player positions
+        return calculateDistance(entity, playerPos);
+    }
+
+    // Extended Command Execution Commands
+    public String executeRconWithCapture(String command) throws Exception {
+        return rcon.executeCommand(command);
+    }
+
+    // Extended Inventory Management Commands
+    public void removeItem(String player, String item, int count) throws Exception {
+        rcon.executeCommand("clear " + player + " " + item + " " + count);
+    }
+
+    public Map<String, Object> getPlayerEquipment(String player) throws Exception {
+        return mineflayer.getEquipment(player);
+    }
+
+    // Extended World & Environment Commands
+    public Map<String, Object> getBlockAtPosition(String position) throws Exception {
+        // Implementation depends on available API
+        return new HashMap<>();
+    }
+
+    public long getWorldTime() throws Exception {
+        String result = rcon.executeCommand("time query gametime");
+        return Long.parseLong(result.trim());
+    }
+
+    public String getWeather() throws Exception {
+        String result = rcon.executeCommand("weather query");
+        return result != null ? result.trim() : "clear";
+    }
+
+    // Utility method for distance calculation
+    private double calculateDistance(Map<String, Object> entity1, Map<String, Object> entity2) {
+        try {
+            double x1 = ((Number) entity1.get("x")).doubleValue();
+            double y1 = ((Number) entity1.get("y")).doubleValue();
+            double z1 = ((Number) entity1.get("z")).doubleValue();
+            double x2 = ((Number) entity2.get("x")).doubleValue();
+            double y2 = ((Number) entity2.get("y")).doubleValue();
+            double z2 = ((Number) entity2.get("z")).doubleValue();
+
+            return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2) + Math.pow(z2 - z1, 2));
+        } catch (Exception e) {
+            return -1.0; // Error indicator
+        }
+    }
 }

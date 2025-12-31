@@ -1,0 +1,101 @@
+package org.cavarest.pilaf.config;
+
+/**
+ * Configuration for PILAF test execution.
+ * Manages connection settings and test parameters.
+ */
+public class TestConfiguration {
+
+    // Mineflayer bridge settings
+    private String mineflayerUrl = System.getProperty("mineflayer.url", "http://localhost:3000");
+    private int mineflayerTimeout = 10_000; // 10 seconds
+
+    // RCON settings
+    private String rconHost = System.getProperty("rcon.host", "localhost");
+    private int rconPort = Integer.parseInt(System.getProperty("rcon.port", "25575"));
+    private String rconPassword = System.getProperty("rcon.password", "dragon123");
+    private int rconTimeout = 5_000; // 5 seconds
+
+    // Test player settings
+    private String testPlayer = System.getProperty("test.player", "pilaf_tester");
+
+    // Backend settings
+    private String backend = System.getProperty("pilaf.backend", "mineflayer");
+
+    // Report settings
+    private String reportDir = System.getProperty("pilaf.report.dir", "target/pilaf-reports");
+    private String reportFormat = System.getProperty("pilaf.report.format", "html");
+
+    // Service health check settings
+    private boolean skipHealthChecks = Boolean.parseBoolean(System.getProperty("pilaf.skip.health", "false"));
+    private int healthCheckTimeout = 5_000; // 5 seconds
+
+    public TestConfiguration() {
+        // Load from environment variables if available
+        mineflayerUrl = System.getenv().getOrDefault("MINEFLAYER_URL", mineflayerUrl);
+        rconHost = System.getenv().getOrDefault("RCON_HOST", rconHost);
+        rconPassword = System.getenv().getOrDefault("RCON_PASSWORD", rconPassword);
+        testPlayer = System.getenv().getOrDefault("TEST_PLAYER", testPlayer);
+    }
+
+    // Getters
+    public String getMineflayerUrl() { return mineflayerUrl; }
+    public int getMineflayerTimeout() { return mineflayerTimeout; }
+    public String getRconHost() { return rconHost; }
+    public int getRconPort() { return rconPort; }
+    public String getRconPassword() { return rconPassword; }
+    public int getRconTimeout() { return rconTimeout; }
+    public String getTestPlayer() { return testPlayer; }
+    public String getBackend() { return backend; }
+    public String getReportDir() { return reportDir; }
+    public String getReportFormat() { return reportFormat; }
+    public boolean isSkipHealthChecks() { return skipHealthChecks; }
+    public int getHealthCheckTimeout() { return healthCheckTimeout; }
+
+    // Setters for programmatic configuration
+    public TestConfiguration setMineflayerUrl(String url) {
+        this.mineflayerUrl = url;
+        return this;
+    }
+
+    public TestConfiguration setRconHost(String host) {
+        this.rconHost = host;
+        return this;
+    }
+
+    public TestConfiguration setRconPort(int port) {
+        this.rconPort = port;
+        return this;
+    }
+
+    public TestConfiguration setRconPassword(String password) {
+        this.rconPassword = password;
+        return this;
+    }
+
+    public TestConfiguration setTestPlayer(String player) {
+        this.testPlayer = player;
+        return this;
+    }
+
+    public TestConfiguration setBackend(String backend) {
+        this.backend = backend;
+        return this;
+    }
+
+    public TestConfiguration setReportDir(String dir) {
+        this.reportDir = dir;
+        return this;
+    }
+
+    public TestConfiguration setSkipHealthChecks(boolean skip) {
+        this.skipHealthChecks = skip;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("TestConfiguration{mineflayerUrl='%s', rconHost='%s:%d', testPlayer='%s', backend='%s'}",
+            mineflayerUrl, rconHost, rconPort, testPlayer, backend);
+    }
+}

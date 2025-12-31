@@ -1,524 +1,599 @@
-= PILAF: Paper Integration Layer for Automation Functions
-:toc:
-:toclevels: 3
-:icons: font
+= PILAF: Minecraft Plugin Integration Testing Framework
 
-image:https://img.shields.io/badge/license-MIT-blue.svg[License]
-image:https://img.shields.io/badge/java-21-orange.svg[Java 21]
+image:https://img.shields.io/gem/v/lutaml-model.svg[RubyGems Version]
+image:https://img.shields.io/github/license/lutaml/lutaml-model.svg[License]
+image:https://github.com/lutaml/lutaml-model/actions/workflows/rake.yml/badge.svg["Build", link="https://github.com/lutaml/lutaml-model/actions/workflows/rake.yml"]
+
+PILAF (Paper Integration Layer for Automation Functions) is a comprehensive YAML story-driven testing framework specifically designed for PaperMC Minecraft plugin developers. It transforms complex Java integration tests into simple, readable YAML scenarios that enable automated testing of Minecraft plugin functionality.
 
 == Purpose
 
-PILAF (Paper Integration Layer for Automation Functions) is a testing framework for
-PaperMC/Bukkit plugins that enables end-to-end integration testing against real
-Minecraft servers using a Mineflayer bot bridge.
+Traditional Minecraft plugin testing requires extensive Java code to simulate player actions, execute server commands, and validate results. PILAF eliminates this complexity by providing a YAML-based story format that non-developers can understand and maintain.
 
-== Features
+**Instead of this:**
+```java
+// 150+ lines of complex Java integration test code
+@Test
+void testLightningAbility() throws Exception {
+    // Setup player connection
+    // Connect to Mineflayer bridge
+    // Execute RCON commands
+    // Simulate player actions
+    // Wait for responses
+    // Validate results
+    // Clean up resources
+}
+```
 
-* **Real Server Testing** - Test plugins against actual Minecraft servers
-* **YAML Test Stories** - Define tests in human-readable YAML format
-* **Mineflayer Integration** - Use Node.js Mineflayer bots for client automation
-* **RCON Support** - Execute server commands via RCON protocol
-* **JUnit Integration** - Seamlessly integrate with existing test suites
-* **Docker Support** - Pre-configured Docker Compose for CI/CD
+**You write this:**
+```yaml
+# 34 lines of readable YAML
+name: "Lightning Ability Test"
+steps:
+  - action: "execute_rcon_command"
+    command: "summon zombie ~ ~5 ~ {CustomName:'\"TestTarget\"'}"
+  - action: "execute_player_command"
+    player: "test_player"
+    command: "/ability 1"
+  - action: "wait"
+    duration: 2000
+  - action: "get_entities_in_view"
+    player: "test_player"
+    store_as: "entities_after"
+```
 
 == Architecture
 
-.PILAF System Architecture
+=== High-Level Flow
+
+.PILAF Testing Architecture
 [source]
 ----
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           PILAF FRAMEWORK                                   │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌───────────────┐     ┌─────────────────┐     ┌──────────────────────┐    │
-│  │  Test Story   │────▶│ Test Orchestrator│────▶│    Test Reporter     │    │
-│  │  (YAML DSL)   │     │                 │     │  (JUnit XML/JSON)    │    │
-│  └───────────────┘     └────────┬────────┘     └──────────────────────┘    │
-│                                 │                                          │
-│                    ┌────────────┴────────────┐                             │
-│                    ▼                         ▼                             │
-│           ┌──────────────┐          ┌──────────────┐                       │
-│           │ RCON Backend │          │  Mineflayer  │                       │
-│           │              │          │   Backend    │                       │
-│           └──────┬───────┘          └──────┬───────┘                       │
-│                  │                         │                               │
-└──────────────────│─────────────────────────│───────────────────────────────┘
-                   │                         │
-                   │    ┌────────────────────┘
-                   │    │
-                   ▼    ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                                                                              │
-│   ┌──────────────────┐              ┌─────────────────────────────────────┐  │
-│   │  Minecraft Server │◀────────────│      Mineflayer Bridge (HTTP)       │  │
-│   │   (PaperMC)       │  WebSocket  │        Node.js + Express            │  │
-│   │   Port: 25565     │             │         Port: 3000                  │  │
-│   │   RCON: 25575     │             └─────────────────────────────────────┘  │
-│   │                   │                                                      │
-│   │  ┌─────────────┐  │                                                      │
-│   │  │ Your Plugin │  │                                                      │
-│   │  └─────────────┘  │                                                      │
-│   └──────────────────┘                                                       │
-│                                                                              │
-│                           DOCKER NETWORK                                     │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│ YAML Story  │    │   PILAF     │    │   Backend   │    │ Minecraft   │
+│             │    │  Framework  │    │  Interface  │    │   Server    │
+│ • Setup     │───▶│             │───▶│             │───▶│             │
+│ • Steps     │    │ • Parser    │    │ • Mineflayer│    │ • Players   │
+│ • Cleanup   │    │ • Executor  │    │ • RCON      │    │ • Commands  │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+                            │                 │                 │
+                            ▼                 ▼                 ▼
+                    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+                    │   State     │    │  Report     │    │   Docker    │
+                    │ Management  │    │ Generator   │    │ Orchestrator│
+                    │             │    │             │    │             │
+                    │ • Variables │    │ • HTML      │    │ • Server    │
+                    │ • Compare   │    │ • Screenshots│    │ • Services  │
+                    │ • JSONPath  │    │ • Logs      │    │ • Cleanup   │
+                    └─────────────┘    └─────────────┘    └─────────────┘
 ----
 
-.Data Flow
-[source]
-----
-                        Test Execution Flow
-                        ═══════════════════
+=== Core Components
 
-    ┌────────────┐      ┌──────────────┐      ┌─────────────────┐
-    │   YAML     │      │    Parser    │      │  TestOrchestrator│
-    │ Test Story │─────▶│              │─────▶│                 │
-    │            │      │              │      │                 │
-    └────────────┘      └──────────────┘      └────────┬────────┘
-                                                       │
-                        ┌──────────────────────────────┤
-                        │                              │
-                        ▼                              ▼
-               ┌────────────────┐            ┌────────────────┐
-               │   Execute      │            │   Assert       │
-               │   Actions      │            │   Conditions   │
-               │                │            │                │
-               └───────┬────────┘            └───────┬────────┘
-                       │                             │
-        ┌──────────────┴──────────────┐              │
-        │                             │              │
-        ▼                             ▼              ▼
-┌──────────────┐            ┌──────────────┐  ┌─────────────┐
-│ RCON Backend │            │  Mineflayer  │  │   Generate  │
-│ - give items │            │  - connect   │  │   Report    │
-│ - summon     │            │  - inventory │  │             │
-│ - execute    │            │  - entities  │  └─────────────┘
-└──────────────┘            └──────────────┘
-----
+1. **PilafCli**: Standalone command-line interface for running YAML stories
+2. **YamlStoryParser**: Parses YAML stories into executable action sequences
+3. **TestOrchestrator**: Coordinates execution between backends and state management
+4. **Backend Interface**: Abstraction for different testing approaches (Mineflayer, RCON, Mock)
+5. **State Management**: Variable storage, comparison, and JSON extraction capabilities
+6. **Report Generator**: HTML reports with step-by-step execution logs and screenshots
 
-== Installation
+== Prerequisites
 
-=== Maven Dependency
+=== System Requirements
+- Java 21+
+- Docker & Docker Compose (for full integration testing)
+- Running PaperMC server or compatible Minecraft server
 
-Add PILAF to your project's `pom.xml`:
+=== Service Dependencies
+PILAF requires these services for full functionality:
 
-[source,xml]
-----
-<dependency>
-    <groupId>org.cavarest</groupId>
-    <artifactId>pilaf</artifactId>
-    <version>0.1.0</version>
-    <scope>test</scope>
-</dependency>
-----
+1. **PaperMC Server** (localhost:25565)
+2. **RCON Server** (localhost:25575)
+3. **Mineflayer Bridge** (localhost:3000)
 
-=== Build from Source
+=== Docker Setup
 
-[source,shell]
-----
-git clone https://github.com/cavarest/pilaf.git
-cd pilaf
-mvn install
-----
+Use the provided Docker Compose configuration for complete testing environment:
 
-== Quick Start
+```bash
+# Start the complete PILAF stack
+docker-compose -f lib/pilaf/docker/docker-compose.pilaf.yml up -d
+```
 
-=== 1. Create a YAML Test Story
+== Quick Start Guide
 
-Create a test story in `src/test/resources/test-stories/my-test.yaml`:
+=== 1. One-Time Setup
 
-[source,yaml]
-----
-name: "Lightning Ability Test"
-description: "Test that lightning ability strikes nearby entities"
+Run the setup script to configure the complete PILAF ecosystem:
+
+```bash
+# From your plugin root directory
+bash lib/pilaf/docker/setup-pilaf.sh
+```
+
+This creates:
+- `pilaf.jar` - Standalone CLI
+- `docker-compose.pilaf.yml` - Docker stack
+- `pilaf.yaml` - Configuration file
+- Convenience scripts (`start-pilaf-services.sh`, `run-pilaf-tests.sh`, etc.)
+
+=== 2. Create Test Directory Structure
+
+```
+src/test/resources/
+└── integration-stories/
+    ├── lightning-ability-test.yaml
+    ├── cooldown-behavior-test.yaml
+    └── entity-removal-test.yaml
+```
+
+=== 3. Write Your First YAML Story
+
+Create `src/test/resources/integration-stories/my-plugin-test.yaml`:
+
+```yaml
+name: "My Plugin Command Test"
+description: "Test that /myplugin command works correctly"
 
 setup:
-  - action: "connect_bot"
-    username: "test_player"
+  - action: "execute_rcon_command"
+    command: "op test_player"
+    name: "Make test player operator"
+
   - action: "give_item"
     player: "test_player"
-    item: "dragon_egg"
+    item: "diamond_sword"
     count: 1
-  - action: "summon"
-    entity: "zombie"
-    near: "test_player"
+    name: "Give test item"
 
 steps:
-  - name: "Use lightning ability"
-    action: "execute_command"
-    command: "/ability lightning @e[type=zombie,limit=1]"
+  - action: "execute_player_command"
+    player: "test_player"
+    command: "/myplugin test"
+    name: "Execute plugin command"
 
-assertions:
-  - type: "entity_affected"
-    entity: "zombie"
-    effect: "damaged"
-----
+  - action: "wait"
+    duration: 1000
+    name: "Wait for command response"
 
-=== 2. Create Integration Test
+  - action: "get_player_inventory"
+    player: "test_player"
+    store_as: "inventory_after"
+    name: "Check inventory after command"
 
-[source,java]
-----
-package com.example.plugin;
+cleanup:
+  - action: "execute_rcon_command"
+    command: "deop test_player"
+    name: "Remove operator privileges"
+```
 
-import org.cavarest.pilaf.PilafRunner;
-import org.cavarest.pilaf.backend.PilafBackendFactory;
-import org.junit.jupiter.api.Test;
+=== 4. Configure PILAF
 
-public class MyPluginIntegrationTest {
+Edit `pilaf.yaml`:
 
-    @Test
-    void testLightningAbility() throws Exception {
-        PilafRunner runner = new PilafRunner.Builder()
-            .withStoryFile("src/test/resources/test-stories/my-test.yaml")
-            .withBackend(PilafBackendFactory.createMineflayerBackend(
-                "http://localhost:3000",
-                "localhost", 25575, "rcon_password"
-            ))
-            .build();
+```yaml
+# Backend Configuration
+backend: "mineflayer"  # Options: mineflayer, rcon, mock
 
-        runner.run();
-    }
-}
-----
+# Service Connection Settings
+mineflayer_url: "http://localhost:3000"
+rcon_host: "localhost"
+rcon_port: 25575
+rcon_password: "dragon123"
 
-=== 3. Start Services with Docker
+# Story Discovery
+stories:
+  - "src/test/resources/integration-stories/"  # Directory of integration tests
+  - "src/test/resources/test-stories/"         # Directory of unit tests
 
-[source,shell]
-----
-docker compose -f docker/docker-compose-example.yml up -d
-----
+# Reporting
+report_directory: "target/pilaf-reports"
+verbose: false
 
-=== 4. Run Tests
+# Health Checks
+skip_health_checks: false
+```
 
-[source,shell]
-----
-mvn test -Dtest=MyPluginIntegrationTest
-----
+=== 5. Run Your Tests
 
-== Components
+```bash
+# Start services
+./start-pilaf-services.sh
 
-=== Test Story (YAML DSL)
+# Run tests
+./run-pilaf-tests.sh
 
-Test stories define the test scenario in human-readable YAML:
+# Or use CLI directly
+java -jar pilaf.jar --config=pilaf.yaml --verbose
 
-[source,yaml]
-----
-name: "Test Name"
-description: "What this test verifies"
+# Health check
+java -jar pilaf.jar --health-check
+```
 
-setup:           # Actions to prepare the test environment
+=== CLI Commands Reference
+
+```bash
+# Using config file
+java -jar pilaf.jar --config=pilaf.yaml
+
+# Using command line arguments
+java -jar pilaf.jar \
+  --stories=src/test/resources/integration-stories/ \
+  --mineflayer-url=http://localhost:3000 \
+  --verbose
+
+# Run specific story files
+java -jar pilaf.jar src/test/resources/integration-stories/lightning-ability-test.yaml
+
+# Health check
+java -jar pilaf.jar --health-check
+
+# Help
+java -jar pilaf.jar --help
+```
+
+== YAML Story Writing Guide
+
+=== Story Structure
+
+Every YAML story has three main sections:
+
+```yaml
+name: "Story Name"
+description: "What this test validates"
+
+setup:           # Actions that run before main test
   - action: "..."
 
-steps:           # Test actions to execute
-  - name: "Step name"
-    action: "..."
+steps:           # Main test execution
+  - action: "..."
+
+cleanup:         # Actions that run after test
+  - action: "..."
+```
+
+=== Action Types Reference
+
+PILAF provides 35+ action types organized by category:
+
+=== Player Management Actions
+
+| Action | Purpose | Required Fields |
+|--------|---------|----------------|
+| `connect_player` | Connect bot player to server | `player` |
+| `disconnect_player` | Disconnect player from server | `player` |
+| `make_operator` | Grant operator privileges | `player` |
+| `get_player_inventory` | Get player inventory contents | `player`, `store_as` |
+| `get_player_position` | Get player coordinates | `player`, `store_as` |
+| `get_player_health` | Get player health value | `player`, `store_as` |
+
+=== Entity Management Actions
+
+| Action | Purpose | Required Fields |
+|--------|---------|----------------|
+| `get_entities_in_view` | Get entities near player | `player`, `store_as` |
+| `get_entity_by_name` | Get specific entity data | `entity_name`, `player`, `store_as` |
+| `spawn_entity` | Spawn entity at location | `name`, `type`, `location` |
+| `get_entity_health` | Get entity health | `entity`, `store_as` |
+
+=== Command Execution Actions
+
+| Action | Purpose | Required Fields |
+|--------|---------|----------------|
+| `execute_player_command` | Execute command as player | `player`, `command` |
+| `execute_rcon_command` | Execute RCON server command | `command` |
+| `execute_rcon_with_capture` | Execute RCON with response capture | `command`, `store_as` |
+
+=== State Management Actions
+
+| Action | Purpose | Required Fields |
+|--------|---------|----------------|
+| `store_state` | Store command result in variable | `variable_name`, `fromCommandResult` |
+| `print_stored_state` | Output stored state value | `variable_name` |
+| `compare_states` | Compare two stored states | `state1`, `state2`, `store_as` |
+| `print_state_comparison` | Output comparison results | `variable_name` |
+
+=== Inventory Management Actions
+
+| Action | Purpose | Required Fields |
+|--------|---------|----------------|
+| `give_item` | Give item to player | `player`, `item`, `count` |
+| `remove_item` | Remove item from player | `player`, `item`, `count` |
+| `get_player_equipment` | Get player equipped items | `player`, `store_as` |
+
+=== World & Environment Actions
+
+| Action | Purpose | Required Fields |
+|--------|---------|----------------|
+| `get_world_time` | Get current world time | `store_as` |
+| `get_weather` | Get current weather | `store_as` |
+| `wait` | Pause execution | `duration` |
+
+=== Utility Actions
+
+| Action | Purpose | Required Fields |
+|--------|---------|----------------|
+| `clear_cooldown` | Clear player cooldown | `player` |
+| `set_cooldown` | Set player cooldown | `player`, `duration` |
+| `clear_entities` | Remove all test entities | - |
+
+=== Advanced Examples
+
+#### State Comparison Workflow
+
+```yaml
+steps:
+  # Capture entity state before action
+  - action: "get_entities_in_view"
+    player: "test_player"
+    store_as: "entities_before"
+    name: "Get entities before lightning"
+
+  # Execute plugin action
+  - action: "execute_player_command"
+    player: "test_player"
+    command: "/lightning strike"
+    name: "Use lightning ability"
+
+  # Wait for effect
+  - action: "wait"
+    duration: 2000
+    name: "Wait for lightning processing"
+
+  # Capture state after action
+  - action: "get_entities_in_view"
+    player: "test_player"
+    store_as: "entities_after"
+    name: "Get entities after lightning"
+
+  # Compare states
+  - action: "compare_states"
+    state1: "entities_before"
+    state2: "entities_after"
+    store_as: "lightning_effect"
+    name: "Compare before/after states"
 
-assertions:      # Conditions to verify
-  - type: "..."
-----
+  # Print comparison
+  - action: "print_state_comparison"
+    variable_name: "lightning_effect"
+    name: "Show lightning effect results"
+```
 
-==== Available Actions
+#### JSON Data Extraction
 
-[cols="1,2,2"]
-|===
-| Action | Description | Parameters
+```yaml
+steps:
+  - action: "execute_rcon_with_capture"
+    command: "data get entity @e[name=TestZombie,limit=1]"
+    store_as: "zombie_data"
 
-| `connect_bot`
-| Connect a Mineflayer bot to the server
-| `username`
-
-| `disconnect_bot`
-| Disconnect a bot from the server
-| `username`
-
-| `give_item`
-| Give an item to a player via RCON
-| `player`, `item`, `count`
-
-| `summon`
-| Spawn an entity near a player
-| `entity`, `near`, `name` (optional)
-
-| `execute_command`
-| Execute a command via RCON or bot
-| `command`
-
-| `wait`
-| Wait for a duration (milliseconds)
-| `duration`
-|===
-
-==== Assertion Types
-
-[cols="1,2"]
-|===
-| Type | Description
-
-| `inventory_contains`
-| Verify player inventory has item
-
-| `entity_exists`
-| Verify entity is present
-
-| `entity_affected`
-| Verify entity was affected (damaged, killed)
-
-| `player_position`
-| Verify player location
-|===
-
-=== Backends
-
-==== RCON Backend
-
-Direct server command execution via RCON protocol.
-
-[source,java]
-----
-RconBackend backend = new RconBackend("localhost", 25575, "password");
-backend.executeCommand("give player diamond 1");
-----
-
-==== Mineflayer Backend
-
-Client automation via Node.js Mineflayer bridge.
-
-[source,java]
-----
-MineflayerBackend backend = new MineflayerBackend(
-    "http://localhost:3000",
-    "localhost", 25575, "password"
-);
-backend.connectBot("test_player");
-String inventory = backend.getInventory("test_player");
-----
-
-=== Test Reporter
-
-Generates comprehensive test reports:
-
-* **HTML** - Beautiful SPA-style interactive reports with JSON diff
-* **JUnit XML** - For CI/CD integration
-* **JSON** - For programmatic parsing
-* **Text** - Human-readable with logs
-
-[source,java]
-----
-TestReporter reporter = new TestReporter("MyTest");
-reporter.step("Give dragon egg")
-    .action("RCON: give player dragon_egg 1")
-    .expected("Player has dragon egg")
-    .actual("Inventory contains dragon_egg")
-    .pass();
-reporter.complete();  // Generates reports in target/pilaf-reports/
-----
-
-==== HTML Report Features
-
-The HTML report (`*_report.html`) includes:
-
-* **Story-based navigation** - Sidebar with all test stories
-* **Collapsible steps** - Click to expand/collapse step details
-* **Action type indicators** - Emojis show command source:
-** 🖥️ RCON - Server RCON commands
-** 👤 PLAYER - Player-executed commands
-** 🤖 CLIENT - Mineflayer client actions
-** 📡 SERVER - Server responses
-* **JSON State Diff** - Semantic diff using RFC 6902 JSON Patch:
-** `+` Added (green)
-** `−` Removed (red)
-** `~` Changed (orange)
-* **Activity Log** - Interleaved command/response log (hidden by default)
-
-==== State Before/After Tracking
-
-To enable JSON diff for a step, explicitly set both `stateBefore()` and `stateAfter()`:
-
-[source,java]
-----
-String entitiesBefore = backend.getNearbyEntities("test_player");
-
-TestStep step = reporter.step("Spawn zombie")
-    .action("RCON: summon zombie")
-    .expected("Zombie spawned")
-    .stateBefore(entitiesBefore);  // Capture state before action
-
-// Execute the action
-backend.executeCommand("summon zombie ~ ~ ~");
-
-String entitiesAfter = backend.getNearbyEntities("test_player");
-
-step.stateAfter(entitiesAfter)    // Capture state after action
-    .assertContains(entitiesAfter, "zombie");
-----
-
-The report will show a semantic JSON diff highlighting what changed:
-
-[source]
-----
-+ entities[0] = {"type":"zombie","name":"Zombie","health":20}
-----
-
-==== Per-Story Activity Logging
-
-Log commands and responses to the current story:
-
-[source,java]
-----
-TestStory story = reporter.story("Lightning Test");
-
-story.logRcon("give player dragon_egg 1");       // 🖥️ RCON command
-story.logServer("Gave 1 dragon_egg to player");  // 📡 Server response
-story.logPlayerCommand("test_player", "/ability 1");  // 👤 Player command
-story.logClient("Bot received chat message");    // 🤖 Client action
-----
-
-== Docker Setup
-
-=== docker-compose.yml
-
-[source,yaml]
-----
-version: '3.8'
-services:
-  minecraft:
-    image: marctv/minecraft-papermc-server:1.21.8
-    ports:
-      - "25565:25565"
-      - "25575:25575"
-    environment:
-      - EULA=true
-      - ENABLE_RCON=true
-      - RCON_PASSWORD=your_password
-    volumes:
-      - ./plugins:/data/plugins
-
-  mineflayer:
-    build: ./mineflayer-bridge
-    ports:
-      - "3000:3000"
-    environment:
-      - MINECRAFT_HOST=minecraft
-      - MINECRAFT_PORT=25565
-    depends_on:
-      - minecraft
-----
-
-=== Building Mineflayer Bridge
-
-[source,shell]
-----
-cd mineflayer-bridge
-npm install
-node server.js
-----
-
-== API Reference
-
-=== PilafRunner
-
-Main entry point for running tests.
-
-[source,java]
-----
-PilafRunner runner = new PilafRunner.Builder()
-    .withStoryFile("path/to/story.yaml")      // YAML test story
-    .withBackend(backend)                      // PilafBackend implementation
-    .withReporter(reporter)                    // Optional TestReporter
-    .build();
-
-TestResult result = runner.run();
-----
-
-=== PilafBackend Interface
-
-[source,java]
-----
-public interface PilafBackend {
-    void connect() throws Exception;
-    void disconnect() throws Exception;
-    String executeCommand(String command) throws Exception;
-    String connectBot(String username) throws Exception;
-    void disconnectBot(String username) throws Exception;
-    String getInventory(String username) throws Exception;
-    String getNearbyEntities(String username) throws Exception;
-    String getPlayerPosition(String username) throws Exception;
-}
-----
-
-== Example: DragonEgg Lightning Plugin
-
-Here's a complete example testing a lightning ability plugin:
-
-[source,java]
-----
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class DragonEggLightningIntegrationTest {
-
-    private static MineflayerBackend backend;
-
-    @BeforeAll
-    static void setup() throws Exception {
-        backend = new MineflayerBackend(
-            "http://localhost:3000",
-            "localhost", 25575, "dragon123"
-        );
-        backend.connect();
-        backend.connectBot("pilaf_tester");
-        Thread.sleep(2000);
-    }
-
-    @Test
-    @Order(1)
-    void testGiveDragonEgg() throws Exception {
-        backend.executeCommand("give pilaf_tester dragon_egg 1");
-        String inventory = backend.getInventory("pilaf_tester");
-        assertTrue(inventory.contains("dragon_egg"));
-    }
-
-    @Test
-    @Order(2)
-    void testSpawnZombie() throws Exception {
-        backend.executeCommand("execute as pilaf_tester at @s run summon zombie ~ ~1 ~");
-        String entities = backend.getNearbyEntities("pilaf_tester");
-        assertTrue(entities.contains("zombie"));
-    }
-
-    @Test
-    @Order(3)
-    void testLightningAbility() throws Exception {
-        backend.executePlayerCommand("pilaf_tester", "ability lightning @e[type=zombie,limit=1]");
-        // Lightning strikes the zombie
-    }
-
-    @AfterAll
-    static void cleanup() throws Exception {
-        backend.disconnectBot("pilaf_tester");
-        backend.disconnect();
-    }
-}
-----
+  - action: "print_stored_state"
+    variable_name: "zombie_data"
+    name: "Print raw zombie data"
+
+  # Note: JSONPath extraction requires additional setup
+  - action: "extract_with_jsonpath"
+    source_variable: "zombie_data"
+    json_path: "$.Health"
+    store_as: "zombie_health"
+    name: "Extract health value using JSONPath"
+```
+
+== Backend Types
+
+=== Mineflayer Backend (Recommended)
+
+For realistic player simulation and full plugin testing:
+
+```yaml
+backend: "mineflayer"
+```
+
+Features:
+* Realistic player behavior simulation
+* Chat message capture and processing
+* Entity interaction and targeting
+* Inventory and equipment management
+* Block placement and breaking simulation
+
+Advantages:
+* Most realistic testing environment
+* Tests actual plugin event handlers
+* Captures player feedback and chat responses
+
+=== RCON Backend
+
+For server command-focused testing:
+
+```yaml
+backend: "rcon"
+```
+
+Features:
+* Direct server command execution
+* Data query and manipulation
+* Server state inspection
+
+Use Cases:
+* Testing server-side plugin functionality
+* Administrative command testing
+* Performance testing
+
+=== Mock Backend
+
+For unit testing without external dependencies:
+
+```yaml
+backend: "mock"
+```
+
+Features:
+* Fast execution without real server
+* Simulated responses for testing logic
+* No external service dependencies
+
+Use Cases:
+* Plugin logic unit testing
+* CI/CD pipeline integration testing
+* Development environment testing
+
+== Integration Examples
+
+=== Complete Lightning Plugin Test
+
+Based on the DragonEgg Lightning plugin example:
+
+```yaml
+name: "Lightning Ability Complete Test"
+description: "Test lightning ability with dragon egg requirement"
+
+setup:
+  - action: "execute_rcon_command"
+    command: "op test_player"
+    name: "Grant operator privileges"
+
+  - action: "execute_rcon_command"
+    command: "give test_player dragon_egg 1"
+    name: "Give dragon egg to player"
+
+  - action: "execute_rcon_command"
+    command: "replaceitem entity test_player weapon.offhand dragon_egg 1"
+    name: "Equip dragon egg in offhand"
+
+steps:
+  # Spawn test entity
+  - action: "execute_rcon_command"
+    command: "execute at test_player run summon zombie ~ ~5 ~ {CustomName:'\"TestTarget\"'}"
+    name: "Spawn zombie target 5 blocks away"
+
+  # Capture state before lightning
+  - action: "get_entities_in_view"
+    player: "test_player"
+    store_as: "entities_before"
+    name: "Get entities before lightning"
+
+  - action: "print_stored_state"
+    variable_name: "entities_before"
+    name: "Print pre-lightning entity state"
+
+  # Execute lightning ability
+  - action: "execute_player_command"
+    player: "test_player"
+    command: "/ability 1"
+    name: "Use lightning ability"
+
+  # Wait for effect
+  - action: "wait"
+    duration: 2000
+    name: "Wait for lightning processing"
+
+  # Capture state after lightning
+  - action: "get_entities_in_view"
+    player: "test_player"
+    store_as: "entities_after"
+    name: "Get entities after lightning"
+
+  - action: "print_stored_state"
+    variable_name: "entities_after"
+    name: "Print post-lightning entity state"
+
+  # Compare states to verify entity removal
+  - action: "compare_states"
+    state1: "entities_before"
+    state2: "entities_after"
+    store_as: "lightning_result"
+    name: "Compare entity states"
+
+  - action: "print_state_comparison"
+    variable_name: "lightning_result"
+    name: "Show lightning effect comparison"
+
+cleanup:
+  - action: "execute_rcon_command"
+    command: "kill @e[name=TestTarget]"
+    name: "Clean up test entities"
+
+  - action: "execute_rcon_command"
+    command: "clear test_player dragon_egg"
+    name: "Remove dragon egg from player"
+
+  - action: "execute_rcon_command"
+    command: "deop test_player"
+    name: "Remove operator privileges"
+```
+
+=== Cooldown Testing
+
+Test plugin cooldown functionality:
+
+```yaml
+name: "Cooldown Behavior Test"
+description: "Test that cooldown blocks immediate reuse"
+
+setup:
+  - action: "execute_rcon_command"
+    command: "op test_player"
+    name: "Grant operator privileges"
+
+  - action: "clear_cooldown"
+    player: "test_player"
+    name: "Clear any existing cooldown"
+
+steps:
+  # Use ability to trigger cooldown
+  - action: "execute_player_command"
+    player: "test_player"
+    command: "/ability 1"
+    name: "Use ability to start cooldown"
+
+  - action: "wait"
+    duration: 500
+    name: "Brief wait"
+
+  # Try to use ability again (should be blocked)
+  - action: "execute_player_command"
+    player: "test_player"
+    command: "/ability 1"
+    name: "Attempt ability during cooldown"
+
+  # Wait for cooldown to expire
+  - action: "set_cooldown"
+    player: "test_player"
+    duration: 3000
+    name: "Set test cooldown for 3 seconds"
+
+  - action: "execute_player_command"
+    player: "test_player"
+    command: "/ability 1"
+    name: "Use ability after cooldown expires"
+
+cleanup:
+  - action: "execute_rcon_command"
+    command: "deop test_player"
+    name: "Remove operator privileges"
+```
 
 == Troubleshooting
 
-=== Bot cannot connect to server
+=== Common Issues
 
-* Verify server is running and accepting connections
-* Check `online-mode=false` in server.properties for offline bots
-* Ensure Mineflayer bridge can reach the Minecraft server
+**Services not available:**
+```bash
+# Check service status
+docker-compose -f docker-compose.pilaf.yml ps
 
-=== RCON authentication failed
+# View logs
+docker-compose -f docker-compose.pilaf.yml logs
 
-* Verify RCON is enabled in server.properties
-* Check RCON password matches
-* Ensure RCON port (25575) is accessible
+# Restart services
+./stop-pilaf-services.sh
+./start-pilaf-services.sh
+```
 
-=== Tests timeout
+**YAML parsing errors:**
+- Check YAML syntax using online validators
+- Ensure proper indentation (spaces, not tabs)
+- Verify required fields for each action
 
-* Increase wait times after server actions
-* Check Docker container health
-* Verify server has finished loading
-
-== License
-
-MIT License - see LICENSE file for details.
+**Connection timeouts:**
+- Verify Docker services
