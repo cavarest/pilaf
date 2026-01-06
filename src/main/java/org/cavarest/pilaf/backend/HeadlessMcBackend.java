@@ -248,4 +248,10 @@ public class HeadlessMcBackend implements PilafBackend {
     public Process getServerProcess() {
         return serverProcess;
     }
+
+    @Override
+    public String getServerLog() {
+        // Server logs are not directly accessible in HeadlessMc
+        return "[Log access not available in HeadlessMc backend]";
+    }
 }

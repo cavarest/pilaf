@@ -40,11 +40,20 @@ public class Action {
         GET_PLAYER_HEALTH,
         SEND_CHAT_MESSAGE,
 
+        // Extended Player Management
+        GAMEMODE_CHANGE,
+        CLEAR_INVENTORY,
+        SET_SPAWN_POINT,
+        TELEPORT_PLAYER,
+        SET_PLAYER_HEALTH,
+        KILL_PLAYER,
+
         // Entity Management Commands
         GET_ENTITIES_IN_VIEW,
         GET_ENTITY_BY_NAME,
         GET_ENTITY_DISTANCE,
         GET_ENTITY_HEALTH_INFO,
+        KILL_ENTITY,
 
         // Command Execution Commands
         EXECUTE_RCON_WITH_CAPTURE,
@@ -59,6 +68,8 @@ public class Action {
         GET_BLOCK_AT_POSITION,
         GET_WORLD_TIME,
         GET_WEATHER,
+        SET_TIME,
+        SET_WEATHER,
 
         // State Management Commands
         STORE_STATE,
@@ -76,6 +87,8 @@ public class Action {
         ASSERT_PLAYER_HAS_ITEM,
         ASSERT_RESPONSE_CONTAINS,
         ASSERT_JSON_EQUALS,
+        ASSERT_LOG_CONTAINS,
+        ASSERT_CONDITION,
 
         // Plugin & Server Commands
         GET_PLUGIN_STATUS,
@@ -87,7 +100,16 @@ public class Action {
         WAIT_FOR_CHAT_MESSAGE,
         CLEAR_ENTITIES,
         DAMAGE_ENTITY,
-        HEAL_PLAYER
+        HEAL_PLAYER,
+
+        // Client Actions (Mineflayer)
+        LOOK_AT,
+        JUMP,
+        USE_ITEM,
+        ATTACK_ENTITY,
+        BREAK_BLOCK,
+        PLACE_BLOCK,
+        GET_CHAT_HISTORY
     }
 
     private ActionType type;
@@ -127,6 +149,7 @@ public class Action {
     private String storeAs;
     private String timeout;
     private String message;
+    private Double value;  // For numeric values like health, time, etc.
 
     public Action() {}
 
@@ -240,6 +263,9 @@ public class Action {
 
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
+
+    public Double getValue() { return value; }
+    public void setValue(Double value) { this.value = value; }
 
     @Override
     public String toString() {

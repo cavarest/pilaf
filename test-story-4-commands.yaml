@@ -1,0 +1,112 @@
+# Server Commands Test
+# Tests server command execution across backends
+name: "Server Commands Test"
+description: "Tests server command execution across backends"
+
+setup:
+  - action: "execute_server_command"
+    command: "say Starting server commands test"
+    name: "Server announcement"
+
+  - action: "execute_server_command"
+    command: "gamemode creative TestPlayer"
+    name: "Set player to creative mode"
+
+steps:
+  # Execute simple server command
+  - action: "execute_server_command"
+    command: "say Testing server connectivity"
+    assertions:
+      - type: "command_success"
+        expected: true
+        name: "Test server announcement command"
+
+  # Check player count (if any players online)
+  - action: "execute_server_command"
+    command: "list"
+    assertions:
+      - type: "command_success"
+        expected: true
+        name: "Test player list command"
+
+  # Get server time
+  - action: "execute_server_command"
+    command: "time query gametime"
+    assertions:
+      - type: "command_success"
+        expected: true
+        name: "Test time query command"
+
+  # Test world-related commands
+  - action: "execute_server_command"
+    command: "weather clear"
+    assertions:
+      - type: "command_success"
+        expected: true
+        name: "Test weather command"
+
+  # Test difficulty command
+  - action: "execute_server_command"
+    command: "difficulty peaceful"
+    assertions:
+      - type: "command_success"
+        expected: true
+        name: "Test difficulty command"
+
+  # Test game rule command
+  - action: "execute_server_command"
+    command: "gamerule doDaylightCycle true"
+    assertions:
+      - type: "command_success"
+        expected: true
+        name: "Test gamerule command"
+
+  # Test give command directly
+  - action: "execute_server_command"
+    command: "give TestPlayer diamond 1"
+    assertions:
+      - type: "command_success"
+        expected: true
+        name: "Test direct give command"
+
+  # Test clear command directly
+  - action: "execute_server_command"
+    command: "clear TestPlayer diamond"
+    assertions:
+      - type: "command_success"
+        expected: true
+        name: "Test direct clear command"
+
+  # Test gamemode command
+  - action: "execute_server_command"
+    command: "gamemode survival TestPlayer"
+    assertions:
+      - type: "command_success"
+        expected: true
+        name: "Test gamemode command"
+
+  # Test spawnpoint command
+  - action: "execute_server_command"
+    command: "spawnpoint TestPlayer 0 64 0"
+    assertions:
+      - type: "command_success"
+        expected: true
+        name: "Test spawnpoint command"
+
+cleanup:
+  # Clean up - restore settings
+  - action: "execute_server_command"
+    command: "difficulty normal"
+    name: "Restore difficulty to normal"
+
+  - action: "execute_server_command"
+    command: "gamerule doDaylightCycle true"
+    name: "Restore daylight cycle"
+
+  - action: "execute_server_command"
+    command: "gamemode creative TestPlayer"
+    name: "Set player back to creative mode"
+
+  - action: "execute_server_command"
+    command: "say Server commands test completed"
+    name: "Test completion announcement"

@@ -1,0 +1,72 @@
+version: '3.8'
+services:
+  # PaperMC Minecraft Server
+  minecraft:
+    image: itzg/minecraft-server:java21
+    container_name: pilaf-minecraft
+    ports:
+      - "25565:25565"  # Minecraft server port
+      - "25575:25575"  # RCON port
+    volumes:
+      - minecraft-data:/data
+    environment:
+      # Accept EULA
+      - EULA=true
+
+      # Version and Type
+      - TYPE=PAPER
+      - PAPER_DOWNLOAD_URL=https://papermc.io/api/v2/projects/paper/versions/1.20.4/builds/419/downloads/paper-1.20.4-419.jar
+
+      # RCON Configuration
+      - ENABLE_RCON=true
+      - RCON_PASSWORD=dragon123
+      - RCON_PORT=25575
+
+      # Server Configuration
+      - SERVER_NAME=PILAF-Test-Server
+      - MAX_PLAYERS=10
+      - ONLINE_MODE=false
+      - GAMEMODE=survival
+      - DIFFICULTY=peaceful
+
+      # Performance Settings for Testing
+      - VIEW_DISTANCE=10
+      - SIMULATION_DISTANCE=10
+
+  # Mineflayer Bridge Service
+  mineflayer:
+    image: node:18-alpine
+    container_name: pilaf-mineflayer
+    ports:
+      - "3000:3000"  # PILAF API port
+    volumes:
+      - ./mineflayer-bridge:/app
+    working_dir: /app
+    environment:
+      # Minecraft Connection
+      - MINECRAFT_HOST=minecraft
+      - MINECRAFT_PORT=25565
+
+      # RCON Connection
+      - MINECRAFT_RCON_HOST=minecraft
+      - MINECRAFT_RCON_PORT=25575
+      - MINECRAFT_RCON_PASSWORD=dragon123
+
+      # Bridge Configuration
+      - BRIDGE_LOG_LEVEL=INFO
+      - BRIDGE_PLAYER_NAME=pilaf_tester
+      - BRIDGE_AUTO_RECONNECT=true
+      - BRIDGE_CONNECTION_TIMEOUT=30000
+
+      # API Configuration
+      - API_HOST=0.0.0.0
+      - API_PORT=3000
+      - API_RATE_LIMIT=100
+    command: sh -c "npm install && node server.js"
+    depends_on:
+      minecraft:
+        condition: service_healthy
+
+volumes:
+  minecraft-data:
+    driver: local

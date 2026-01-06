@@ -1,0 +1,87 @@
+# Basic Item Operations Test
+# Tests basic item giving and inventory checking across backends
+name: "Basic Item Operations Test"
+description: "Tests basic item giving and inventory checking across backends"
+
+setup:
+  - action: "execute_server_command"
+    command: "say Starting basic item operations test"
+    name: "Server announcement"
+
+  - action: "execute_server_command"
+    command: "gamemode creative TestPlayer"
+    name: "Set player to creative mode"
+
+steps:
+  # Give player a diamond sword
+  - action: "give_item"
+    player: "TestPlayer"
+    item: "diamond_sword"
+    count: 1
+    name: "Give diamond sword"
+
+  # Verify player has diamond sword
+  - action: "check_inventory"
+    player: "TestPlayer"
+    item: "diamond_sword"
+    slot: "mainhand"
+    assertions:
+      - type: "inventory_contains"
+        expected: true
+        name: "Verify diamond sword in mainhand"
+
+  # Give player cobblestone
+  - action: "give_item"
+    player: "TestPlayer"
+    item: "cobblestone"
+    count: 64
+    name: "Give cobblestone stack"
+
+  # Verify cobblestone count
+  - action: "check_inventory"
+    player: "TestPlayer"
+    item: "cobblestone"
+    slot: "inventory"
+    assertions:
+      - type: "inventory_contains"
+        expected: true
+        name: "Verify cobblestone in inventory"
+
+  # Give player different item types
+  - action: "give_item"
+    player: "TestPlayer"
+    item: "golden_apple"
+    count: 3
+    name: "Give golden apples"
+
+  # Verify golden apples
+  - action: "check_inventory"
+    player: "TestPlayer"
+    item: "golden_apple"
+    assertions:
+      - type: "item_count"
+        expected: 3
+        name: "Verify golden apple count"
+
+cleanup:
+  - action: "remove_item"
+    player: "TestPlayer"
+    item: "diamond_sword"
+    count: 1
+    name: "Remove diamond sword"
+
+  - action: "remove_item"
+    player: "TestPlayer"
+    item: "cobblestone"
+    count: 64
+    name: "Remove cobblestone"
+
+  - action: "remove_item"
+    player: "TestPlayer"
+    item: "golden_apple"
+    count: 3
+    name: "Remove golden apples"
+
+  - action: "execute_server_command"
+    command: "say Basic item operations test completed"
+    name: "Test completion announcement"

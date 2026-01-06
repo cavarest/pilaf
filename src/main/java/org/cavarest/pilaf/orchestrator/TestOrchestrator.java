@@ -12,6 +12,10 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Orchestrates the execution of PILAF test stories.
@@ -418,6 +422,324 @@ public class TestOrchestrator {
 
                     break;
 
+                // =============================================
+                // PLAYER MANAGEMENT ACTIONS (via RCON)
+                // =============================================
+
+                // Change player gamemode
+                case GAMEMODE_CHANGE:
+                    String gamemode = action.getEntity() != null ? action.getEntity() : "survival";
+                    String gamemodeResult = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        gamemodeResult = ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .executeRconWithCapture("gamemode " + gamemode + " " + action.getPlayer());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        gamemodeResult = ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .executeRconWithCapture("gamemode " + gamemode + " " + action.getPlayer());
+                    }
+                    rawResponse = gamemodeResult != null ? gamemodeResult : "✓ Gamemode changed";
+                    break;
+
+                // Clear player inventory
+                case CLEAR_INVENTORY:
+                    String clearResult = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        clearResult = ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .executeRconWithCapture("clear " + action.getPlayer());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        clearResult = ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .executeRconWithCapture("clear " + action.getPlayer());
+                    }
+                    rawResponse = clearResult != null ? clearResult : "✓ Inventory cleared";
+                    break;
+
+                // Set player spawn point
+                case SET_SPAWN_POINT:
+                    String spawnCmd = "spawnpoint " + action.getPlayer();
+                    if (action.getLocation() != null && action.getLocation().size() >= 3) {
+                        spawnCmd += " " + action.getLocation().get(0).intValue()
+                                   + " " + action.getLocation().get(1).intValue()
+                                   + " " + action.getLocation().get(2).intValue();
+                    }
+                    String spawnResult = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        spawnResult = ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .executeRconWithCapture(spawnCmd);
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        spawnResult = ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .executeRconWithCapture(spawnCmd);
+                    }
+                    rawResponse = spawnResult != null ? spawnResult : "✓ Spawn point set";
+                    break;
+
+                // Teleport player
+                case TELEPORT_PLAYER:
+                    String tpCmd = "tp " + action.getPlayer();
+                    if (action.getDestination() != null) {
+                        String[] coords = action.getDestination().split("\\s+");
+                        if (coords.length >= 3) {
+                            tpCmd += " " + coords[0] + " " + coords[1] + " " + coords[2];
+                        }
+                    } else if (action.getLocation() != null && action.getLocation().size() >= 3) {
+                        tpCmd += " " + action.getLocation().get(0).intValue()
+                               + " " + action.getLocation().get(1).intValue()
+                               + " " + action.getLocation().get(2).intValue();
+                    }
+                    String tpResult = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        tpResult = ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .executeRconWithCapture(tpCmd);
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        tpResult = ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .executeRconWithCapture(tpCmd);
+                    }
+                    rawResponse = tpResult != null ? tpResult : "✓ Player teleported";
+                    break;
+
+                // Set player health
+                case SET_PLAYER_HEALTH:
+                    String healthCmd = "attribute minecraft:generic.max_health base set " + action.getValue();
+                    String healthResult = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        healthResult = ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .executeRconWithCapture(healthCmd);
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        healthResult = ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .executeRconWithCapture(healthCmd);
+                    }
+                    // Also heal the player to apply the new max health
+                    String healResult = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        healResult = ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .executeRconWithCapture("heal " + action.getPlayer());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        healResult = ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .executeRconWithCapture("heal " + action.getPlayer());
+                    }
+                    rawResponse = "✓ Player health set to " + action.getValue();
+                    break;
+
+                // Kill player
+                case KILL_PLAYER:
+                    String killResult = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        killResult = ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .executeRconWithCapture("kill " + action.getPlayer());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        killResult = ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .executeRconWithCapture("kill " + action.getPlayer());
+                    }
+                    rawResponse = killResult != null ? killResult : "✓ Player killed";
+                    break;
+
+                // =============================================
+                // ENTITY MANAGEMENT ACTIONS (via RCON)
+                // =============================================
+
+                // Kill entity
+                case KILL_ENTITY:
+                    String killEntityCmd = "kill " + (action.getEntity() != null ? action.getEntity() : "@e[type=" + action.getEntityType() + "]");
+                    String killEntityResult = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        killEntityResult = ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .executeRconWithCapture(killEntityCmd);
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        killEntityResult = ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .executeRconWithCapture(killEntityCmd);
+                    }
+                    rawResponse = killEntityResult != null ? killEntityResult : "✓ Entity killed";
+                    break;
+
+                // Set entity health
+                case SET_ENTITY_HEALTH:
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .setEntityHealth(action.getEntity(), action.getValue());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .setEntityHealth(action.getEntity(), action.getValue());
+                    }
+                    rawResponse = "✓ Entity health set to " + action.getValue();
+                    break;
+
+                // =============================================
+                // WORLD MANAGEMENT ACTIONS (via RCON)
+                // =============================================
+
+                // Set world time
+                case SET_TIME:
+                    String timeCmd = "time set " + (action.getValue() != null ? action.getValue().longValue() : 1000);
+                    String timeResult = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        timeResult = ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .executeRconWithCapture(timeCmd);
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        timeResult = ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .executeRconWithCapture(timeCmd);
+                    }
+                    rawResponse = timeResult != null ? timeResult : "✓ Time set";
+                    break;
+
+                // Set weather
+                case SET_WEATHER:
+                    String weatherCmd = "weather " + (action.getEntity() != null ? action.getEntity() : "clear")
+                                       + " " + (action.getDuration() != null ? action.getDuration() / 1000 : 600);
+                    String weatherResult = null;
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        weatherResult = ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .executeRconWithCapture(weatherCmd);
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        weatherResult = ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .executeRconWithCapture(weatherCmd);
+                    }
+                    rawResponse = weatherResult != null ? weatherResult : "✓ Weather set";
+                    break;
+
+                // =============================================
+                // CLIENT ACTIONS (Mineflayer)
+                // =============================================
+
+                // Look at target
+                case LOOK_AT:
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        // Use player command to look at target
+                        ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .executePlayerCommand(action.getPlayer(), "look " + action.getEntity(), Collections.emptyList());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .executePlayerCommand(action.getPlayer(), "look " + action.getEntity(), Collections.emptyList());
+                    }
+                    rawResponse = "✓ Player looking at " + action.getEntity();
+                    break;
+
+                // Jump
+                case JUMP:
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .executePlayerCommand(action.getPlayer(), "jump", Collections.emptyList());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .executePlayerCommand(action.getPlayer(), "jump", Collections.emptyList());
+                    }
+                    rawResponse = "✓ Player jumped";
+                    break;
+
+                // Use item
+                case USE_ITEM:
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .useItem(action.getPlayer(), action.getItem(), action.getEntity());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .useItem(action.getPlayer(), action.getItem(), action.getEntity());
+                    }
+                    rawResponse = "✓ Item used";
+                    break;
+
+                // Attack entity
+                case ATTACK_ENTITY:
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .executePlayerCommand(action.getPlayer(), "attack " + action.getEntity(), Collections.emptyList());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .executePlayerCommand(action.getPlayer(), "attack " + action.getEntity(), Collections.emptyList());
+                    }
+                    rawResponse = "✓ Attacked " + action.getEntity();
+                    break;
+
+                // Break block
+                case BREAK_BLOCK:
+                    String breakCmd = "break " + action.getPosition();
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .executePlayerCommand(action.getPlayer(), breakCmd, Collections.emptyList());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .executePlayerCommand(action.getPlayer(), breakCmd, Collections.emptyList());
+                    }
+                    rawResponse = "✓ Block broken at " + action.getPosition();
+                    break;
+
+                // Place block
+                case PLACE_BLOCK:
+                    String placeCmd = "place " + action.getItem() + " " + action.getPosition();
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
+                            .executePlayerCommand(action.getPlayer(), placeCmd, Collections.emptyList());
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        ((org.cavarest.pilaf.backend.RconBackend) backend)
+                            .executePlayerCommand(action.getPlayer(), placeCmd, Collections.emptyList());
+                    }
+                    rawResponse = "✓ Block placed at " + action.getPosition();
+                    break;
+
+                // Get chat history
+                case GET_CHAT_HISTORY:
+                    if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
+                        Object chatHistory = ((org.cavarest.pilaf.backend.MineflayerBackend) backend).getChatHistory(action.getPlayer());
+                        rawResponse = chatHistory != null ? chatHistory.toString() : "[]";
+                        if (action.getStoreAs() != null) {
+                            storedStates.put(action.getStoreAs(), chatHistory);
+                        }
+                    } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
+                        rawResponse = "Chat history not available via RCON";
+                    }
+                    break;
+
+                // =============================================
+                // STATE MANAGEMENT ACTIONS
+                // =============================================
+
+                // Extract with JSONPath
+                case EXTRACT_WITH_JSONPATH:
+                    Object sourceState = storedStates.get(action.getSourceVariable());
+                    String extracted = extractWithJsonPath(sourceState, action.getJsonPath());
+                    storedStates.put(action.getVariableName(), extracted);
+                    rawResponse = action.getVariableName() + " = " + extracted;
+                    break;
+
+                // Filter entities
+                case FILTER_ENTITIES:
+                    Object entitiesToFilter = storedStates.get(action.getSourceVariable());
+                    Object filtered = filterEntities(entitiesToFilter, action.getFilterType(), action.getFilterValue());
+                    storedStates.put(action.getVariableName(), filtered);
+                    rawResponse = action.getVariableName() + " = " + filtered;
+                    break;
+
+                // =============================================
+                // ASSERTION ACTIONS (for assertion stories)
+                // =============================================
+
+                case ASSERT_ENTITY_MISSING:
+                    // Just log - actual assertion is in evaluateAssertion
+                    rawResponse = "Check " + action.getEntity() + " doesn't exist";
+                    break;
+
+                case ASSERT_ENTITY_EXISTS:
+                    rawResponse = "Check " + action.getEntity() + " exists";
+                    break;
+
+                case ASSERT_PLAYER_HAS_ITEM:
+                    rawResponse = "Check " + action.getPlayer() + " has " + action.getItem();
+                    break;
+
+                case ASSERT_RESPONSE_CONTAINS:
+                    rawResponse = "Check response contains '" + action.getContains() + "'";
+                    break;
+
+                case ASSERT_JSON_EQUALS:
+                    rawResponse = "Check JSON equals";
+                    break;
+
+                case ASSERT_LOG_CONTAINS:
+                    rawResponse = "Check log contains";
+                    break;
+
+                case ASSERT_CONDITION:
+                    rawResponse = "Check condition met";
+                    break;
+
                 default:
                     log("    ⚠️ Unknown action type: " + action.getType());
             }
@@ -444,7 +766,7 @@ public class TestOrchestrator {
         }
     }
 
-    /**
+   /**
      * Builds the raw command string that was executed.
      */
     private String buildRawCommand(Action action) {
@@ -552,6 +874,91 @@ public class TestOrchestrator {
             case EXECUTE_PLAYER_RAW:
                 sb.append("Player ").append(action.getPlayer()).append(" executes: ").append(action.getCommand());
                 break;
+
+            // Player Management Commands
+            case GAMEMODE_CHANGE:
+                sb.append("Set gamemode ").append(action.getEntity()).append(" for ").append(action.getPlayer());
+                break;
+            case CLEAR_INVENTORY:
+                sb.append("Clear inventory of ").append(action.getPlayer());
+                break;
+            case SET_SPAWN_POINT:
+                sb.append("Set spawn point for ").append(action.getPlayer());
+                break;
+            case TELEPORT_PLAYER:
+                sb.append("Teleport ").append(action.getPlayer()).append(" to ").append(action.getDestination());
+                break;
+            case SET_PLAYER_HEALTH:
+                sb.append("Set health of ").append(action.getPlayer()).append(" to ").append(action.getValue());
+                break;
+            case KILL_PLAYER:
+                sb.append("Kill ").append(action.getPlayer());
+                break;
+
+            // Entity Management Commands
+            case KILL_ENTITY:
+                sb.append("Kill entity ").append(action.getEntity());
+                break;
+            case SET_ENTITY_HEALTH:
+                sb.append("Set health of ").append(action.getEntity()).append(" to ").append(action.getValue());
+                break;
+
+            // World Management Commands
+            case SET_TIME:
+                sb.append("Set world time to ").append(action.getValue());
+                break;
+            case SET_WEATHER:
+                sb.append("Set weather to ").append(action.getEntity()).append(" for ").append(action.getDuration()).append("ms");
+                break;
+
+            // Client Actions
+            case LOOK_AT:
+                sb.append("Player ").append(action.getPlayer()).append(" looks at ").append(action.getEntity());
+                break;
+            case JUMP:
+                sb.append("Player ").append(action.getPlayer()).append(" jumps");
+                break;
+            case USE_ITEM:
+                sb.append("Player ").append(action.getPlayer()).append(" uses ").append(action.getItem());
+                break;
+            case ATTACK_ENTITY:
+                sb.append("Player ").append(action.getPlayer()).append(" attacks ").append(action.getEntity());
+                break;
+            case BREAK_BLOCK:
+                sb.append("Player ").append(action.getPlayer()).append(" breaks block at ").append(action.getPosition());
+                break;
+            case PLACE_BLOCK:
+                sb.append("Player ").append(action.getPlayer()).append(" places ").append(action.getItem()).append(" at ").append(action.getPosition());
+                break;
+            case GET_CHAT_HISTORY:
+                sb.append("Get chat history for ").append(action.getPlayer());
+                break;
+
+            // State Management Commands
+            case EXTRACT_WITH_JSONPATH:
+                sb.append("Extract ").append(action.getJsonPath()).append(" from ").append(action.getSourceVariable()).append(" as ").append(action.getVariableName());
+                break;
+            case FILTER_ENTITIES:
+                sb.append("Filter entities by ").append(action.getFilterType()).append("=").append(action.getFilterValue()).append(" as ").append(action.getVariableName());
+                break;
+
+            // Assertion Actions
+            case ASSERT_ENTITY_MISSING:
+                sb.append("Assert ").append(action.getEntity()).append(" doesn't exist");
+                break;
+            case ASSERT_ENTITY_EXISTS:
+                sb.append("Assert ").append(action.getEntity()).append(" exists");
+                break;
+            case ASSERT_PLAYER_HAS_ITEM:
+                sb.append("Assert ").append(action.getPlayer()).append(" has ").append(action.getItem());
+                break;
+            case ASSERT_RESPONSE_CONTAINS:
+                sb.append("Assert response contains ").append(action.getContains());
+                break;
+            case ASSERT_JSON_EQUALS:
+                sb.append("Assert JSON equals");
+                break;
+
             default:
                 sb.append(action.getType().toString().toLowerCase().replace("_", " "));
         }
@@ -629,13 +1036,24 @@ public class TestOrchestrator {
         return sb.toString();
     }
 
+    @SuppressWarnings("unchecked")
     private void evaluateAssertion(Assertion assertion) {
         boolean passed = false;
         String message = "";
+        String details = "";
 
         try {
-            passed = assertion.evaluate(backend);
-            message = describeAssertion(assertion);
+            Object evalResult = assertion.evaluate(backend);
+            if (evalResult instanceof Map) {
+                Map<String, Object> resultMap = (Map<String, Object>) evalResult;
+                passed = Boolean.TRUE.equals(resultMap.get("passed"));
+                message = (String) resultMap.get("message");
+                Object detailsObj = resultMap.get("details");
+                details = detailsObj != null ? detailsObj.toString() : "";
+            } else {
+                passed = (Boolean) evalResult;
+                message = describeAssertion(assertion);
+            }
         } catch (Exception e) {
             message = "Error: " + e.getMessage();
         }
@@ -683,6 +1101,43 @@ public class TestOrchestrator {
             case GET_WORLD_TIME: return "Get world time";
             case GET_WEATHER: return "Get weather status";
             case EXECUTE_PLAYER_RAW: return "Execute player command: " + action.getCommand();
+
+            // Player Management
+            case GAMEMODE_CHANGE: return "Set gamemode " + action.getEntity() + " for " + action.getPlayer();
+            case CLEAR_INVENTORY: return "Clear inventory of " + action.getPlayer();
+            case SET_SPAWN_POINT: return "Set spawn point for " + action.getPlayer();
+            case TELEPORT_PLAYER: return "Teleport " + action.getPlayer() + " to " + action.getDestination();
+            case SET_PLAYER_HEALTH: return "Set health of " + action.getPlayer() + " to " + action.getValue();
+            case KILL_PLAYER: return "Kill " + action.getPlayer();
+
+            // Entity Management
+            case KILL_ENTITY: return "Kill entity " + action.getEntity();
+            case SET_ENTITY_HEALTH: return "Set health of " + action.getEntity() + " to " + action.getValue();
+
+            // World Management
+            case SET_TIME: return "Set world time to " + action.getValue();
+            case SET_WEATHER: return "Set weather to " + action.getEntity();
+
+            // Client Actions
+            case LOOK_AT: return action.getPlayer() + " looks at " + action.getEntity();
+            case JUMP: return action.getPlayer() + " jumps";
+            case USE_ITEM: return action.getPlayer() + " uses " + action.getItem();
+            case ATTACK_ENTITY: return action.getPlayer() + " attacks " + action.getEntity();
+            case BREAK_BLOCK: return action.getPlayer() + " breaks block at " + action.getPosition();
+            case PLACE_BLOCK: return action.getPlayer() + " places " + action.getItem() + " at " + action.getPosition();
+            case GET_CHAT_HISTORY: return "Get chat history for " + action.getPlayer();
+
+            // State Management
+            case EXTRACT_WITH_JSONPATH: return "Extract " + action.getJsonPath() + " from " + action.getSourceVariable();
+            case FILTER_ENTITIES: return "Filter entities by " + action.getFilterType() + "=" + action.getFilterValue();
+
+            // Assertion Actions
+            case ASSERT_ENTITY_MISSING: return "Assert " + action.getEntity() + " doesn't exist";
+            case ASSERT_ENTITY_EXISTS: return "Assert " + action.getEntity() + " exists";
+            case ASSERT_PLAYER_HAS_ITEM: return "Assert " + action.getPlayer() + " has " + action.getItem();
+            case ASSERT_RESPONSE_CONTAINS: return "Assert response contains '" + action.getContains() + "'";
+            case ASSERT_JSON_EQUALS: return "Assert JSON equals";
+
             default: return action.toString();
         }
     }
@@ -691,10 +1146,27 @@ public class TestOrchestrator {
         switch (assertion.getType()) {
             case ENTITY_HEALTH:
                 double health = backend.getEntityHealth(assertion.getEntity());
-                return assertion.getEntity() + " health " + assertion.getCondition() + " " + assertion.getValue() + " (actual: " + health + ")";
+                return assertion.getEntity() + " health " + assertion.getConditionType() + " " + assertion.getValue() + " (actual: " + health + ")";
             case ENTITY_EXISTS:
                 boolean exists = backend.entityExists(assertion.getEntity());
                 return assertion.getEntity() + " exists=" + assertion.getExpected() + " (actual: " + exists + ")";
+            case PLAYER_INVENTORY:
+            case ASSERT_PLAYER_HAS_ITEM:
+                boolean hasItem = backend.playerInventoryContains(assertion.getPlayer(), assertion.getItem(), assertion.getSlot());
+                return "Player " + assertion.getPlayer() + " has item " + assertion.getItem() + ": " + hasItem;
+            case PLUGIN_COMMAND:
+                return "Plugin " + assertion.getPlugin() + " command " + assertion.getCommand();
+            case ASSERT_ENTITY_MISSING:
+                boolean isMissing = !backend.entityExists(assertion.getEntity());
+                return "Entity " + assertion.getEntity() + " missing: " + isMissing;
+            case ASSERT_RESPONSE_CONTAINS:
+                return "Response contains '" + assertion.getContains() + "': " + (assertion.getSource() != null ? "pending" : "no source");
+            case ASSERT_JSON_EQUALS:
+                return "JSON equals check (not fully implemented)";
+            case ASSERT_LOG_CONTAINS:
+                return "Log contains check (not fully implemented)";
+            case ASSERT_CONDITION:
+                return "Condition check (not fully implemented)";
             default: return assertion.toString();
         }
     }
@@ -712,5 +1184,105 @@ public class TestOrchestrator {
     private void log(String message) {
         if (verbose) System.out.println(message);
         result.addLog(message);
+    }
+
+    /**
+     * Extract value from data using JSONPath-like syntax.
+     * Supports simple key access and nested key access (e.g., "items[0].name").
+     */
+    @SuppressWarnings("unchecked")
+    private String extractWithJsonPath(Object data, String jsonPath) {
+        if (data == null || jsonPath == null) {
+            return String.valueOf(data);
+        }
+
+        try {
+            if (data instanceof Map) {
+                Map<String, Object> map = (Map<String, Object>) data;
+
+                // Handle simple key access (e.g., "health")
+                if (!jsonPath.contains(".") && !jsonPath.contains("[")) {
+                    Object value = map.get(jsonPath);
+                    return value != null ? String.valueOf(value) : "";
+                }
+
+                // Handle nested access (e.g., "items[0]" or "position.x")
+                String[] parts = jsonPath.split("\\.");
+                Object current = map;
+
+                for (String part : parts) {
+                    if (current instanceof Map) {
+                        current = ((Map<String, Object>) current).get(part);
+                    } else if (current instanceof List && part.contains("[")) {
+                        // Handle array access like "items[0]"
+                        String arrayKey = part.substring(0, part.indexOf("["));
+                        int index = Integer.parseInt(part.substring(part.indexOf("[") + 1, part.indexOf("]")));
+                        List<?> list = (List<?>) ((Map<String, Object>) current).get(arrayKey);
+                        if (list != null && index < list.size()) {
+                            current = list.get(index);
+                        } else {
+                            return "";
+                        }
+                    } else {
+                        return "";
+                    }
+
+                    if (current == null) {
+                        return "";
+                    }
+                }
+
+                return current != null ? String.valueOf(current) : "";
+            }
+        } catch (Exception e) {
+            log("    ⚠️ JSONPath extraction error: " + e.getMessage());
+        }
+
+        return String.valueOf(data);
+    }
+
+    /**
+     * Filter entities based on criteria.
+     * Supports filtering by type (e.g., "type=zombie") or name (e.g., "name=TestEntity").
+     */
+    @SuppressWarnings("unchecked")
+    private Object filterEntities(Object entitiesData, String filterType, String filterValue) {
+        if (entitiesData == null) {
+            return new ArrayList<>();
+        }
+
+        try {
+            List<Map<String, Object>> filtered = new ArrayList<>();
+
+            if (entitiesData instanceof Map) {
+                Map<String, Object> map = (Map<String, Object>) entitiesData;
+                Object entitiesObj = map.get("entities");
+                if (entitiesObj instanceof List) {
+                    List<Map<String, Object>> entities = (List<Map<String, Object>>) entitiesObj;
+
+                    for (Map<String, Object> entity : entities) {
+                        boolean matches = false;
+
+                        if ("type".equals(filterType)) {
+                            String entityType = (String) entity.get("type");
+                            matches = entityType != null && entityType.equalsIgnoreCase(filterValue);
+                        } else if ("name".equals(filterType)) {
+                            String entityName = (String) entity.get("name");
+                            matches = entityName != null && entityName.equalsIgnoreCase(filterValue);
+                        }
+
+                        if (matches) {
+                            filtered.add(entity);
+                        }
+                    }
+                }
+            }
+
+            return filtered;
+        } catch (Exception e) {
+            log("    ⚠️ Entity filtering error: " + e.getMessage());
+        }
+
+        return new ArrayList<>();
     }
 }

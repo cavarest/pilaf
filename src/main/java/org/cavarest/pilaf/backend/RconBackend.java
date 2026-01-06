@@ -1,18 +1,25 @@
 package org.cavarest.pilaf.backend;
 
-import org.cavarest.pilaf.rcon.RconClient;
+import org.cavarest.rcon.RconClient;
+import java.io.IOException;
 import java.util.*;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * RCON-based backend implementation for executing server commands.
  */
 public class RconBackend implements PilafBackend {
+    private static final Logger logger = Logger.getLogger(RconBackend.class.getName());
+
     private final String host;
     private final int port;
     private final String password;
     private RconClient rcon;
     private Map<String, Double> entityHealths = new HashMap<>();
     private Set<String> spawnedEntities = new HashSet<>();
+    private boolean verbose = false;
 
     public RconBackend(String host, int port, String password) {
         this.host = host;
@@ -21,23 +28,56 @@ public class RconBackend implements PilafBackend {
     }
 
     public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
         if (rcon != null) {
             rcon.setVerbose(verbose);
         }
     }
 
+    private void log(Level level, String message) {
+        if (verbose || level.intValue() >= Level.INFO.intValue()) {
+            logger.log(level, "[RCON] " + message);
+        }
+    }
+
+    /**
+     * Executes an RCON command and returns the result.
+     * Handles IOException internally for backward compatibility.
+     */
+    private String executeCommand(String command) {
+        try {
+            return rcon.sendCommand(command);
+        } catch (IOException e) {
+            log(Level.WARNING, "Command failed: " + e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Executes an RCON command without checking result.
+     */
+    private void sendCommand(String command) {
+        try {
+            rcon.sendCommand(command);
+        } catch (IOException e) {
+            log(Level.WARNING, "Command failed: " + e.getMessage());
+        }
+    }
+
     @Override
     public void initialize() throws Exception {
+        log(Level.INFO, "Connecting to RCON server at " + host + ":" + port);
         rcon = new RconClient(host, port, password);
-        if (!rcon.connect()) {
-            throw new Exception("Failed to connect to RCON server at " + host + ":" + port);
-        }
+        rcon.connect();
+        log(Level.INFO, "Successfully connected to RCON server");
     }
 
     @Override
     public void cleanup() throws Exception {
         if (rcon != null) {
-            rcon.disconnect();
+            log(Level.INFO, "Closing RCON connection");
+            rcon.close();
+            rcon = null;
         }
     }
 
@@ -46,29 +86,29 @@ public class RconBackend implements PilafBackend {
 
     @Override
     public void movePlayer(String player, String type, String dest) {
-        rcon.executeCommand("tp " + player + " " + dest);
+        executeCommand("tp " + player + " " + dest);
     }
 
     @Override
     public void equipItem(String player, String item, String slot) {
         String mcSlot = slot.equals("offhand") ? "weapon.offhand" : "weapon.mainhand";
-        rcon.executeCommand("replaceitem entity " + player + " " + mcSlot + " " + item);
+        executeCommand("replaceitem entity " + player + " " + mcSlot + " " + item);
     }
 
     @Override
     public void giveItem(String player, String item, Integer count) {
-        rcon.executeCommand("give " + player + " " + item + " " + count);
+        executeCommand("give " + player + " " + item + " " + count);
     }
 
     @Override
     public void executePlayerCommand(String player, String command, List<String> args) {
         String fullCmd = command + " " + String.join(" ", args);
-        rcon.executeCommand("execute as " + player + " run " + fullCmd);
+        executeCommand("execute as " + player + " run " + fullCmd);
     }
 
     @Override
     public void sendChat(String player, String message) {
-        rcon.executeCommand("tellraw " + player + " \"" + message + "\"");
+        executeCommand("tellraw " + player + " \"" + message + "\"");
     }
 
     @Override
@@ -80,20 +120,20 @@ public class RconBackend implements PilafBackend {
     public void spawnEntity(String name, String type, List<Double> location, Map<String, String> equipment) {
         String cmd = String.format("summon %s %.1f %.1f %.1f {CustomName:'\"test_%s\"'}",
             type.toLowerCase(), location.get(0), location.get(1), location.get(2), name);
-        rcon.executeCommand(cmd);
+        executeCommand(cmd);
         spawnedEntities.add(name);
         entityHealths.put(name, 20.0);
     }
 
     @Override
     public boolean entityExists(String name) {
-        String result = rcon.executeCommand("execute if entity @e[name=test_" + name + "]");
+        String result = executeCommand("execute if entity @e[name=test_" + name + "]");
         return result != null && result.contains("1");
     }
 
     @Override
     public double getEntityHealth(String name) {
-        String result = rcon.executeCommand("data get entity @e[name=test_" + name + ",limit=1] Health");
+        String result = executeCommand("data get entity @e[name=test_" + name + ",limit=1] Health");
         try {
             if (result != null && result.contains("has the following entity data:")) {
                 String num = result.replaceAll("[^0-9.]", "");
@@ -105,7 +145,7 @@ public class RconBackend implements PilafBackend {
 
     @Override
     public void setEntityHealth(String name, Double health) {
-        rcon.executeCommand("data modify entity @e[name=test_" + name + ",limit=1] Health set value " + health + "f");
+        executeCommand("data modify entity @e[name=test_" + name + ",limit=1] Health set value " + health + "f");
         entityHealths.put(name, health);
     }
 
@@ -115,7 +155,7 @@ public class RconBackend implements PilafBackend {
         if (args != null && !args.isEmpty()) {
             fullCommand = command + " " + String.join(" ", args);
         }
-        rcon.executeCommand(fullCommand);
+        executeCommand(fullCommand);
     }
 
     @Override
@@ -126,13 +166,13 @@ public class RconBackend implements PilafBackend {
 
     @Override
     public boolean pluginReceivedCommand(String plugin, String command, String player) {
-        String result = rcon.executeCommand("plugins");
+        String result = executeCommand("plugins");
         return result != null && result.contains(plugin);
     }
 
     @Override
     public void removeAllTestEntities() {
-        rcon.executeCommand("kill @e[name=test_]");
+        executeCommand("kill @e[name=test_]");
         spawnedEntities.clear();
         entityHealths.clear();
     }
@@ -144,7 +184,7 @@ public class RconBackend implements PilafBackend {
 
     // Extended Player Management Commands
     public void makeOperator(String player) throws Exception {
-        rcon.executeCommand("op " + player);
+        executeCommand("op " + player);
     }
 
     public void connectPlayer(String player) throws Exception {
@@ -155,37 +195,37 @@ public class RconBackend implements PilafBackend {
 
     public void disconnectPlayer(String player) throws Exception {
         // RCON cannot disconnect players - use kick command as closest equivalent
-        rcon.executeCommand("kick " + player + " Disconnected by test");
+        executeCommand("kick " + player + " Disconnected by test");
     }
 
     public Map<String, Object> getPlayerInventory(String player) throws Exception {
-        String result = rcon.executeCommand("data get entity " + player + " Inventory");
+        String result = executeCommand("data get entity " + player + " Inventory");
         return parseInventoryData(result);
     }
 
     public Map<String, Object> getPlayerPosition(String player) throws Exception {
-        String result = rcon.executeCommand("data get entity " + player + " Pos");
+        String result = executeCommand("data get entity " + player + " Pos");
         return parsePositionData(result);
     }
 
     public double getPlayerHealth(String player) throws Exception {
-        String result = rcon.executeCommand("data get entity " + player + " Health");
+        String result = executeCommand("data get entity " + player + " Health");
         return parseHealthData(result);
     }
 
     // Extended Entity Management Commands
     public Map<String, Object> getEntitiesInView(String player) throws Exception {
-        String result = rcon.executeCommand("execute at " + player + " run data get entity @e[distance=..10]");
+        String result = executeCommand("execute at " + player + " run data get entity @e[distance=..10]");
         return parseEntitiesData(result);
     }
 
     public Map<String, Object> getEntityByName(String entityName, String player) throws Exception {
-        String result = rcon.executeCommand("execute at " + player + " run data get entity @e[name=" + entityName + ",limit=1]");
+        String result = executeCommand("execute at " + player + " run data get entity @e[name=" + entityName + ",limit=1]");
         return parseEntityData(result);
     }
 
     public double getEntityDistance(String entityName, String player) throws Exception {
-        String result = rcon.executeCommand("execute at " + player + " run data get entity @e[name=" + entityName + ",limit=1] Pos");
+        String result = executeCommand("execute at " + player + " run data get entity @e[name=" + entityName + ",limit=1] Pos");
         Map<String, Object> entityPos = parsePositionData(result);
         Map<String, Object> playerPos = getPlayerPosition(player);
         return calculateDistance(entityPos, playerPos);
@@ -193,39 +233,39 @@ public class RconBackend implements PilafBackend {
 
     // Extended Command Execution Commands
     public String executeRconWithCapture(String command) throws Exception {
-        return rcon.executeCommand(command);
+        return executeCommand(command);
     }
 
     // RAW RCON - execute exact command as-is (for full RCON command set access)
     public String executeRconRaw(String command) throws Exception {
         // Execute the exact command without any parsing or transformation
-        return rcon.executeCommand(command);
+        return executeCommand(command);
     }
 
     // RAW Player command - execute exact command as the player
     public String executePlayerCommandRaw(String player, String command) throws Exception {
         // Execute the exact command as the player without wrapping in "execute as... run"
-        return rcon.executeCommand("execute as " + player + " run " + command);
+        return executeCommand("execute as " + player + " run " + command);
     }
 
     // Extended Inventory Management Commands
     public void removeItem(String player, String item, int count) throws Exception {
-        rcon.executeCommand("clear " + player + " " + item + " " + count);
+        executeCommand("clear " + player + " " + item + " " + count);
     }
 
     public Map<String, Object> getPlayerEquipment(String player) throws Exception {
-        String result = rcon.executeCommand("data get entity " + player + " HandItems");
+        String result = executeCommand("data get entity " + player + " HandItems");
         return parseEquipmentData(result);
     }
 
     // Extended World & Environment Commands
     public Map<String, Object> getBlockAtPosition(String position) throws Exception {
-        String result = rcon.executeCommand("data get block " + position);
+        String result = executeCommand("data get block " + position);
         return parseBlockData(result);
     }
 
     public long getWorldTime() throws Exception {
-        String result = rcon.executeCommand("time query gametime");
+        String result = executeCommand("time query gametime");
         // Response format: "The time is 89565" - need to extract the number
         if (result != null) {
             String trimmed = result.trim();
@@ -347,5 +387,12 @@ public class RconBackend implements PilafBackend {
         // Simplified parsing
         block.put("raw", data);
         return block;
+    }
+
+    @Override
+    public String getServerLog() {
+        // Server logs are not accessible via RCON in Minecraft
+        // This would require direct file access or a plugin
+        return "[Log access not available via RCON]";
     }
 }

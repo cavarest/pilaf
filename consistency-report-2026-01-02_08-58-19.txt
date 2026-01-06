@@ -1,0 +1,167 @@
+=================================================================
+           PILAF BACKEND CONSISTENCY REPORT
+=================================================================
+
+Generated: 2026-01-02 08:58:19
+
+EXECUTIVE SUMMARY
+==================
+
+Overall Consistency: PASSED
+
+Statistics:
+  Backend Combinations: 4
+  Test Stories: 4
+  Consistent Stories: 4
+  Inconsistent Stories: 0
+
+BACKEND TEST RESULTS
+====================
+
+Backend: config-docker-headlessmc.yaml
+Status: SUCCESS
+Stories tested: 4
+Stories passed: 0
+
+  test-story-2-entities.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 0ms
+
+  test-story-3-movement.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 0ms
+
+  test-story-1-basic-items.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 1ms
+
+  test-story-4-commands.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 0ms
+
+
+Backend: config-headlessmc-mineflayer.yaml
+Status: SUCCESS
+Stories tested: 4
+Stories passed: 0
+
+  test-story-2-entities.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 0ms
+
+  test-story-3-movement.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 0ms
+
+  test-story-1-basic-items.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 1ms
+
+  test-story-4-commands.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 0ms
+
+
+Backend: config-headlessmc-both.yaml
+Status: SUCCESS
+Stories tested: 4
+Stories passed: 0
+
+  test-story-2-entities.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 0ms
+
+  test-story-3-movement.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 0ms
+
+  test-story-1-basic-items.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 1ms
+
+  test-story-4-commands.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 1ms
+
+
+Backend: config-docker-mineflayer.yaml
+Status: SUCCESS
+Stories tested: 4
+Stories passed: 0
+
+  test-story-2-entities.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 0ms
+
+  test-story-3-movement.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 0ms
+
+  test-story-1-basic-items.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 15ms
+
+  test-story-4-commands.yaml:
+    Success: false
+    Assertions Passed: 0
+    Assertions Failed: 0
+    Execution Time: 0ms
+
+
+CONSISTENCY ANALYSIS
+====================
+
+Story: test-story-2-entities.yaml
+Status: CONSISTENT
+
+All backend combinations produced identical results.
+
+Story: test-story-3-movement.yaml
+Status: CONSISTENT
+
+All backend combinations produced identical results.
+
+Story: test-story-1-basic-items.yaml
+Status: CONSISTENT
+
+All backend combinations produced identical results.
+
+Story: test-story-4-commands.yaml
+Status: CONSISTENT
+
+All backend combinations produced identical results.
+
+
+=================================================================
+                        END OF REPORT
+=================================================================

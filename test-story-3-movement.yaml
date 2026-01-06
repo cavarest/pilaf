@@ -1,0 +1,97 @@
+# Player Movement Test
+# Tests player movement and positioning across backends
+name: "Player Movement Test"
+description: "Tests player movement and positioning across backends"
+
+setup:
+  - action: "execute_server_command"
+    command: "say Starting player movement test"
+    name: "Server announcement"
+
+  - action: "execute_server_command"
+    command: "gamemode creative TestPlayer"
+    name: "Set player to creative mode"
+
+steps:
+  # Connect player (if needed)
+  - action: "connect_player"
+    username: "TestPlayer"
+    name: "Connect test player"
+
+  # Move player to coordinates
+  - action: "move_player"
+    player_name: "TestPlayer"
+    destination_type: "coordinates"
+    destination: "100 64 100"
+    name: "Move player to (100,64,100)"
+
+  # Verify position
+  - action: "check_player_position"
+    player_name: "TestPlayer"
+    assertions:
+      - type: "position_approximately"
+        x: 100
+        y: 64
+        z: 100
+        tolerance: 2
+        name: "Verify player position approximately (100,64,100)"
+
+  # Move player to another location
+  - action: "move_player"
+    player_name: "TestPlayer"
+    destination_type: "coordinates"
+    destination: "200 70 200"
+    name: "Move player to (200,70,200)"
+
+  # Verify new position
+  - action: "check_player_position"
+    player_name: "TestPlayer"
+    assertions:
+      - type: "position_approximately"
+        x: 200
+        y: 70
+        z: 200
+        tolerance: 2
+        name: "Verify player position approximately (200,70,200)"
+
+  # Move to relative location
+  - action: "move_player"
+    player_name: "TestPlayer"
+    destination_type: "relative"
+    destination: "~ ~ ~"
+    name: "Move player relatively (no change)"
+
+  # Test dimension change (if supported)
+  - action: "execute_server_command"
+    command: "execute in minecraft:the_nether run tp TestPlayer 0 64 0"
+    name: "Move player to nether"
+
+  # Wait for dimension change
+  - action: "wait"
+    duration: 1000
+    name: "Wait for dimension change"
+
+  # Verify dimension
+  - action: "execute_server_command"
+    command: "execute in minecraft:the_end run tp TestPlayer 0 64 0"
+    name: "Move player to end dimension"
+
+  # Wait for dimension change
+  - action: "wait"
+    duration: 1000
+    name: "Wait for end dimension change"
+
+  # Return to overworld
+  - action: "execute_server_command"
+    command: "execute in minecraft:overworld run tp TestPlayer 0 64 0"
+    name: "Return player to overworld"
+
+cleanup:
+  # Disconnect player
+  - action: "disconnect_player"
+    username: "TestPlayer"
+    name: "Disconnect test player"
+
+  - action: "execute_server_command"
+    command: "say Player movement test completed"
+    name: "Test completion announcement"

@@ -1,0 +1,40 @@
+# PILAF Demo Configuration
+# =========================
+# This configuration file sets up PILAF to run the demo-story.yaml test
+# using Docker Compose (PaperMC server + Mineflayer bridge).
+
+# Backend Selection
+backend: mineflayer
+
+# Server Configuration (RCON to Docker container)
+server:
+  host: "localhost"
+  port: 25575
+  password: "dragon123"
+  version: "1.21.8"
+
+# Mineflayer Client Configuration
+mineflayer:
+  url: "http://localhost:3000"
+  player_name: "pilaf_tester"
+  auto_reconnect: true
+  connection_timeout: 30000
+
+# Report Configuration
+report:
+  format: "html"
+  output_dir: "target/pilaf-reports"
+  include_screenshots: false
+  include_logs: true
+
+# Test Execution Settings
+execution:
+  wait_between_steps: 1
+  max_retries: 3
+  retry_delay: 5
+  timeout: 300
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  file: "target/pilaf-reports/pilaf-demo.log"

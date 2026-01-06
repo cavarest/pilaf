@@ -246,6 +246,11 @@ public class DockerServerBackend implements ServerBackend, PilafBackend {
         }
     }
 
+    @Override
+    public String getServerLog() {
+        return getServerLogs();
+    }
+
     // PilafBackend interface methods
     @Override
     public void movePlayer(String playerName, String destinationType, String destination) {

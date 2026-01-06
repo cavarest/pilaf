@@ -1,0 +1,41 @@
+name: "Player Item Distribution Test"
+description: "Test that RCON can give items to players and verify they receive them"
+
+setup:
+  - action: "execute_rcon_command"
+    command: "say Starting player item distribution test"
+    name: "Server announcement"
+
+  - action: "execute_rcon_command"
+    command: "spawnpoint test_player 0 64 0"
+    name: "Set player spawn point"
+
+steps:
+  - action: "execute_rcon_command"
+    command: "give test_player diamond_sword 1"
+    name: "Give diamond sword to test player"
+
+  - action: "execute_rcon_command"
+    command: "give test_player golden_apple 5"
+    name: "Give golden apples to test player"
+
+  - action: "wait"
+    duration: 2000
+    name: "Wait for items to be distributed"
+
+  - action: "execute_rcon_command"
+    command: "say Player inventory check starting"
+    name: "Inventory check announcement"
+
+cleanup:
+  - action: "execute_rcon_command"
+    command: "clear test_player diamond_sword"
+    name: "Clean up diamond sword"
+
+  - action: "execute_rcon_command"
+    command: "clear test_player golden_apple"
+    name: "Clean up golden apples"
+
+  - action: "execute_rcon_command"
+    command: "say Player item distribution test completed"
+    name: "Test completion announcement"

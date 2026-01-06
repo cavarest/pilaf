@@ -285,6 +285,18 @@ public class MineflayerBackend implements PilafBackend {
         return "clear";
     }
 
+    public Object getChatHistory(String player) throws Exception {
+        // Return empty chat history as placeholder
+        // Full implementation would require extending the Mineflayer bridge
+        return new ArrayList<>();
+    }
+
+    public String getServerLog() {
+        // Return a placeholder - full implementation would need log access
+        // In Minecraft, server logs are typically not accessible via RCON
+        return "[Log access not available via RCON]";
+    }
+
     // Utility method to extract health value from Map
     private Double extractHealthFromMap(Map<String, Object> healthMap) {
         if (healthMap != null && healthMap.containsKey("health")) {

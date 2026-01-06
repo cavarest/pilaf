@@ -55,4 +55,7 @@ public interface PilafBackend {
     // Cleanup helpers
     void removeAllTestEntities();
     void removeAllTestPlayers();
+
+    // Server log access
+    String getServerLog();
 }

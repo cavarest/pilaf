@@ -64,6 +64,28 @@ public class YamlStoryParser {
             }
         }
 
+        // Parse assertions
+        if (data.containsKey("assertions")) {
+            List<Map<String, Object>> assertionList = (List<Map<String, Object>>) data.get("assertions");
+            for (Map<String, Object> assertionData : assertionList) {
+                Assertion assertion = parseAssertion(assertionData);
+                if (assertion != null) {
+                    story.addAssertion(assertion);
+                }
+            }
+        }
+
+        // Parse assertions
+        if (data.containsKey("assertions")) {
+            List<Map<String, Object>> assertionList = (List<Map<String, Object>>) data.get("assertions");
+            for (Map<String, Object> assertionData : assertionList) {
+                Assertion assertion = parseAssertion(assertionData);
+                if (assertion != null) {
+                    story.addAssertion(assertion);
+                }
+            }
+        }
+
         return story;
     }
 
@@ -323,16 +345,44 @@ public class YamlStoryParser {
         a.setSlot((String) data.get("slot"));
         a.setPlugin((String) data.get("plugin"));
         a.setCommand((String) data.get("command"));
-        if (data.containsKey("condition")) a.setCondition(parseCondition((String) data.get("condition")));
+        a.setSource((String) data.get("source"));
+        a.setContains((String) data.get("contains"));
+        a.setExpectedJson((String) data.get("expected"));
+        a.setCondition((String) data.get("condition"));
+        a.setVariableName((String) data.get("variableName"));
+        if (data.containsKey("condition")) a.setConditionType(parseCondition((String) data.get("condition")));
         if (data.containsKey("value")) a.setValue(((Number) data.get("value")).doubleValue());
-        if (data.containsKey("expected")) a.setExpected((Boolean) data.get("expected"));
+        if (data.containsKey("expected")) {
+            Object expectedVal = data.get("expected");
+            if (expectedVal instanceof Boolean) {
+                a.setExpected((Boolean) expectedVal);
+            }
+        }
         return a;
     }
 
     private Assertion.AssertionType parseAssertionType(String t) {
-        switch (t.toLowerCase()) {
+        if (t == null) return null;
+        String normalizedType = t.toLowerCase().replace("_", "");
+
+        // Handle new assertion types
+        if (normalizedType.equals("assertentitymissing"))
+            return Assertion.AssertionType.ASSERT_ENTITY_MISSING;
+        if (normalizedType.equals("assertentityexists"))
+            return Assertion.AssertionType.ENTITY_EXISTS;
+        if (normalizedType.equals("assertplayerhasitem"))
+            return Assertion.AssertionType.ASSERT_PLAYER_HAS_ITEM;
+        if (normalizedType.equals("assertresponsecontains"))
+            return Assertion.AssertionType.ASSERT_RESPONSE_CONTAINS;
+        if (normalizedType.equals("assertjsonequals"))
+            return Assertion.AssertionType.ASSERT_JSON_EQUALS;
+        if (normalizedType.equals("assertlogcontains"))
+            return Assertion.AssertionType.ASSERT_LOG_CONTAINS;
+        if (normalizedType.equals("assertcondition"))
+            return Assertion.AssertionType.ASSERT_CONDITION;
+
+        switch (normalizedType) {
             case "entity_health": return Assertion.AssertionType.ENTITY_HEALTH;
-            case "entity_exists": return Assertion.AssertionType.ENTITY_EXISTS;
             case "player_inventory": return Assertion.AssertionType.PLAYER_INVENTORY;
             case "plugin_command": return Assertion.AssertionType.PLUGIN_COMMAND;
             default: throw new IllegalArgumentException("Unknown assertion: " + t);

@@ -1,0 +1,12 @@
+# Configuration for Docker Server + HeadlessMc Client
+server_backend: docker
+client_backend: headlessmc
+
+# Server settings
+server_version: "1.21.5"
+rcon_host: localhost
+rcon_port: 25575
+rcon_password: dragon123
+
+# HeadlessMc client settings (no auto_launch needed)
+rcon_fallback: true

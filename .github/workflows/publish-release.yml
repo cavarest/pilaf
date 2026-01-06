@@ -77,7 +77,7 @@ jobs:
           echo "Release version: $VERSION"
 
       - name: Build and publish to GitHub Packages
-        run: ./gradlew clean build publish
+        run: ./gradlew clean build publishGpr
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}

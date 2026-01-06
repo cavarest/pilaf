@@ -1,0 +1,13 @@
+# Configuration for HeadlessMc Server + HeadlessMc Client
+server_backend: headlessmc
+client_backend: headlessmc
+
+# Server settings
+server_version: "1.21.5"
+rcon_host: localhost
+rcon_port: 25575
+rcon_password: dragon123
+
+# HeadlessMc settings
+auto_launch: true
+rcon_fallback: true
