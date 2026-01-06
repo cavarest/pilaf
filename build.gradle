@@ -7,7 +7,10 @@ plugins {
 repositories {
     mavenCentral()
 
-    // GitHub Packages for rcon library
+    // Local Maven repository for CI builds (rcon library built from source)
+    mavenLocal()
+
+    // GitHub Packages for rcon library (fallback for local development)
     maven {
         url = uri("https://maven.pkg.github.com/cavarest/rcon")
         credentials {
