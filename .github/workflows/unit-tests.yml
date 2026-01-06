@@ -30,11 +30,20 @@ jobs:
 
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v5
+      with:
+        cache-read-only: false
+
+    - name: Clear Gradle cache to force fresh dependency resolution
+      run: |
+        echo "🧹 Clearing Gradle caches to ensure fresh dependencies..."
+        rm -rf ~/.gradle/caches/modules-2/files-2.1/org.cavarest/
+        rm -rf /home/runner/.gradle/caches/jars-*/*/
+        rm -rf /home/runner/.gradle/caches/modules-*/files-*/*/org.cavarest/
 
     - name: Build with Gradle
       run: |
         echo "🔨 Compiling Java source code..."
-        ./gradlew clean compileJava
+        ./gradlew clean compileJava --refresh-dependencies
 
     - name: Run unit tests
       run: |
