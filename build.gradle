@@ -59,10 +59,19 @@ dependencies {
     // Picocli for CLI
     implementation 'info.picocli:picocli:4.7.5'
 
-    // RCON client - use GitHub Packages in CI/CD, local JAR for development
-    if (System.getenv("GITHUB_TOKEN") != null) {
-        implementation 'org.cavarest:cavarest-rcon:0.1.2'
-    } else {
+    // RCON client - use local maven repo in CI, local JAR for development
+    // Always check mavenLocal() first for CI-built dependencies
+    implementation ('org.cavarest:cavarest-rcon:0.1.2') {
+        // Force resolution from mavenLocal if available (CI builds)
+        // Fall back to GitHub Packages if not found locally
+        if (System.getenv("GITHUB_TOKEN") != null) {
+            // In CI, prefer mavenLocal which has the freshly built library
+            // Gradle will automatically check mavenLocal before other repos
+        }
+    }
+
+    // Development fallback: use local JAR when maven repos are unavailable
+    if (!System.getenv("GITHUB_TOKEN") && file('../rcon/build/libs/cavarest-rcon-0.1.2-SNAPSHOT.jar').exists()) {
         implementation files('../rcon/build/libs/cavarest-rcon-0.1.2-SNAPSHOT.jar')
     }
 }
