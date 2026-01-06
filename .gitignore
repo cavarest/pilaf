@@ -1,7 +1,8 @@
 target/
 *.class
 *.jar
-*.log
+!.gradle/wrapper/gradle-wrapper.jar
+.log
 .idea/
 *.iml
 .DS_Store
