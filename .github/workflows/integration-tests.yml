@@ -1,0 +1,124 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - 'build.gradle'
+      - '.github/workflows/integration-tests.yml'
+      - '*.yaml'
+      - '*.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - 'build.gradle'
+      - '.github/workflows/integration-tests.yml'
+      - '*.yaml'
+      - '*.yml'
+  workflow_dispatch:
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+
+    permissions:
+      checks: write
+      contents: read
+      packages: read
+
+    services:
+      minecraft:
+        image: itzg/minecraft-server
+        ports:
+          25565:25565
+          25575:25575
+        env:
+          EULA: 'TRUE'
+          ONLINE_MODE: 'false'
+          TYPE: 'PAPER'
+          VERSION: '1.21.8'
+          RCON_PASSWORD: 'cavarest'
+          ENABLE_RCON: 'true'
+          MAX_PLAYERS: '5'
+          MEMORY: '512M'
+        options: >-
+          --health-cmd "mc-health"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 15
+          --health-start-period 120s
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v5
+
+    - name: Wait for Minecraft server to be ready
+      run: |
+        echo "⏳ Waiting for Minecraft server to start..."
+        echo "The health check will ensure the server is ready before we proceed"
+
+    - name: Verify RCON is accessible
+      run: |
+        echo "🔌 Testing RCON connection..."
+        RESPONSE=$(printf 'version\0' | nc -w 3 localhost 25575 2>/dev/null)
+        if echo "$RESPONSE" | grep -q "version\|Paper\|Minecraft"; then
+          echo "✅ RCON is accessible and responding"
+        else
+          echo "⚠️ RCON may not be ready yet"
+        fi
+
+    - name: Build with Gradle
+      run: |
+        echo "🔨 Compiling Java source code..."
+        ./gradlew clean compileJava compileTestJava
+
+    - name: Run unit tests first
+      run: |
+        echo "🧪 Running unit tests..."
+        ./gradlew test
+
+    - name: Run PILAF integration tests (demo story)
+      run: |
+        echo "🚀 Running PILAF integration tests with demo-story.yaml..."
+        ./gradlew run --args="--config config-demo.yaml demo-story.yaml"
+
+    - name: Upload test reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: integration-test-results
+        path: |
+          target/pilaf-reports/
+        retention-days: 30
+
+    - name: Display integration test summary
+      if: always()
+      run: |
+        echo "## Integration Test Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ -d target/pilaf-reports ]; then
+          echo "✅ Integration tests completed." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Report Location**: target/pilaf-reports/" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ No test reports found." >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: Stop Minecraft server
+      if: always()
+      run: |
+        echo "🛑 Stopping Minecraft server container..."
+        docker stop $(docker ps -q --filter ancestor=itzg/minecraft-server) 2>/dev/null || true
+        docker rm $(docker ps -aq --filter ancestor=itzg/minecraft-server) 2>/dev/null || true

@@ -14,6 +14,11 @@ public class PilafBackendFactory {
             case "rcon":
             case "real-server":
                 return new RconBackend(host, port, password);
+            case "docker":
+            case "docker-server":
+                return new DockerServerBackend("1.21.5", host, port, password);
+            case "headlessmc":
+                return new HeadlessMcBackend("1.21.5", host, port, password, true, true);
             case "mineflayer":
             case "real-client":
                 return new MineflayerBackend("localhost", 3000, host, port, password);

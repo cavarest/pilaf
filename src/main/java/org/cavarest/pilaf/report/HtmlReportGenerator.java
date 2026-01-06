@@ -23,16 +23,24 @@ import java.util.stream.Collectors;
  */
 public class HtmlReportGenerator {
 
-    private static final PebbleEngine ENGINE = new PebbleEngine.Builder().build();
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private static PebbleEngine createEngine() {
+        // Create a new engine each time to avoid template caching issues
+        return new PebbleEngine.Builder().build();
+    }
 
     public static void generate(String suiteName, boolean passed, LocalDateTime startTime,
             LocalDateTime endTime, List<TestReporter.TestStory> stories,
             String serverLogs, String clientLogs, String outputDir) throws IOException {
 
-        // Load template and CSS
-        PebbleTemplate template = ENGINE.getTemplate("templates/report.peb");
-        String css = loadResource("templates/report.css");
+        // Create fresh engine each time to avoid template caching issues
+        PebbleEngine engine = createEngine();
+
+        // Load template (CSS is inline in template now)
+        PebbleTemplate template = engine.getTemplate("templates/report.peb");
+
+        // No external CSS needed - styles are inline in template
 
         // Calculate stats
         long durationMs = Duration.between(startTime, endTime).toMillis();
@@ -44,7 +52,6 @@ public class HtmlReportGenerator {
         Map<String, Object> context = new HashMap<>();
         context.put("suiteName", suiteName);
         context.put("passed", passed);
-        context.put("css", css);
         context.put("startTime", startTime.format(DATE_FORMAT));
         context.put("endTime", endTime.format(DATE_FORMAT));
         context.put("durationSeconds", durationMs / 1000.0);
@@ -54,6 +61,28 @@ public class HtmlReportGenerator {
         context.put("generatedAt", LocalDateTime.now().format(DATE_FORMAT));
         context.put("stories", transformStories(stories));
 
+        // Add flat steps list for two-pane layout
+        // Use steps from stories if available, otherwise use legacy steps list
+        List<TestReporter.TestStep> allSteps = new ArrayList<>();
+        for (TestReporter.TestStory story : stories) {
+            allSteps.addAll(story.getSteps());
+        }
+        if (allSteps.isEmpty()) {
+            allSteps = flattenAllSteps(stories);
+        }
+        context.put("steps", transformSteps(allSteps));
+
+        // Add environment and server metrics
+        context.put("javaVersion", System.getProperty("java.version"));
+        context.put("osName", System.getProperty("os.name"));
+        context.put("backendType", "Mineflayer + RCON");
+        context.put("serverVersion", "PaperMC 1.21.8");
+
+        // Count action types for metrics
+        Map<String, Integer> actionMetrics = countActionTypes(stories);
+        context.put("actionMetrics", actionMetrics);
+        context.put("totalActions", actionMetrics.values().stream().mapToInt(Integer::intValue).sum());
+
         // Render template
         StringWriter writer = new StringWriter();
         template.evaluate(writer, context);
@@ -61,6 +90,17 @@ public class HtmlReportGenerator {
         // Write output
         String filename = suiteName.replaceAll("[^a-zA-Z0-9]", "_") + "_report.html";
         Files.writeString(Paths.get(outputDir, filename), writer.toString());
+    }
+
+    /**
+     * Flattens all steps from all stories into a single list.
+     */
+    private static List<TestReporter.TestStep> flattenAllSteps(List<TestReporter.TestStory> stories) {
+        List<TestReporter.TestStep> allSteps = new ArrayList<>();
+        for (TestReporter.TestStory story : stories) {
+            allSteps.addAll(story.getSteps());
+        }
+        return allSteps;
     }
 
     /**
@@ -94,22 +134,37 @@ public class HtmlReportGenerator {
         map.put("name", step.name);
         map.put("passed", step.passed);
         map.put("expected", step.expected);
+        map.put("actual", step.actual);
         map.put("stateBefore", step.stateBefore);
         map.put("stateAfter", step.stateAfter);
+        map.put("player", step.player);
+        map.put("assertionType", step.assertionType);
 
-        // Detect action type and add emoji
-        Map<String, String> actionType = null;
-        if (step.action != null) {
-            map.put("action", step.action);
-            actionType = detectCommandType(step.action);
-            map.put("actionType", actionType);
+        // Format start/end times
+        if (step.startTime != null) {
+            map.put("startTime", step.startTime.format(DATE_FORMAT));
         }
+        if (step.endTime != null) {
+            map.put("endTime", step.endTime.format(DATE_FORMAT));
+        }
+
+        // Arguments
+        map.put("arguments", step.arguments);
+
+        // Action - use the action field for raw command
+        map.put("action", step.action);
+
+        // Detect action type from step.action (raw command) and step.player
+        Map<String, String> actionType = detectActionTypeFromStep(step);
+        map.put("actionType", actionType);
 
         // Actual result type inherits from action type for better labeling
         if (step.actual != null) {
             map.put("actual", step.actual);
             map.put("actualType", detectResultType(step.actual, actionType));
-            map.put("actualHtml", renderState(step.actual));
+            // Format the actual response for display
+            String formattedActual = formatResponseForDisplay(step.actual);
+            map.put("actualHtml", formattedActual);
         }
 
         // Pre-render HTML for states
@@ -131,33 +186,43 @@ public class HtmlReportGenerator {
     }
 
     /**
-     * Detects command type from action string and returns appropriate icon/label.
+     * Detects action type from TestStep (uses raw command and player field).
      */
-    private static Map<String, String> detectCommandType(String action) {
+    private static Map<String, String> detectActionTypeFromStep(TestReporter.TestStep step) {
         Map<String, String> type = new HashMap<>();
-        String lowerAction = action.toLowerCase();
+        String action = step.action != null ? step.action.toLowerCase() : "";
+        String player = step.player;
 
-        if (lowerAction.startsWith("rcon:") || lowerAction.contains("rcon ")) {
-            type.put("icon", "🖥️");
-            type.put("label", "RCON");
-            type.put("cssClass", "rcon");
-        } else if (lowerAction.startsWith("player ") || lowerAction.contains("executes:")) {
+        // If player is set, it's a client action
+        if (player != null && !player.isEmpty()) {
             type.put("icon", "👤");
-            type.put("label", "PLAYER");
-            type.put("cssClass", "player");
-        } else if (lowerAction.startsWith("op:") || lowerAction.contains("operator")) {
-            type.put("icon", "⚡");
-            type.put("label", "OP");
-            type.put("cssClass", "rcon");
-        } else if (lowerAction.startsWith("client") || lowerAction.contains("mineflayer")) {
-            type.put("icon", "🤖");
             type.put("label", "CLIENT");
             type.put("cssClass", "client");
-        } else {
-            type.put("icon", "⚡");
-            type.put("label", "ACTION");
-            type.put("cssClass", "");
+            return type;
         }
+
+        // Check for server/RCON commands
+        if (action.startsWith("rcon:") ||
+            action.startsWith("give ") ||
+            action.startsWith("spawn ") ||
+            action.startsWith("kill ") ||
+            action.startsWith("tp ") ||
+            action.startsWith("gamemode ") ||
+            action.startsWith("weather ") ||
+            action.startsWith("time ") ||
+            action.startsWith("clear ") ||
+            action.startsWith("execute ") ||
+            action.contains("entity:")) {
+            type.put("icon", "🖥️");
+            type.put("label", "SERVER");
+            type.put("cssClass", "server");
+            return type;
+        }
+
+        // Default to workflow
+        type.put("icon", "⚙️");
+        type.put("label", "WORKFLOW");
+        type.put("cssClass", "workflow");
         return type;
     }
 
@@ -225,7 +290,7 @@ public class HtmlReportGenerator {
             .collect(Collectors.toList());
     }
 
-    private static List<Map<String, Object>> transformLogs(List<?> logs) {
+    private static List<Map<String, Object>> transformLogs(List<TestReporter.LogEntry> logs) {
         return logs.stream()
             .map(log -> {
                 Map<String, Object> map = new HashMap<>();
@@ -240,18 +305,6 @@ public class HtmlReportGenerator {
                 return map;
             })
             .collect(Collectors.toList());
-    }
-
-    /**
-     * Loads a resource file as a string.
-     */
-    private static String loadResource(String path) throws IOException {
-        try (InputStream is = HtmlReportGenerator.class.getClassLoader().getResourceAsStream(path)) {
-            if (is == null) {
-                throw new IOException("Resource not found: " + path);
-            }
-            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
-        }
     }
 
     /**
@@ -417,7 +470,165 @@ public class HtmlReportGenerator {
      * Pretty prints JSON with HTML escaping.
      */
     private static String prettyPrintJson(String json) {
-        return escapeHtml(prettyPrintJsonForDiff(json));
+        // First check if it's valid JSON or Java object notation
+        String trimmed = json.trim();
+        if ((trimmed.startsWith("{") || trimmed.startsWith("[")) && trimmed.length() > 100) {
+            try {
+                // Try to parse as JSON first
+                JsonNode node = MAPPER.readTree(trimmed);
+                String formatted = MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(node);
+                return escapeHtml(formatted);
+            } catch (Exception e) {
+                // If not valid JSON, try to format Java object notation
+                return formatJavaObject(json);
+            }
+        }
+        return escapeHtml(json);
+    }
+
+    /**
+     * Formats Java object notation (like {key=value, ...}) into pretty HTML.
+     */
+    private static String formatJavaObject(String input) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<div class=\"json-formatted\">");
+
+        String content = input.trim();
+        if (content.startsWith("{") && content.endsWith("}")) {
+            content = content.substring(1, content.length() - 1);
+
+            int indent = 0;
+            int i = 0;
+            while (i < content.length()) {
+                char c = content.charAt(i);
+
+                if (c == '{' || c == '[') {
+                    sb.append(c).append("<br>").append("  ".repeat(++indent));
+                } else if (c == '}' || c == ']') {
+                    sb.append("<br>").append("  ".repeat(--indent)).append(c);
+                } else if (c == ',') {
+                    sb.append(c).append("<br>").append("  ".repeat(indent));
+                } else if (c == '=') {
+                    sb.append(": ");
+                } else {
+                    sb.append(escapeHtml(String.valueOf(c)));
+                }
+                i++;
+            }
+        } else {
+            sb.append(escapeHtml(content));
+        }
+
+        sb.append("</div>");
+        return sb.toString();
+    }
+
+    /**
+     * Formats a response string for display (JSON or Java object notation).
+     */
+    private static String formatResponseForDisplay(String response) {
+        if (response == null || response.trim().isEmpty()) {
+            return "";
+        }
+
+        String trimmed = response.trim();
+
+        // Check if it's an object/array notation
+        if ((trimmed.startsWith("{") || trimmed.startsWith("[")) && trimmed.length() > 50) {
+            try {
+                // Try to parse as JSON first
+                if (trimmed.startsWith("{")) {
+                    JsonNode node = MAPPER.readTree(trimmed);
+                    return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(node);
+                }
+            } catch (Exception e) {
+                // Not valid JSON, format as Java object notation
+                return formatJavaObjectNotation(trimmed);
+            }
+        }
+
+        return response;
+    }
+
+    /**
+     * Formats Java object notation (like {key=value, ...}) into pretty-printed string.
+     */
+    private static String formatJavaObjectNotation(String input) {
+        StringBuilder sb = new StringBuilder();
+        String content = input.trim();
+
+        // Remove outer braces if present
+        if (content.startsWith("{") && content.endsWith("}")) {
+            content = content.substring(1, content.length() - 1);
+        }
+
+        int indent = 0;
+        boolean inString = false;
+        boolean escapeNext = false;
+        StringBuilder current = new StringBuilder();
+
+        for (int i = 0; i < content.length(); i++) {
+            char c = content.charAt(i);
+
+            if (escapeNext) {
+                current.append(c);
+                escapeNext = false;
+                continue;
+            }
+
+            if (c == '\\') {
+                current.append(c);
+                escapeNext = true;
+                continue;
+            }
+
+            if (c == '"') {
+                inString = !inString;
+                current.append(c);
+                continue;
+            }
+
+            if (!inString) {
+                if (c == '{' || c == '[') {
+                    if (current.length() > 0 && current.toString().trim().endsWith(",")) {
+                        sb.append(current.toString().trim());
+                        current.setLength(0);
+                    }
+                    sb.append(current);
+                    current.setLength(0);
+                    sb.append(c).append("\n").append("  ".repeat(++indent));
+                } else if (c == '}' || c == ']') {
+                    if (current.length() > 0) {
+                        String trimmed = current.toString().trim();
+                        if (trimmed.endsWith(",")) {
+                            trimmed = trimmed.substring(0, trimmed.length() - 1);
+                        }
+                        sb.append(trimmed);
+                    }
+                    current.setLength(0);
+                    sb.append("\n").append("  ".repeat(--indent)).append(c);
+                } else if (c == ',') {
+                    String trimmed = current.toString().trim();
+                    if (trimmed.endsWith(",")) {
+                        trimmed = trimmed.substring(0, trimmed.length() - 1);
+                    }
+                    sb.append(trimmed).append(",").append("\n").append("  ".repeat(indent));
+                    current.setLength(0);
+                } else if (c == '=') {
+                    current.append(": ");
+                } else {
+                    current.append(c);
+                }
+            } else {
+                current.append(c);
+            }
+        }
+
+        if (current.length() > 0) {
+            sb.append(current.toString().trim());
+        }
+
+        return sb.toString();
     }
 
     /**
@@ -429,5 +640,32 @@ public class HtmlReportGenerator {
                 .replace("<", "&" + "lt;")
                 .replace(">", "&" + "gt;")
                 .replace("\"", "&" + "quot;");
+    }
+
+    /**
+     * Counts action types for metrics display (server/client/workflow).
+     */
+    private static Map<String, Integer> countActionTypes(List<TestReporter.TestStory> stories) {
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        counts.put("server", 0);
+        counts.put("client", 0);
+        counts.put("workflow", 0);
+
+        for (TestReporter.TestStory story : stories) {
+            for (TestReporter.TestStep step : story.getSteps()) {
+                // Detect type using the same logic as detectActionTypeFromStep
+                Map<String, String> type = detectActionTypeFromStep(step);
+                String cssClass = type.get("cssClass");
+
+                if ("server".equals(cssClass)) {
+                    counts.put("server", counts.get("server") + 1);
+                } else if ("client".equals(cssClass)) {
+                    counts.put("client", counts.get("client") + 1);
+                } else {
+                    counts.put("workflow", counts.get("workflow") + 1);
+                }
+            }
+        }
+        return counts;
     }
 }

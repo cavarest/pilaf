@@ -22,6 +22,11 @@ public class RconClient {
     private OutputStream outputStream;
     private boolean authenticated;
     private int requestId = 1;
+    private boolean verbose = false;
+
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
+    }
 
     public RconClient(String host, int port, String password) {
         this.host = host;
@@ -38,7 +43,7 @@ public class RconClient {
             outputStream = socket.getOutputStream();
 
             if (authenticate()) {
-                System.out.println("RCON client connected successfully");
+                if (verbose) System.out.println("   [RCON] Connected to " + host + ":" + port);
                 return true;
             } else {
                 disconnect();
@@ -53,16 +58,21 @@ public class RconClient {
     private boolean authenticate() {
         try {
             int authId = requestId++;
+            if (verbose) System.out.println("   [RCON] AUTH REQUEST: id=" + authId + ", type=AUTH, payload=\"" + password + "\"");
             sendPacket(authId, SERVERDATA_AUTH, password);
 
             RconPacket response = readPacket();
             if (response == null) {
+                if (verbose) System.out.println("   [RCON] AUTH RESPONSE: FAILED - no response");
                 System.out.println("Authentication failed: no response");
                 return false;
             }
 
+            if (verbose) System.out.println("   [RCON] AUTH RESPONSE: id=" + response.getRequestId() + ", type=" + response.getType() + ", body=\"" + response.getBody() + "\"");
+
             if (response.getRequestId() == authId || response.getRequestId() != -1) {
                 authenticated = true;
+                if (verbose) System.out.println("   [RCON] AUTH SUCCESS");
                 return true;
             } else {
                 System.out.println("Authentication failed: invalid password");
@@ -81,16 +91,24 @@ public class RconClient {
 
         try {
             int cmdId = requestId++;
+            if (verbose) System.out.println("   [RCON] EXEC REQUEST: id=" + cmdId + ", type=EXEC, command=\"" + command + "\"");
             sendPacket(cmdId, SERVERDATA_EXECCOMMAND, command);
 
             RconPacket response = readPacket();
             if (response != null) {
-                return response.getBody();
+                if (verbose) System.out.println("   [RCON] EXEC RESPONSE: id=" + response.getRequestId() + ", type=" + response.getType() + ", body=\"" + response.getBody() + "\"");
+                // Return the body, or empty string if no response body
+                return response.getBody().isEmpty() ? "(no response)" : response.getBody();
+            } else {
+                if (verbose) System.out.println("   [RCON] EXEC RESPONSE: FAILED - no response (command may have been sent)");
+                // Return empty string instead of null for fire-and-forget commands
+                return "";
             }
         } catch (IOException e) {
+            if (verbose) System.out.println("   [RCON] EXEC ERROR: " + e.getMessage());
             System.out.println("Command execution failed: " + e.getMessage());
         }
-        return null;
+        return "";
     }
 
     private void sendPacket(int id, int type, String body) throws IOException {

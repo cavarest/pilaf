@@ -48,6 +48,8 @@ public class Action {
 
         // Command Execution Commands
         EXECUTE_RCON_WITH_CAPTURE,
+        EXECUTE_RCON_RAW,
+        EXECUTE_PLAYER_RAW,
 
         // Inventory Management Commands
         REMOVE_ITEM,
@@ -305,6 +307,19 @@ public class Action {
 
     public static Action executeRconCommand(String command) {
         Action action = new Action(ActionType.EXECUTE_RCON_COMMAND);
+        action.setCommand(command);
+        return action;
+    }
+
+    public static Action executeRconRaw(String command) {
+        Action action = new Action(ActionType.EXECUTE_RCON_RAW);
+        action.setCommand(command);
+        return action;
+    }
+
+    public static Action executePlayerRaw(String username, String command) {
+        Action action = new Action(ActionType.EXECUTE_PLAYER_RAW);
+        action.setPlayer(username);
         action.setCommand(command);
         return action;
     }

@@ -2,8 +2,11 @@ package org.cavarest.pilaf.cli;
 
 import org.cavarest.pilaf.config.TestConfiguration;
 import org.cavarest.pilaf.orchestrator.TestOrchestrator;
+import org.cavarest.pilaf.backend.PilafBackend;
+import org.cavarest.pilaf.backend.PilafBackendFactory;
+import org.cavarest.pilaf.model.TestResult;
 import org.cavarest.pilaf.report.TestReporter;
-import org.cavarest.pilaf.runner.YamlDrivenTestRunner;
+import org.cavarest.pilaf.testing.BackendConsistencyTester;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -25,6 +28,7 @@ import java.util.concurrent.Callable;
  *   java -jar pilaf.jar --config=pilaf.yaml
  *   java -jar pilaf.jar --stories=src/test/resources/integration-stories/ --mineflayer-url=http://localhost:3000
  *   java -jar pilaf.jar src/test/resources/my-test.yaml --verbose
+ *   java -jar pilaf.jar --consistency-test
  */
 @Command(
     name = "pilaf",
@@ -73,7 +77,7 @@ public class PilafCli implements Callable<Integer> {
 
     @Option(
         names = {"--backend"},
-        description = "Backend to use: mineflayer, rcon, or mock (default: mineflayer)"
+        description = "Backend to use: mineflayer, rcon (default: mineflayer)"
     )
     private String backend = "mineflayer";
 
@@ -101,6 +105,12 @@ public class PilafCli implements Callable<Integer> {
     )
     private boolean skipHealthChecks = false;
 
+    @Option(
+        names = {"--consistency-test"},
+        description = "Run backend consistency testing across all combinations"
+    )
+    private boolean consistencyTest = false;
+
     @Parameters(
         description = "Additional story files or directories to execute"
     )
@@ -113,6 +123,10 @@ public class PilafCli implements Callable<Integer> {
                 return performHealthCheck();
             }
 
+            if (consistencyTest) {
+                return runConsistencyTests();
+            }
+
             // Load configuration
             TestConfiguration config = loadConfiguration();
 
@@ -123,8 +137,14 @@ public class PilafCli implements Callable<Integer> {
                 reporter.setVerbose(true);
             }
 
-            // Create test runner
-            YamlDrivenTestRunner runner = new YamlDrivenTestRunner(config, reporter);
+            // Create real backend using TestConfiguration
+            PilafBackend pilafBackend = PilafBackendFactory.create(config.getBackend(),
+                config.getRconHost(), config.getRconPort(), config.getRconPassword());
+
+            // Create real orchestrator
+            TestOrchestrator orchestrator = new TestOrchestrator(pilafBackend);
+            orchestrator.setVerbose(verbose);
+            orchestrator.setReporter(reporter);
 
             // Discover and execute stories
             List<Path> storyPaths = discoverStories();
@@ -138,13 +158,28 @@ public class PilafCli implements Callable<Integer> {
                 System.out.println("   📄 " + path);
             }
 
-            // Execute stories
+            // Execute stories using REAL orchestrator
             System.out.println("\n🚀 Starting PILAF test execution...");
-            runner.discoverAndExecuteStories(Paths.get("."));
+            for (Path storyPath : storyPaths) {
+                try {
+                    String storyContent = new String(java.nio.file.Files.readAllBytes(storyPath));
+                    orchestrator.loadStoryFromString(storyContent);
+                    TestResult result = orchestrator.execute();
+                    reporter.addResult(result);
+                } catch (Exception e) {
+                    System.err.println("❌ Error executing story " + storyPath + ": " + e.getMessage());
+                    if (verbose) {
+                        e.printStackTrace();
+                    }
+                    TestResult failedResult = new TestResult(storyPath.toString());
+                    failedResult.setSuccess(false);
+                    failedResult.setError(e);
+                    reporter.addResult(failedResult);
+                }
+            }
 
             // Generate report
             System.out.println("\n📊 Generating test report...");
-            runner.generateReport();
             reporter.complete();
 
             System.out.println("\n✅ PILAF test execution complete!");
@@ -154,6 +189,37 @@ public class PilafCli implements Callable<Integer> {
 
         } catch (Exception e) {
             System.err.println("❌ PILAF execution failed: " + e.getMessage());
+            if (verbose) {
+                e.printStackTrace();
+            }
+            return 1;
+        }
+    }
+
+    private int runConsistencyTests() {
+        System.out.println("🧪 PILAF Backend Consistency Testing");
+        System.out.println("=====================================");
+        System.out.println("Testing PILAF behavior across all backend combinations...");
+        System.out.println();
+
+        try {
+            BackendConsistencyTester tester = new BackendConsistencyTester();
+            BackendConsistencyTester.ConsistencyTestResult result = tester.runConsistencyTests();
+
+            System.out.println("\n📊 Consistency Test Results:");
+            System.out.println(result.getSummary());
+
+            if (result.isOverallConsistent()) {
+                System.out.println("\n✅ All backend combinations produced consistent results!");
+                return 0;
+            } else {
+                System.out.println("\n❌ Inconsistencies detected across backend combinations.");
+                System.out.println("Check the generated reports for details.");
+                return 1;
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ Consistency testing failed: " + e.getMessage());
             if (verbose) {
                 e.printStackTrace();
             }
@@ -200,7 +266,11 @@ public class PilafCli implements Callable<Integer> {
             List<Path> defaultLocations = List.of(
                 Paths.get("src/test/resources/integration-stories"),
                 Paths.get("src/test/resources/test-stories"),
-                Paths.get("stories")
+                Paths.get("stories"),
+                Paths.get("test-story-1-basic-items.yaml"),
+                Paths.get("test-story-2-entities.yaml"),
+                Paths.get("test-story-3-movement.yaml"),
+                Paths.get("test-story-4-commands.yaml")
             );
 
             for (Path location : defaultLocations) {
@@ -265,7 +335,6 @@ public class PilafCli implements Callable<Integer> {
 
     public static void main(String[] args) {
         int exitCode = new CommandLine(new PilafCli())
-            
             .execute(args);
         System.exit(exitCode);
     }

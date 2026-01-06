@@ -4,260 +4,676 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PILAF Test Report - {{ suiteName }}</title>
-  <style>{{ css | raw }}</style>
+  <style>
+    :root {
+      --server-color: #3498db;
+      --client-color: #2ecc71;
+      --workflow-color: #9b59b6;
+      --assert-color: #e74c3c;
+      --compare-color: #e67e22;
+      --bg-dark: #1a1a2e;
+      --bg-card: #16213e;
+      --bg-sidebar: #0f1525;
+      --text-primary: #eaeaea;
+      --text-secondary: #a0a0a0;
+      --success-color: #2ecc71;
+      --fail-color: #e74c3c;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    /* Two-pane layout */
+    .main-layout {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    /* Left Sidebar - Navigation */
+    .sidebar {
+      width: 260px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid #3a3a5a;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar-header {
+      padding: 14px;
+      border-bottom: 1px solid #3a3a5a;
+      position: sticky;
+      top: 0;
+      background: var(--bg-sidebar);
+      z-index: 10;
+    }
+
+    .sidebar-title {
+      font-size: 0.75em;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .sidebar-name {
+      font-size: 0.9em;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .filter-bar {
+      padding: 10px 14px;
+      border-bottom: 1px solid #3a3a5a;
+      position: sticky;
+      top: 60px;
+      background: var(--bg-sidebar);
+      z-index: 10;
+    }
+
+    .filter-bar input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #3a3a5a;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+      color: var(--text-primary);
+      font-size: 0.8em;
+      box-sizing: border-box;
+    }
+
+    .filter-bar input::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .nav-list {
+      padding: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s;
+      font-size: 0.75em;
+      margin-bottom: 2px;
+      text-decoration: none;
+      color: var(--text-secondary);
+    }
+
+    .nav-item:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: rgba(52, 152, 219, 0.15);
+      color: var(--text-primary);
+      border-left: 2px solid var(--server-color);
+    }
+
+    .nav-icon {
+      width: 16px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .nav-text {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .nav-status {
+      width: 14px;
+      text-align: center;
+      font-size: 0.85em;
+    }
+
+    .sidebar-footer {
+      padding: 10px 14px;
+      border-top: 1px solid #3a3a5a;
+      font-size: 0.7em;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    /* Right Content - Scrollable List */
+    .content {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      min-width: 0;
+    }
+
+    /* Summary Header */
+    .summary-header {
+      background: var(--bg-card);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      border: 1px solid #3a3a5a;
+    }
+
+    .summary-title {
+      font-size: 1.1em;
+      font-weight: 600;
+    }
+
+    .summary-badge {
+      padding: 6px 14px;
+      border-radius: 16px;
+      font-size: 0.85em;
+      font-weight: 600;
+    }
+
+    .summary-badge.passed {
+      background: rgba(46, 204, 113, 0.2);
+      color: #2ecc71;
+    }
+
+    .summary-badge.failed {
+      background: rgba(231, 76, 60, 0.2);
+      color: #e74c3c;
+    }
+
+    .metrics {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .metric {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8em;
+      color: var(--text-secondary);
+    }
+
+    .metric-value {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* Detail Cards */
+    .detail-card {
+      background: var(--bg-card);
+      border-radius: 8px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      border: 1px solid #3a3a5a;
+      scroll-margin-top: 100px;
+    }
+
+    .detail-card:first-child {
+      margin-top: 0;
+    }
+
+    .detail-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid #3a3a5a;
+      cursor: pointer;
+    }
+
+    .detail-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.8em;
+      flex-shrink: 0;
+    }
+
+    .detail-title {
+      flex: 1;
+      font-weight: 600;
+      font-size: 0.9em;
+    }
+
+    .detail-meta {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .action-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 0.7em;
+      font-weight: 600;
+    }
+
+    .action-badge.server {
+      background: rgba(52, 152, 219, 0.2);
+      color: #3498db;
+    }
+
+    .action-badge.client {
+      background: rgba(46, 204, 113, 0.2);
+      color: #2ecc71;
+    }
+
+    .action-badge.workflow {
+      background: rgba(155, 89, 182, 0.2);
+      color: #9b59b6;
+    }
+
+    .timer {
+      font-size: 0.7em;
+      color: var(--text-secondary);
+      font-family: monospace;
+    }
+
+    .detail-body {
+      padding: 16px;
+    }
+
+    .detail-section {
+      margin-bottom: 12px;
+    }
+
+    .detail-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-label {
+      font-size: 0.65em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .detail-value {
+      font-size: 0.8em;
+      font-family: 'Monaco', 'Menlo', monospace;
+      line-height: 1.5;
+      word-break: break-all;
+      color: var(--text-primary);
+    }
+
+    .detail-value.code {
+      background: rgba(0,0,0,0.2);
+      padding: 10px 12px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+    }
+
+    .detail-value pre {
+      margin: 0;
+      white-space: pre-wrap;
+      font-family: inherit;
+    }
+
+    /* Collapsible JSON sections */
+    .collapsible {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .collapsible-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-secondary);
+      font-size: 0.75em;
+    }
+
+    .collapsible-header:hover {
+      color: var(--text-primary);
+    }
+
+    .collapsible-content {
+      max-height: 200px;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+
+    .collapsible-content.expanded {
+      max-height: none;
+    }
+
+    .expand-hint {
+      font-size: 0.7em;
+      color: var(--server-color);
+      margin-top: 4px;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .main-layout {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid #3a3a5a;
+        max-height: 200px;
+      }
+
+      .content {
+        height: auto;
+      }
+
+      .nav-list {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding: 8px;
+        gap: 8px;
+      }
+
+      .nav-item {
+        flex-shrink: 0;
+        white-space: nowrap;
+        border-left: none;
+        border-radius: 20px;
+        background: rgba(255,255,255,0.03);
+      }
+
+      .nav-item.active {
+        border-left: none;
+        background: rgba(52, 152, 219, 0.2);
+      }
+
+      .nav-text {
+        max-width: 120px;
+      }
+
+      .summary-header {
+        position: relative;
+      }
+
+      .detail-card {
+        scroll-margin-top: 20px;
+      }
+    }
+  </style>
 </head>
 <body>
-  <div class="app">
-    {# Sidebar Navigation #}
-    <nav class="sidebar">
+  <div class="main-layout">
+    <!-- Left Sidebar - Navigation -->
+    <aside class="sidebar">
       <div class="sidebar-header">
-        <h2>🧪 PILAF</h2>
-        <div class="suite-name">{{ suiteName }}</div>
+        <div class="sidebar-title">Test Report</div>
+        <div class="sidebar-name">{{ suiteName }}</div>
       </div>
-      <div class="nav-section">
-        <div class="nav-title">📊 Overview</div>
-        <a href="#summary" class="nav-link active">Summary</a>
+
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="🔍 Filter steps..." oninput="filterSteps()">
       </div>
-      <div class="nav-section">
-        <div class="nav-title">📖 Stories ({{ stories | length }})</div>
-        {% for story in stories %}
-        <a href="#story-{{ loop.index - 1 }}" class="nav-link">
-          {{ story.passed ? '✅' : '❌' }} {{ story.name | abbreviate(25) }}
-          <span class="step-count">({{ story.steps | length }})</span>
+
+      <div class="nav-list" id="navList">
+        {% set stepNum = 0 %}
+        {% for step in steps %}
+        <a href="#step-{{ stepNum }}" class="nav-item" id="nav-{{ stepNum }}" data-type="{{ step.actionType.cssClass }}" data-name="{{ step.name | lower }}">
+          <span class="nav-icon">{{ step.actionType.icon }}</span>
+          <span class="nav-text">{{ stepNum + 1 }}. {{ step.name }}</span>
+          <span class="nav-status">{{ step.passed ? '✅' : '❌' }}</span>
         </a>
+        {% set stepNum = stepNum + 1 %}
         {% endfor %}
       </div>
-    </nav>
 
-    {# Main Content #}
-    <main class="content">
-      {# Summary Section #}
-      <section id="summary" class="section">
-        <div class="section-header">
-          <h1>{{ suiteName }}</h1>
-          <span class="overall-badge {{ passed ? 'passed' : 'failed' }}">
-            {{ passed ? '✅ ALL PASSED' : '❌ FAILURES' }}
-          </span>
-        </div>
+      <div class="sidebar-footer">
+        {{ totalSteps }} steps • {{ durationSeconds }}s
+      </div>
+    </aside>
 
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-value">{{ stories | length }}</div>
-            <div class="stat-label">Stories</div>
+    <!-- Right Content - Scrollable List -->
+    <main class="content" id="content">
+      <!-- Summary Header -->
+      <div class="summary-header">
+        <div class="summary-title">{{ suiteName }}</div>
+        <span class="summary-badge {{ passed ? 'passed' : 'failed' }}">
+          {{ passed ? '✅ ALL TESTS PASSED' : '❌ TESTS FAILED' }}
+        </span>
+        <div class="metrics">
+          <div class="metric">
+            <span class="metric-value">{{ totalSteps }}</span>
+            <span>steps</span>
           </div>
-          <div class="stat-card passed">
-            <div class="stat-value">{{ storiesPassed }}</div>
-            <div class="stat-label">Passed</div>
+          <div class="metric">
+            <span class="metric-value">{{ durationSeconds }}s</span>
+            <span>duration</span>
           </div>
-          <div class="stat-card failed">
-            <div class="stat-value">{{ storiesFailed }}</div>
-            <div class="stat-label">Failed</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">{{ totalSteps }}</div>
-            <div class="stat-label">Steps</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">{{ durationSeconds }}s</div>
-            <div class="stat-label">Duration</div>
+          <div class="metric">
+            <span>{{ startTime }}</span>
+            <span>→</span>
+            <span>{{ endTime }}</span>
           </div>
         </div>
+      </div>
 
-        <div class="time-info">
-          <span>Started: {{ startTime }}</span>
-          <span>Ended: {{ endTime }}</span>
-        </div>
-
-        <div class="stories-overview">
-          <h3>Stories Overview</h3>
-          {% for story in stories %}
-          <div class="story-row {{ story.passed ? 'passed' : 'failed' }}">
-            <span class="story-status">{{ story.passed ? '✅' : '❌' }}</span>
-            <a href="#story-{{ loop.index - 1 }}" class="story-name">{{ story.name }}</a>
-            <span class="story-stats">{{ story.passedCount }}/{{ story.steps | length }} steps</span>
-          </div>
-          {% endfor %}
-        </div>
-      </section>
-
-      {# Story Sections #}
-      {% for story in stories %}
-      <section id="story-{{ loop.index - 1 }}" class="section story-section">
-        <div class="story-header {{ story.passed ? 'passed' : 'failed' }}">
-          <div class="story-title">
-            <span class="story-badge">{{ story.passed ? '✅' : '❌' }}</span>
-            <h2>{{ story.name }}</h2>
-          </div>
-          <div class="story-meta">
-            <span class="meta-item passed">✓ {{ story.passedCount }} passed</span>
-            {% if story.failedCount > 0 %}
-            <span class="meta-item failed">✗ {{ story.failedCount }} failed</span>
-            {% endif %}
+      <!-- Detail Cards -->
+      {% set cardNum = 0 %}
+      {% for step in steps %}
+      <div class="detail-card" id="step-{{ cardNum }}">
+        <div class="detail-header">
+          <div class="detail-num">{{ cardNum + 1 }}</div>
+          <div class="detail-title">{{ step.name }}</div>
+          <div class="detail-meta">
+            <span class="action-badge {{ step.actionType.cssClass }}">
+              {{ step.actionType.icon }} {{ step.actionType.label }}
+            </span>
+            <span class="timer">
+              {{ step.startTime | default('00:00') }} → {{ step.endTime | default('00:00') }}
+            </span>
           </div>
         </div>
 
-        <div class="steps-container">
-          {% for step in story.steps %}
-          <div class="step {{ step.passed ? 'passed' : 'failed' }}" data-collapsed="true">
-            <div class="step-header" onclick="toggleStep(this)">
-              <span class="step-num">{{ loop.index }}</span>
-              <span class="step-name">{{ step.name }}</span>
-              <span class="step-badge {{ step.passed ? 'passed' : 'failed' }}">
-                {{ step.passed ? 'PASSED' : 'FAILED' }}
-              </span>
-              <span class="collapse-icon">▼</span>
-            </div>
-
-            <div class="step-details">
-              {% if step.action is not empty %}
-              <div class="detail-row">
-                <span class="detail-label">{{ step.actionType.icon }} {{ step.actionType.label }}</span>
-                <div class="detail-value {{ step.actionType.cssClass }}">{{ step.action }}</div>
-              </div>
-              {% endif %}
-
-              {% if step.expected is not empty %}
-              <div class="detail-row">
-                <span class="detail-label">📎 Expected</span>
-                <div class="detail-value">{{ step.expected }}</div>
-              </div>
-              {% endif %}
-
-              {# Show actual result when available #}
-              {% if step.actual is not empty %}
-              <div class="detail-row">
-                <span class="detail-label">{{ step.actualType.icon }} {{ step.actualType.label }}</span>
-                <div class="detail-value {{ step.actualType.cssClass }}">{{ step.actualHtml | raw }}</div>
-              </div>
-              {% endif %}
-
-              {# State Diff View - only show when both states exist #}
-              {% if step.diffHtml is not empty %}
-              <div class="state-diff-container">
-                <div class="diff-header">🔄 State Changes</div>
-                <div class="diff-view">
-                  {{ step.diffHtml | raw }}
-                </div>
-                <details class="full-state-toggle">
-                  <summary>📋 See full before/after</summary>
-                  <div class="full-state-comparison">
-                    <div class="state-box before">
-                      <div class="state-label">📤 Before</div>
-                      <div class="state-content">{{ step.stateBeforeHtml | raw }}</div>
-                    </div>
-                    <div class="state-box after">
-                      <div class="state-label">📥 After</div>
-                      <div class="state-content">{{ step.stateAfterHtml | raw }}</div>
-                    </div>
-                  </div>
-                </details>
-              </div>
-              {% elseif step.stateBeforeHtml is not empty or step.stateAfterHtml is not empty %}
-              <div class="state-comparison">
-                {% if step.stateBeforeHtml is not empty %}
-                <div class="state-box before">
-                  <div class="state-label">📤 State Before</div>
-                  <div class="state-content">{{ step.stateBeforeHtml | raw }}</div>
-                </div>
-                {% endif %}
-                {% if step.stateAfterHtml is not empty %}
-                <div class="state-box after">
-                  <div class="state-label">📥 State After</div>
-                  <div class="state-content">{{ step.stateAfterHtml | raw }}</div>
-                </div>
-                {% endif %}
-              </div>
-              {% endif %}
-
-              {% if step.evidence is not empty %}
-              <div class="evidence-section">
-                <span class="detail-label">🔍 Evidence</span>
-                <ul class="evidence-list">
-                  {% for e in step.evidence %}
-                  <li>{{ e.icon }} {{ e.text }}</li>
-                  {% endfor %}
-                </ul>
-              </div>
-              {% endif %}
-            </div>
+        <div class="detail-body">
+          <!-- Parameters -->
+          {% if step.arguments is not empty %}
+          <div class="detail-section">
+            <div class="detail-label">📝 Parameters</div>
+            <div class="detail-value">{{ step.arguments }}</div>
           </div>
-          {% endfor %}
+          {% endif %}
 
-          {# Per-story Activity Logs - hidden by default #}
-          {% if story.logs is not empty %}
-          <div class="story-logs" data-collapsed="true">
-            <div class="logs-header" onclick="toggleLogs(this)">
-              <span>📋 Activity Log ({{ story.logs | length }} entries)</span>
-              <span class="collapse-icon">▼</span>
-            </div>
-            <div class="interleaved-log-content">
-              {% for log in story.logs %}
-              <div class="log-line {{ log.type.cssClass }}">
-                <span class="log-timestamp">[{{ log.timestamp }}]</span>
-                <span class="log-type">{{ log.label }}</span>
-                <span class="log-text">{{ log.message }}</span>
-              </div>
-              {% endfor %}
+          <!-- Action -->
+          {% if step.action is not empty %}
+          <div class="detail-section">
+            <div class="detail-label">🔧 Action</div>
+            <div class="detail-value code">{{ step.action }}</div>
+          </div>
+          {% endif %}
+
+          <!-- Response -->
+          {% if step.actual is not empty %}
+          <div class="detail-section">
+            <div class="detail-label">⚡ Response</div>
+            <div class="detail-value code">
+              <pre id="response-{{ cardNum }}">{{ step.actualHtml | default(step.actual) }}</pre>
             </div>
           </div>
           {% endif %}
         </div>
-      </section>
+      </div>
+      {% set cardNum = cardNum + 1 %}
       {% endfor %}
-
-      <footer class="footer">
-        Generated by PILAF at {{ generatedAt }}
-      </footer>
     </main>
   </div>
 
   <script>
-    function toggleStep(header) {
-      const step = header.parentElement;
-      const collapsed = step.dataset.collapsed === 'true';
-      step.dataset.collapsed = collapsed ? 'false' : 'true';
-    }
+    let totalSteps = {{ totalSteps }};
 
-    function toggleLogs(header) {
-      const logsContainer = header.parentElement;
-      const collapsed = logsContainer.dataset.collapsed === 'true';
-      logsContainer.dataset.collapsed = collapsed ? 'false' : 'true';
-    }
+    // Format JSON responses and make long ones collapsible
+    function formatResponses() {
+      document.querySelectorAll('.detail-value pre').forEach((pre, idx) => {
+        const text = pre.textContent.trim();
 
-    // Expand failed steps by default
-    document.querySelectorAll('.step.failed').forEach(step => {
-      step.dataset.collapsed = 'false';
-    });
+        // Check if it looks like JSON (starts with { or [)
+        if ((text.startsWith('{') || text.startsWith('[')) && text.length > 100) {
+          try {
+            const obj = JSON.parse(text);
+            const formatted = JSON.stringify(obj, null, 2);
+            pre.textContent = formatted;
 
-    // Update active nav link on scroll
-    const sections = document.querySelectorAll('.section');
-    const navLinks = document.querySelectorAll('.nav-link');
+            // Count lines and make collapsible if > 10 lines
+            const lines = formatted.split('\n').length;
+            if (lines > 10) {
+              pre.style.maxHeight = '200px';
+              pre.style.overflow = 'hidden';
 
-    window.addEventListener('scroll', () => {
-      let current = '';
-      sections.forEach(section => {
-        const sectionTop = section.offsetTop - 100;
-        if (scrollY >= sectionTop) {
-          current = section.getAttribute('id');
+              // Add expand button
+              const expandBtn = document.createElement('div');
+              expandBtn.className = 'expand-hint';
+              expandBtn.textContent = '📖 Click to expand (' + lines + ' lines)';
+              expandBtn.style.cursor = 'pointer';
+              expandBtn.onclick = function() {
+                if (pre.style.maxHeight === '200px') {
+                  pre.style.maxHeight = 'none';
+                  expandBtn.textContent = '📖 Click to collapse';
+                } else {
+                  pre.style.maxHeight = '200px';
+                  expandBtn.textContent = '📖 Click to expand (' + lines + ' lines)';
+                }
+              };
+              pre.parentNode.appendChild(expandBtn);
+            }
+          } catch (e) {
+            // Not valid JSON, leave as-is
+          }
         }
       });
-      navLinks.forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('href') === '#' + current) {
-          link.classList.add('active');
+    }
+
+    // Highlight nav item on scroll
+    function updateActiveNav() {
+      const cards = document.querySelectorAll('.detail-card');
+      const navs = document.querySelectorAll('.nav-item');
+
+      let current = 0;
+      let minDist = Infinity;
+
+      cards.forEach((card, idx) => {
+        const rect = card.getBoundingClientRect();
+        const dist = Math.abs(rect.top - 100);
+        if (dist < minDist) {
+          minDist = dist;
+          current = idx;
         }
       });
+
+      navs.forEach((nav, idx) => {
+        nav.classList.toggle('active', idx === current);
+      });
+    }
+
+    function filterSteps() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const navs = document.querySelectorAll('.nav-item');
+      const cards = document.querySelectorAll('.detail-card');
+
+      navs.forEach((nav, idx) => {
+        const name = nav.dataset.name || '';
+        const visible = name.includes(query);
+        nav.style.display = visible ? '' : 'none';
+        cards[idx].style.display = visible ? '' : 'none';
+      });
+    }
+
+    // Intersection Observer for active state
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          const idx = parseInt(id.replace('step-', ''));
+          document.querySelectorAll('.nav-item').forEach((nav, i) => {
+            nav.classList.toggle('active', i === idx);
+          });
+        }
+      });
+    }, { rootMargin: '-20% 0px -80% 0px' });
+
+    document.querySelectorAll('.detail-card').forEach(card => {
+      observer.observe(card);
     });
 
-    // Smooth scroll
-    navLinks.forEach(link => {
-      link.addEventListener('click', (e) => {
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowDown' || e.key === 'j') {
         e.preventDefault();
-        const target = document.querySelector(link.getAttribute('href'));
-        if (target) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+        navigate(1);
+      } else if (e.key === 'ArrowUp' || e.key === 'k') {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === '/') {
+        e.preventDefault();
+        document.getElementById('searchInput').focus();
+      }
+    });
+
+    function navigate(direction) {
+      const navs = document.querySelectorAll('.nav-item:not([style*="display: none"])');
+      let current = 0;
+      navs.forEach((nav, idx) => {
+        if (nav.classList.contains('active')) current = idx;
       });
+
+      let next = current + direction;
+      if (next < 0) next = 0;
+      if (next >= navs.length) next = navs.length - 1;
+
+      navs[next].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      navs[next].click();
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      formatResponses();
     });
   </script>
 </body>

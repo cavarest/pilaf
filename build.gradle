@@ -1,0 +1,77 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'maven-publish'
+}
+
+group = 'org.cavarest'
+version = '0.1.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+application {
+    mainClass = 'org.cavarest.pilaf.cli.PilafCli'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // YAML Parsing
+    implementation 'org.yaml:snakeyaml:2.0'
+
+    // Pebble Template Engine for HTML reports
+    implementation 'io.pebbletemplates:pebble:3.2.2'
+
+    // JSON Diff for semantic state comparison
+    implementation 'com.flipkart.zjsonpatch:zjsonpatch:0.4.16'
+
+    // Jackson for JSON parsing (required by zjsonpatch)
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.17.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
+
+    // JUnit Jupiter for testing
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // JSONPath for data extraction
+    implementation 'com.jayway.jsonpath:json-path:2.9.0'
+
+    // Picocli for CLI
+    implementation 'info.picocli:picocli:4.7.5'
+}
+
+// Create fat JAR without Shadow plugin
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        attributes(
+            'Main-Class': 'org.cavarest.pilaf.cli.PilafCli'
+        )
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
+}
+
+tasks.withType(Test) {
+    useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'org.cavarest'
+            artifactId = 'pilaf'
+            version = '0.1.0'
+
+            from components.java
+        }
+    }
+}

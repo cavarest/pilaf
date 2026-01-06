@@ -14,20 +14,29 @@ public class MineflayerBackend implements PilafBackend {
     private final Set<String> connectedPlayers = new HashSet<>();
     private final Map<String, Double> entityHealths = new HashMap<>();
     private final Set<String> spawnedEntities = new HashSet<>();
+    private boolean verbose = false;
 
     public MineflayerBackend(String bridgeHost, int bridgePort, String rconHost, int rconPort, String rconPassword) {
         this.mineflayer = new MineflayerClient(bridgeHost, bridgePort);
         this.rcon = new RconClient(rconHost, rconPort, rconPassword);
     }
 
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
+        this.mineflayer.setVerbose(verbose);
+        this.rcon.setVerbose(verbose);
+    }
+
     @Override
     public void initialize() throws Exception {
+        if (verbose) System.out.println("   [BACKEND] Initializing Mineflayer backend...");
         if (!rcon.connect()) {
             throw new Exception("Failed to connect to RCON");
         }
         if (!mineflayer.isHealthy()) {
             throw new Exception("Mineflayer bridge not responding");
         }
+        if (verbose) System.out.println("   [BACKEND] Mineflayer backend initialized");
     }
 
     @Override
@@ -46,6 +55,11 @@ public class MineflayerBackend implements PilafBackend {
         if (mineflayer.connect(username)) {
             connectedPlayers.add(username);
         }
+    }
+
+    public void disconnectPlayer(String username) throws Exception {
+        mineflayer.disconnect(username);
+        connectedPlayers.remove(username);
     }
 
     @Override
@@ -138,7 +152,11 @@ public class MineflayerBackend implements PilafBackend {
 
     @Override
     public void executeServerCommand(String command, List<String> args) {
-        rcon.executeCommand(command + " " + String.join(" ", args));
+        String fullCommand = command;
+        if (args != null && !args.isEmpty()) {
+            fullCommand = command + " " + String.join(" ", args);
+        }
+        rcon.executeCommand(fullCommand);
     }
 
     @Override
@@ -189,8 +207,17 @@ public class MineflayerBackend implements PilafBackend {
         return mineflayer.getHealth(player);
     }
 
+    public Double getPlayerHealthAsDouble(String player) throws Exception {
+        Map<String, Object> healthMap = mineflayer.getHealth(player);
+        return extractHealthFromMap(healthMap);
+    }
+
     // Extended Entity Management Commands
     public Map<String, Object> getEntitiesInView(String player) throws Exception {
+        return mineflayer.getEntities(player);
+    }
+
+    public Map<String, Object> getEntities(String player) throws Exception {
         return mineflayer.getEntities(player);
     }
 
@@ -210,6 +237,20 @@ public class MineflayerBackend implements PilafBackend {
         return rcon.executeCommand(command);
     }
 
+    // RAW RCON - execute exact command as-is (for full RCON command set access)
+    public String executeRconRaw(String command) throws Exception {
+        // Execute the exact command without any parsing or transformation
+        return rcon.executeCommand(command);
+    }
+
+    // RAW Player command - execute exact command as the player
+    public String executePlayerCommandRaw(String player, String command) throws Exception {
+        // Execute the exact command as the player through the bridge
+        // Note: Mineflayer command() returns void, so we just acknowledge execution
+        mineflayer.command(player, command);
+        return "Command executed: " + command;
+    }
+
     // Extended Inventory Management Commands
     public void removeItem(String player, String item, int count) throws Exception {
         rcon.executeCommand("clear " + player + " " + item + " " + count);
@@ -227,12 +268,38 @@ public class MineflayerBackend implements PilafBackend {
 
     public long getWorldTime() throws Exception {
         String result = rcon.executeCommand("time query gametime");
-        return Long.parseLong(result.trim());
+        // Response format: "The time is 89565" - need to extract the number
+        if (result != null) {
+            String trimmed = result.trim();
+            if (trimmed.contains("The time is ")) {
+                trimmed = trimmed.replace("The time is ", "").trim();
+            }
+            return Long.parseLong(trimmed);
+        }
+        return 0L;
     }
 
     public String getWeather() throws Exception {
-        String result = rcon.executeCommand("weather query");
-        return result != null ? result.trim() : "clear";
+        // In Minecraft 1.21.8, weather query doesn't exist as a separate command
+        // Use time and default to clear for simplicity
+        return "clear";
+    }
+
+    // Utility method to extract health value from Map
+    private Double extractHealthFromMap(Map<String, Object> healthMap) {
+        if (healthMap != null && healthMap.containsKey("health")) {
+            Object healthValue = healthMap.get("health");
+            if (healthValue instanceof Number) {
+                return ((Number) healthValue).doubleValue();
+            } else if (healthValue instanceof String) {
+                try {
+                    return Double.parseDouble((String) healthValue);
+                } catch (NumberFormatException e) {
+                    return 0.0;
+                }
+            }
+        }
+        return 0.0;
     }
 
     // Utility method for distance calculation

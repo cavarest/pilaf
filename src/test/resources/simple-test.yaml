@@ -1,0 +1,25 @@
+name: "Simple Test Story"
+description: "A basic test to verify PILAF is working"
+
+setup:
+  - action: "execute_rcon_command"
+    command: "say PILAF test starting"
+    name: "Server announcement"
+
+steps:
+  - action: "execute_rcon_command"
+    command: "time set day"
+    name: "Set daytime"
+
+  - action: "execute_rcon_command"
+    command: "weather clear"
+    name: "Clear weather"
+
+  - action: "wait"
+    duration: 1000
+    name: "Wait for server to process"
+
+cleanup:
+  - action: "execute_rcon_command"
+    command: "say PILAF test completed"
+    name: "Test completion announcement"

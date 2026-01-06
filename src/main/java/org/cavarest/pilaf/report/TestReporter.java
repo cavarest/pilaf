@@ -22,10 +22,32 @@ public class TestReporter {
     private String outputDir = "target/pilaf-reports";
     private boolean passed = true;
     private String failureReason;
+    private boolean verbose = false;
 
     // Legacy support
     private final List<TestStep> steps = new ArrayList<>();
     private final List<TestResult> results = new ArrayList<>();
+
+    /**
+     * Calculate whether overall test passed based on actual results.
+     * Returns false if any step failed or there was an error.
+     */
+    private boolean calculatePassed() {
+        // Check steps
+        if (!steps.isEmpty()) {
+            return steps.stream().allMatch(s -> s.passed);
+        }
+        // Check results - if any result has an error, the test failed
+        if (!results.isEmpty()) {
+            return results.stream().allMatch(r -> r.isSuccess());
+        }
+        // If no steps/results but we have error info, mark as failed
+        if (failureReason != null && !failureReason.isEmpty()) {
+            return false;
+        }
+        // No results = passed (empty test)
+        return true;
+    }
 
     public TestReporter() {
         this("PILAF Test Suite");
@@ -38,6 +60,30 @@ public class TestReporter {
 
     public void setOutputDir(String dir) {
         this.outputDir = dir;
+    }
+
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
+    }
+
+    public void generateAllReports() throws IOException {
+        if (endTime == null) {
+            endTime = LocalDateTime.now();
+        }
+        Files.createDirectories(Paths.get(outputDir));
+
+        generateDetailedTextReport();
+        generateDetailedJsonReport();
+        generateDetailedJUnitXml();
+
+        // Calculate actual passed status based on all results
+        boolean actualPassed = calculatePassed();
+
+        HtmlReportGenerator.generate(suiteName, actualPassed, startTime, endTime,
+            stories.isEmpty() ? Collections.singletonList(new TestStory(suiteName, steps)) : stories,
+            serverLogs.toString(), clientLogs.toString(), outputDir);
+
+        printSummary();
     }
 
     public TestStory story(String name) {
@@ -58,7 +104,6 @@ public class TestReporter {
     public TestStep step(String name) {
         TestStep step = new TestStep(name);
         getCurrentStory().addStep(step);
-        steps.add(step);
         return step;
     }
 
@@ -79,21 +124,39 @@ public class TestReporter {
 
     public void addResult(TestResult result) {
         results.add(result);
+
+        // Automatically create a TestStory from TestResult
+        if (result.getStoryName() != null) {
+            TestStory story = new TestStory(result.getStoryName());
+            story.description = "Executed from " + result.getStoryName();
+
+            // Only add a summary step if no steps were already recorded
+            // Steps are already added via reporter.step() calls in TestOrchestrator
+            if (story.getSteps().isEmpty()) {
+                TestStep step = new TestStep("Test Execution");
+                step.action = result.getStoryName();
+                step.passed = result.isSuccess();
+                // Add error info if test failed
+                if (result.getError() != null) {
+                    step.evidence.add("✗ Error: " + result.getError().getMessage());
+                    step.actual = result.getError().getMessage();
+                } else {
+                    step.evidence.add(result.isSuccess() ? "✓ Test passed" : "✗ Test failed");
+                    step.actual = result.isSuccess() ? "passed" : "failed";
+                }
+                if (result.getExecutionTimeMs() > 0) {
+                    step.evidence.add("Duration: " + result.getExecutionTimeMs() + "ms");
+                }
+                story.addStep(step);
+            }
+
+            stories.add(story);
+        }
     }
 
     public void complete() throws IOException {
         this.endTime = LocalDateTime.now();
-        Files.createDirectories(Paths.get(outputDir));
-
-        generateDetailedTextReport();
-        generateDetailedJsonReport();
-        generateDetailedJUnitXml();
-
-        HtmlReportGenerator.generate(suiteName, passed, startTime, endTime,
-            stories.isEmpty() ? Collections.singletonList(new TestStory(suiteName, steps)) : stories,
-            serverLogs.toString(), clientLogs.toString(), outputDir);
-
-        printSummary();
+        generateAllReports();
     }
 
     private void generateDetailedTextReport() throws IOException {
@@ -105,12 +168,21 @@ public class TestReporter {
         report.append("Status: ").append(passed ? "PASSED" : "FAILED").append("\n");
         report.append("Duration: ").append(Duration.between(startTime, endTime).toMillis()).append("ms\n\n");
 
-        if (!steps.isEmpty()) {
+        // Use steps from stories if available, otherwise use legacy steps list
+        List<TestReporter.TestStep> allSteps = new ArrayList<>();
+        for (TestStory story : stories) {
+            allSteps.addAll(story.getSteps());
+        }
+        if (allSteps.isEmpty()) {
+            allSteps = steps;
+        }
+
+        if (!allSteps.isEmpty()) {
             report.append("TEST STEPS\n");
             report.append("-----------\n\n");
 
-            for (int i = 0; i < steps.size(); i++) {
-                TestStep step = steps.get(i);
+            for (int i = 0; i < allSteps.size(); i++) {
+                TestStep step = allSteps.get(i);
                 report.append(String.format("Step %d: %s\n", i + 1, step.name));
                 report.append("  Status: ").append(step.passed ? "PASSED" : "FAILED").append("\n");
 
@@ -182,7 +254,7 @@ public class TestReporter {
         System.out.println("==================");
         System.out.println();
         System.out.println("Suite: " + suiteName);
-        System.out.println("Status: " + (passed ? "PASSED" : "FAILED"));
+        System.out.println("Status: " + (calculatePassed() ? "PASSED" : "FAILED"));
         System.out.println("Duration: " + Duration.between(startTime, endTime).toMillis() + "ms");
         System.out.println();
         System.out.println("Reports generated in: " + outputDir + "/");
@@ -268,10 +340,17 @@ public class TestReporter {
     public static class TestStep {
         public final String name;
         public String action;
+        public String arguments;
         public String expected;
         public String actual;
         public boolean passed = true;
         public final List<String> evidence = new ArrayList<>();
+        public String stateBefore;
+        public String stateAfter;
+        public LocalDateTime startTime;
+        public LocalDateTime endTime;
+        public String player;
+        public String assertionType;
 
         public TestStep(String name) {
             this.name = name;
@@ -279,6 +358,21 @@ public class TestReporter {
 
         public TestStep action(String action) {
             this.action = action;
+            return this;
+        }
+
+        public TestStep arguments(String arguments) {
+            this.arguments = arguments;
+            return this;
+        }
+
+        public TestStep player(String player) {
+            this.player = player;
+            return this;
+        }
+
+        public TestStep assertionType(String type) {
+            this.assertionType = type;
             return this;
         }
 

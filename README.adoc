@@ -4,7 +4,11 @@ image:https://img.shields.io/gem/v/lutaml-model.svg[RubyGems Version]
 image:https://img.shields.io/github/license/lutaml/lutaml-model.svg[License]
 image:https://github.com/lutaml/lutaml-model/actions/workflows/rake.yml/badge.svg["Build", link="https://github.com/lutaml/lutaml-model/actions/workflows/rake.yml"]
 
-PILAF (Paper Integration Layer for Automation Functions) is a comprehensive YAML story-driven testing framework specifically designed for PaperMC Minecraft plugin developers. It transforms complex Java integration tests into simple, readable YAML scenarios that enable automated testing of Minecraft plugin functionality.
+PILAF (Paper Integration Layer for Automation Functions) is a comprehensive YAML
+story-driven testing framework specifically designed for PaperMC Minecraft
+plugin developers. It transforms complex Java integration tests into simple,
+readable YAML scenarios that enable automated testing of Minecraft plugin
+functionality.
 
 == Purpose
 
@@ -379,9 +383,9 @@ steps:
     name: "Extract health value using JSONPath"
 ```
 
-== Backend Types
+== Backend types
 
-=== Mineflayer Backend (Recommended)
+=== Client backend: Mineflayer
 
 For realistic player simulation and full plugin testing:
 
@@ -401,7 +405,27 @@ Advantages:
 * Tests actual plugin event handlers
 * Captures player feedback and chat responses
 
-=== RCON Backend
+=== Client backend: HeadlessMC
+
+For realistic player simulation and full plugin testing:
+
+```yaml
+backend: "headlessmc"
+```
+
+Features:
+* Realistic player behavior simulation
+* Chat message capture and processing
+* Entity interaction and targeting
+* Inventory and equipment management
+* Block placement and breaking simulation
+
+Advantages:
+* Most realistic testing environment
+* Tests actual plugin event handlers
+* Captures player feedback and chat responses
+
+=== Server backend: RCON
 
 For server command-focused testing:
 
@@ -419,25 +443,9 @@ Use Cases:
 * Administrative command testing
 * Performance testing
 
-=== Mock Backend
 
-For unit testing without external dependencies:
 
-```yaml
-backend: "mock"
-```
-
-Features:
-* Fast execution without real server
-* Simulated responses for testing logic
-* No external service dependencies
-
-Use Cases:
-* Plugin logic unit testing
-* CI/CD pipeline integration testing
-* Development environment testing
-
-== Integration Examples
+== Integration examples
 
 === Complete Lightning Plugin Test
 

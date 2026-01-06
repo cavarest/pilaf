@@ -1,29 +1,38 @@
 # PILAF Complete Docker Stack
 # This docker-compose file sets up the complete PILAF testing environment:
-# - PaperMC Minecraft Server
+# - PaperMC Minecraft Server (1.21.8)
 # - Mineflayer Bridge for player automation
 # - RCON server for command execution
-version: '3.8'
-
+#
+# Plugin handling:
+# - Base image plugins are in /plugins (not affected by /data volume)
+# - Use PLUGIN_URL to download additional plugins on startup
+# - Custom plugins can be placed in ./plugins directory
 services:
   # PaperMC Minecraft Server
   papermc:
-    image: papermc/paper:1.20.4
+    image: itzg/minecraft-server:java21
     container_name: pilaf-papermc
     ports:
       - "25565:25565"  # Minecraft server port
       - "25575:25575"  # RCON port
     volumes:
-      - papermc-data:/server/data
+      # World data and configs - these persist across restarts
+      - papermc-data:/data
+      # Mount custom plugins directory - these will be loaded alongside base plugins
+      - ./plugins:/plugins/custom:ro
     environment:
       # Accept EULA
       - EULA=true
 
+      # Version and Type - Updated to 1.21.8
+      - TYPE=PAPER
+      - VERSION=1.21.8
+
       # RCON Configuration
-      - RCON_PORT=25575
+      - ENABLE_RCON=true
       - RCON_PASSWORD=dragon123
-      - RCON_ENABLE_COMMAND_BLOCKING=false
-      - RCON_BROADCAST_TO_CONSOLE=false
+      - RCON_PORT=25575
 
       # Server Configuration
       - SERVER_NAME=PILAF-Test-Server
@@ -35,34 +44,18 @@ services:
       # Performance Settings for Testing
       - VIEW_DISTANCE=10
       - SIMULATION_DISTANCE=10
-      - ENTITY_ACTIVATION_RANGE=16
-      - MAX_WORLD_SIZE=29999984
 
-    # Server startup command with performance optimizations
-    command: >
-      --server-name=PILAF-Test-Server
-      --max-players=10
-      --online-mode=false
-      --gamemode=survival
-      --difficulty=peaceful
-      --view-distance=10
-      --simulation-distance=10
-      --entity-activation-range=16
-      --max-world-size=29999984
-      --enable-query=false
-      --enable-rcon=true
-      --rcon.port=25575
-      --rcon.password=dragon123
-      --rcon.enable-command-blocking=false
-      --broadcast-rcon-to-ops=false
+      # Plugin URLs - Download additional plugins on startup
+      # Add your plugin URLs here (one per line, no quotes)
+      # - https://github.com/placeholder/plugins/releases/download/v1.0/plugin.jar
 
     # Health check to ensure server is ready
     healthcheck:
-      test: ["CMD", "java", "-version"]
+      test: ["CMD-SHELL", "rcon-cli list > /dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
 
     # Network configuration
     networks:
@@ -71,20 +64,20 @@ services:
   # Mineflayer Bridge Service
   mineflayer-bridge:
     build:
-      context: ./mineflayer-bridge
+      context: ../mineflayer-bridge
       dockerfile: Dockerfile
     container_name: pilaf-mineflayer-bridge
     ports:
       - "3000:3000"  # PILAF API port
     environment:
       # Minecraft Connection
-      - MINECRAFT_HOST=papermc
-      - MINECRAFT_PORT=25565
+      - MC_HOST=papermc
+      - MC_PORT=25565
 
       # RCON Connection
-      - MINECRAFT_RCON_HOST=papermc
-      - MINECRAFT_RCON_PORT=25575
-      - MINECRAFT_RCON_PASSWORD=dragon123
+      - MC_RCON_HOST=papermc
+      - MC_RCON_PORT=25575
+      - MC_RCON_PASSWORD=dragon123
 
       # Bridge Configuration
       - BRIDGE_LOG_LEVEL=INFO
@@ -97,43 +90,15 @@ services:
       - API_PORT=3000
       - API_RATE_LIMIT=100
 
-    depends_on:
-      papermc:
-        condition: service_healthy
-
-    # Health check for the bridge
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-    # Network configuration
+    # Network configuration - must be same network as papermc
     networks:
       - pilaf-network
 
-  # Optional: PILAF CLI Service (for containerized testing)
-  pilaf-cli:
-    image: openjdk:21-jdk
-    container_name: pilaf-cli
-    volumes:
-      # Mount the plugin directory for testing
-      - ../../:/workspace
-      # Mount PILAF JAR if built
-      - ../../target/pilaf.jar:/opt/pilaf/pilaf.jar:ro
-    working_dir: /workspace
-    command: >
-      sh -c "
-        echo '🚀 PILAF CLI Container Ready';
-        echo '📋 Usage: java -jar /opt/pilaf/pilaf.jar --help';
-        echo '💡 Copy pilaf.jar to /opt/pilaf/ to use CLI in container';
-        sleep infinity
-      "
-    networks:
-      - pilaf-network
-    profiles:
-      - cli  # Only start with --profile cli
+    # NOTE: Mineflayer bridge will wait for PaperMC via retry logic in its code
+    # Do not use depends_on with health checks as they can fail
+    # depends_on:
+    #   papermc:
+    #     condition: service_started
 
 # Network configuration
 networks:

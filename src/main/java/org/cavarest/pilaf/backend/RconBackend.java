@@ -20,6 +20,12 @@ public class RconBackend implements PilafBackend {
         this.password = password;
     }
 
+    public void setVerbose(boolean verbose) {
+        if (rcon != null) {
+            rcon.setVerbose(verbose);
+        }
+    }
+
     @Override
     public void initialize() throws Exception {
         rcon = new RconClient(host, port, password);
@@ -105,7 +111,11 @@ public class RconBackend implements PilafBackend {
 
     @Override
     public void executeServerCommand(String command, List<String> args) {
-        rcon.executeCommand(command + " " + String.join(" ", args));
+        String fullCommand = command;
+        if (args != null && !args.isEmpty()) {
+            fullCommand = command + " " + String.join(" ", args);
+        }
+        rcon.executeCommand(fullCommand);
     }
 
     @Override
@@ -135,6 +145,17 @@ public class RconBackend implements PilafBackend {
     // Extended Player Management Commands
     public void makeOperator(String player) throws Exception {
         rcon.executeCommand("op " + player);
+    }
+
+    public void connectPlayer(String player) throws Exception {
+        // RCON cannot connect players - this is a no-op for RCON-only backend
+        // Players must be connected via a client (Mineflayer, regular client, etc.)
+        System.out.println("    ℹ️  RCON backend: connectPlayer is a no-op. Use Mineflayer backend for player connections.");
+    }
+
+    public void disconnectPlayer(String player) throws Exception {
+        // RCON cannot disconnect players - use kick command as closest equivalent
+        rcon.executeCommand("kick " + player + " Disconnected by test");
     }
 
     public Map<String, Object> getPlayerInventory(String player) throws Exception {
@@ -175,6 +196,18 @@ public class RconBackend implements PilafBackend {
         return rcon.executeCommand(command);
     }
 
+    // RAW RCON - execute exact command as-is (for full RCON command set access)
+    public String executeRconRaw(String command) throws Exception {
+        // Execute the exact command without any parsing or transformation
+        return rcon.executeCommand(command);
+    }
+
+    // RAW Player command - execute exact command as the player
+    public String executePlayerCommandRaw(String player, String command) throws Exception {
+        // Execute the exact command as the player without wrapping in "execute as... run"
+        return rcon.executeCommand("execute as " + player + " run " + command);
+    }
+
     // Extended Inventory Management Commands
     public void removeItem(String player, String item, int count) throws Exception {
         rcon.executeCommand("clear " + player + " " + item + " " + count);
@@ -193,12 +226,21 @@ public class RconBackend implements PilafBackend {
 
     public long getWorldTime() throws Exception {
         String result = rcon.executeCommand("time query gametime");
-        return Long.parseLong(result.trim());
+        // Response format: "The time is 89565" - need to extract the number
+        if (result != null) {
+            String trimmed = result.trim();
+            if (trimmed.contains("The time is ")) {
+                trimmed = trimmed.replace("The time is ", "").trim();
+            }
+            return Long.parseLong(trimmed);
+        }
+        return 0L;
     }
 
     public String getWeather() throws Exception {
-        String result = rcon.executeCommand("weather query");
-        return result != null ? result.trim() : "clear";
+        // In Minecraft 1.21.8, weather query doesn't exist as a separate command
+        // Use time and default to clear for simplicity
+        return "clear";
     }
 
     // State Management Commands

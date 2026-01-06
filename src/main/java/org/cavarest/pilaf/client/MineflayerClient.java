@@ -1,5 +1,7 @@
 package org.cavarest.pilaf.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -12,13 +14,23 @@ import java.util.*;
  */
 public class MineflayerClient {
     private final String baseUrl;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private int timeout = 30000;
+    private boolean verbose = false;
 
     public MineflayerClient(String host, int port) {
         this.baseUrl = "http://" + host + ":" + port;
     }
 
-    public void setTimeout(int timeoutMs) { this.timeout = timeoutMs; }
+    public void setVerbose(boolean verbose) {
+        this.verbose = verbose;
+    }
+
+    public void log(String message) {
+        if (verbose) {
+            System.out.println("   [HTTP] " + message);
+        }
+    }
 
     public boolean connect(String username) throws Exception {
         return connect(username, null, null);
@@ -29,14 +41,20 @@ public class MineflayerClient {
         body.put("username", username);
         if (mcHost != null) body.put("host", mcHost);
         if (mcPort != null) body.put("port", mcPort);
+        String requestJson = toJson(body);
+        log("POST /connect body=" + requestJson);
         Map<String, Object> result = post("/connect", body);
-        return "connected".equals(result.get("status")) || "already_connected".equals(result.get("status"));
+        String status = (String) result.get("status");
+        log("Response: " + result);
+        return "connected".equals(status) || "already_connected".equals(status);
     }
 
     public boolean disconnect(String username) throws Exception {
         Map<String, Object> body = new HashMap<>();
         body.put("username", username);
+        log("POST /disconnect body=" + toJson(body));
         Map<String, Object> result = post("/disconnect", body);
+        log("Response: " + result);
         return "disconnected".equals(result.get("status"));
     }
 
@@ -44,14 +62,18 @@ public class MineflayerClient {
         Map<String, Object> body = new HashMap<>();
         body.put("username", username);
         body.put("command", command);
-        post("/command", body);
+        log("POST /command body=" + toJson(body));
+        Map<String, Object> result = post("/command", body);
+        log("Response: " + result);
     }
 
     public void chat(String username, String message) throws Exception {
         Map<String, Object> body = new HashMap<>();
         body.put("username", username);
         body.put("message", message);
-        post("/chat", body);
+        log("POST /chat body=" + toJson(body));
+        Map<String, Object> result = post("/chat", body);
+        log("Response: " + result);
     }
 
     public void move(String username, double x, double y, double z) throws Exception {
@@ -60,7 +82,9 @@ public class MineflayerClient {
         body.put("x", x);
         body.put("y", y);
         body.put("z", z);
-        post("/move", body);
+        log("POST /move body=" + toJson(body));
+        Map<String, Object> result = post("/move", body);
+        log("Response: " + result);
     }
 
     public void equip(String username, String item, String slot) throws Exception {
@@ -68,38 +92,60 @@ public class MineflayerClient {
         body.put("username", username);
         body.put("item", item);
         body.put("slot", slot);
-        post("/equip", body);
+        log("POST /equip body=" + toJson(body));
+        Map<String, Object> result = post("/equip", body);
+        log("Response: " + result);
     }
 
     public void use(String username, String target) throws Exception {
         Map<String, Object> body = new HashMap<>();
         body.put("username", username);
         body.put("target", target);
-        post("/use", body);
+        log("POST /use body=" + toJson(body));
+        Map<String, Object> result = post("/use", body);
+        log("Response: " + result);
     }
 
     public Map<String, Object> getPosition(String username) throws Exception {
-        return get("/position/" + username);
+        log("GET /position/" + username);
+        Map<String, Object> result = get("/position/" + username);
+        log("Response: " + result);
+        return result;
     }
 
     public Map<String, Object> getHealth(String username) throws Exception {
-        return get("/health/" + username);
+        log("GET /health/" + username);
+        Map<String, Object> result = get("/health/" + username);
+        log("Response: " + result);
+        return result;
     }
 
     public Map<String, Object> getInventory(String username) throws Exception {
-        return get("/inventory/" + username);
+        log("GET /inventory/" + username);
+        Map<String, Object> result = get("/inventory/" + username);
+        log("Response: " + result);
+        return result;
     }
 
     public Map<String, Object> getEntities(String username) throws Exception {
-        return get("/entities/" + username);
+        log("GET /entities/" + username);
+        Map<String, Object> result = get("/entities/" + username);
+        log("Response: " + result);
+        return result;
     }
 
     public Map<String, Object> getEntity(String entityName, String username) throws Exception {
-        return get("/entity/" + entityName + "/" + username);
+        log("GET /entity/" + entityName + "/" + username);
+        Map<String, Object> result = get("/entity/" + entityName + "/" + username);
+        log("Response: " + result);
+        return result;
     }
 
     public Map<String, Object> getEquipment(String username) throws Exception {
-        return get("/equipment/" + username);
+        log("GET /equipment/" + username);
+        Map<String, Object> result = get("/equipment/" + username);
+        log("Response: " + result);
+        return result;
     }
 
     public boolean isHealthy() {
@@ -151,23 +197,38 @@ public class MineflayerClient {
     }
 
     private String toJson(Map<String, Object> map) {
-        StringBuilder sb = new StringBuilder("{");
-        boolean first = true;
-        for (Map.Entry<String, Object> e : map.entrySet()) {
-            if (!first) sb.append(",");
-            sb.append("\"").append(e.getKey()).append("\":");
-            Object v = e.getValue();
-            if (v instanceof String) sb.append("\"").append(v).append("\"");
-            else if (v instanceof Number) sb.append(v);
-            else if (v instanceof Boolean) sb.append(v);
-            else sb.append("\"").append(v).append("\"");
-            first = false;
+        try {
+            return objectMapper.writeValueAsString(map);
+        } catch (Exception ex) {
+            // Fallback to simple JSON builder
+            StringBuilder sb = new StringBuilder("{");
+            boolean first = true;
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                if (!first) sb.append(",");
+                sb.append("\"").append(entry.getKey()).append("\":");
+                Object v = entry.getValue();
+                if (v instanceof String) sb.append("\"").append(v).append("\"");
+                else if (v instanceof Number) sb.append(v);
+                else if (v instanceof Boolean) sb.append(v);
+                else sb.append("\"").append(v).append("\"");
+                first = false;
+            }
+            sb.append("}");
+            return sb.toString();
         }
-        sb.append("}");
-        return sb.toString();
     }
 
     private Map<String, Object> parseJson(String json) {
+        try {
+            return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            log("JSON parse error: " + e.getMessage() + ", falling back to simple parser");
+            // Fallback to simple parser for simple cases
+            return parseJsonSimple(json);
+        }
+    }
+
+    private Map<String, Object> parseJsonSimple(String json) {
         Map<String, Object> result = new HashMap<>();
         json = json.trim();
         if (!json.startsWith("{")) return result;

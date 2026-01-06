@@ -34,9 +34,16 @@ public class ConfigLoader {
     private TestConfiguration parseConfiguration(Map<String, Object> config) {
         TestConfiguration testConfig = new TestConfiguration();
 
-        // Backend configuration
+        // Backend configuration - check both 'backend' and 'server_backend'
         if (config.containsKey("backend")) {
             testConfig.setBackend(getString(config.get("backend")));
+        } else if (config.containsKey("server_backend")) {
+            testConfig.setBackend(getString(config.get("server_backend")));
+        }
+
+        // Server version
+        if (config.containsKey("server_version")) {
+            testConfig.setServerVersion(getString(config.get("server_version")));
         }
 
         // Service URLs

@@ -21,10 +21,14 @@ public class TestConfiguration {
 
     // Backend settings
     private String backend = System.getProperty("pilaf.backend", "mineflayer");
+    private String serverVersion = System.getProperty("pilaf.server.version", "1.21.5");
 
     // Report settings
     private String reportDir = System.getProperty("pilaf.report.dir", "target/pilaf-reports");
     private String reportFormat = System.getProperty("pilaf.report.format", "html");
+
+    // Verbose output
+    private boolean verbose = Boolean.parseBoolean(System.getProperty("pilaf.verbose", "false"));
 
     // Service health check settings
     private boolean skipHealthChecks = Boolean.parseBoolean(System.getProperty("pilaf.skip.health", "false"));
@@ -47,8 +51,10 @@ public class TestConfiguration {
     public int getRconTimeout() { return rconTimeout; }
     public String getTestPlayer() { return testPlayer; }
     public String getBackend() { return backend; }
+    public String getServerVersion() { return serverVersion; }
     public String getReportDir() { return reportDir; }
     public String getReportFormat() { return reportFormat; }
+    public boolean isVerbose() { return verbose; }
     public boolean isSkipHealthChecks() { return skipHealthChecks; }
     public int getHealthCheckTimeout() { return healthCheckTimeout; }
 
@@ -83,8 +89,18 @@ public class TestConfiguration {
         return this;
     }
 
+    public TestConfiguration setServerVersion(String serverVersion) {
+        this.serverVersion = serverVersion;
+        return this;
+    }
+
     public TestConfiguration setReportDir(String dir) {
         this.reportDir = dir;
+        return this;
+    }
+
+    public TestConfiguration setVerbose(boolean verbose) {
+        this.verbose = verbose;
         return this;
     }
 
@@ -95,7 +111,7 @@ public class TestConfiguration {
 
     @Override
     public String toString() {
-        return String.format("TestConfiguration{mineflayerUrl='%s', rconHost='%s:%d', testPlayer='%s', backend='%s'}",
-            mineflayerUrl, rconHost, rconPort, testPlayer, backend);
+        return String.format("TestConfiguration{mineflayerUrl='%s', rconHost='%s:%d', testPlayer='%s', backend='%s', serverVersion='%s'}",
+            mineflayerUrl, rconHost, rconPort, testPlayer, backend, serverVersion);
     }
 }

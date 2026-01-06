@@ -24,6 +24,11 @@ public interface PilafBackend {
      */
     String getType();
 
+    /**
+     * Enable verbose logging.
+     */
+    void setVerbose(boolean verbose);
+
     // Player actions
     void movePlayer(String playerName, String destinationType, String destination);
     void equipItem(String playerName, String item, String slot);
