@@ -58,9 +58,9 @@ dependencies {
 
     // RCON client - use GitHub Packages in CI/CD, local JAR for development
     if (System.getenv("GITHUB_TOKEN") != null) {
-        implementation 'org.cavarest:cavarest-rcon:0.1.1'
+        implementation 'org.cavarest:cavarest-rcon:0.1.2'
     } else {
-        implementation files('../rcon/build/libs/cavarest-rcon-0.1.1-SNAPSHOT.jar')
+        implementation files('../rcon/build/libs/cavarest-rcon-0.1.2-SNAPSHOT.jar')
     }
 }
 
