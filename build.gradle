@@ -6,6 +6,13 @@ plugins {
 
 repositories {
     mavenCentral()
+    maven {
+        url = uri("https://maven.pkg.github.com/cavarest/rcon")
+        credentials {
+            username = System.getenv("GITHUB_ACTOR")
+            password = System.getenv("GITHUB_TOKEN")
+        }
+    }
 }
 
 group = 'org.cavarest'
@@ -47,9 +54,8 @@ dependencies {
     // Picocli for CLI
     implementation 'info.picocli:picocli:4.7.5'
 
-    // RCON client (local build from ../rcon/)
-    // For CI/CD: Add GitHub Packages repository and use 'org.cavarest:rcon:0.1.0'
-    implementation files('../rcon/build/libs/cavarest-rcon-0.1.0.jar')
+    // RCON client from GitHub Packages
+    implementation 'org.cavarest:rcon:0.1.1'
 }
 
 // Create fat JAR without Shadow plugin
