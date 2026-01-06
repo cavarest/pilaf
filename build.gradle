@@ -12,15 +12,15 @@ repositories {
 
     // GitHub Packages for rcon library (ONLY used for local development when CI-built library unavailable)
     // In CI, we build rcon locally and publish to mavenLocal(), so GitHub Packages is never needed
-    maven {
-        url = uri("https://maven.pkg.github.com/cavarest/rcon")
-        credentials {
-            username = System.getenv("GITHUB_ACTOR") ?: "anonymous"
-            password = System.getenv("GITHUB_TOKEN") ?: ""
-        }
-        // Only use GitHub Packages when NOT in CI (GITHUB_TOKEN not set)
-        // This avoids 401 errors when credentials are invalid for the rcon package
-        if (System.getenv("GITHUB_TOKEN") == null) {
+    if (System.getenv("GITHUB_TOKEN") == null) {
+        // Only add GitHub Packages when NOT in CI (development mode)
+        // In CI, GITHUB_TOKEN is always set, so this block is skipped
+        maven {
+            url = uri("https://maven.pkg.github.com/cavarest/rcon")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: "anonymous"
+                password = System.getenv("GITHUB_TOKEN") ?: ""
+            }
             content {
                 includeGroup "org.cavarest"
             }
