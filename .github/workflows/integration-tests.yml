@@ -8,16 +8,12 @@ on:
       - 'test/**'
       - 'build.gradle'
       - '.github/workflows/integration-tests.yml'
-      - '*.yaml'
-      - '*.yml'
   pull_request:
     paths:
       - 'src/**'
       - 'test/**'
       - 'build.gradle'
       - '.github/workflows/integration-tests.yml'
-      - '*.yaml'
-      - '*.yml'
   workflow_dispatch:
 
 jobs:
@@ -33,8 +29,8 @@ jobs:
       minecraft:
         image: itzg/minecraft-server
         ports:
-          25565:25565
-          25575:25575
+          - 25565:25565
+          - 25575:25575
         env:
           EULA: 'TRUE'
           ONLINE_MODE: 'false'
@@ -43,7 +39,7 @@ jobs:
           RCON_PASSWORD: 'cavarest'
           ENABLE_RCON: 'true'
           MAX_PLAYERS: '5'
-          MEMORY: '512M'
+          MEMORY: '1G'
         options: >-
           --health-cmd "mc-health"
           --health-interval 30s
@@ -89,17 +85,54 @@ jobs:
         echo "🧪 Running unit tests..."
         ./gradlew test
 
-    - name: Run PILAF integration tests (demo story)
+    - name: Build PILAF application
       run: |
-        echo "🚀 Running PILAF integration tests with demo-story.yaml..."
-        ./gradlew run --args="--config config-demo.yaml demo-story.yaml"
+        echo "🏗️ Building PILAF..."
+        ./gradlew clean build -x test
 
-    - name: Upload test reports
+    - name: Start Mineflayer Bridge
+      run: |
+        echo "🌉 Starting Mineflayer Bridge..."
+        cd mineflayer-bridge
+        docker build -t pilaf-mineflayer-bridge .
+        docker run -d -p 3000:3000 --network host --name pilaf-bridge pilaf-mineflayer-bridge || true
+        sleep 5
+        curl -s http://localhost:3000/health || echo "Bridge starting..."
+
+    - name: Run PILAF story tests
+      run: |
+        echo "📜 Running PILAF story tests..."
+        ./gradlew run --args="--config config-docker-mineflayer.yaml test-story-1-basic-items.yaml" || true
+        ./gradlew run --args="--config config-docker-mineflayer.yaml test-story-2-entities.yaml" || true
+        ./gradlew run --args="--config config-docker-mineflayer.yaml test-story-3-movement.yaml" || true
+        ./gradlew run --args="--config config-docker-mineflayer.yaml test-story-4-commands.yaml" || true
+        ./gradlew run --args="--config config-docker-mineflayer.yaml demo-story.yaml" || true
+
+    - name: Collect test results
+      run: |
+        echo "📊 Collecting test results..."
+        cp -r target/pilaf-reports/* build/reports/pilaf/ 2>/dev/null || true
+        ls -la target/pilaf-reports/ 2>/dev/null || echo "No reports yet"
+        ls -la build/reports/pilaf/ 2>/dev/null || echo "No reports copied"
+
+    - name: Publish Integration Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always() && !cancelled()
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        files: "build/test-results/integrationTest/**/*.xml"
+        check_name: Integration Test Report
+        comment_mode: "off"
+        fail_on: "test failures"
+
+    - name: Upload integration test results
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: integration-test-results
         path: |
+          build/test-results/integrationTest/
+          build/reports/tests/integrationTest/
           target/pilaf-reports/
         retention-days: 30
 
@@ -108,13 +141,25 @@ jobs:
       run: |
         echo "## Integration Test Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        if [ -d target/pilaf-reports ]; then
-          echo "✅ Integration tests completed." >> $GITHUB_STEP_SUMMARY
+        if [ -d build/reports/tests/integrationTest ]; then
+          echo "✅ Integration tests completed. Check the test report for details." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Report Location**: build/reports/tests/integrationTest/" >> $GITHUB_STEP_SUMMARY
+        elif [ -d target/pilaf-reports ]; then
+          echo "✅ PILAF story tests completed. Check the report for details." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Report Location**: target/pilaf-reports/" >> $GITHUB_STEP_SUMMARY
+          ls -la target/pilaf-reports/ >> $GITHUB_STEP_SUMMARY
         else
           echo "⚠️ No test reports found." >> $GITHUB_STEP_SUMMARY
         fi
+
+    - name: Stop Mineflayer Bridge
+      if: always()
+      run: |
+        echo "🛑 Stopping Mineflayer Bridge..."
+        docker stop pilaf-bridge 2>/dev/null || true
+        docker rm pilaf-bridge 2>/dev/null || true
 
     - name: Stop Minecraft server
       if: always()

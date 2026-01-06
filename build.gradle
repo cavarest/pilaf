@@ -7,14 +7,12 @@ plugins {
 repositories {
     mavenCentral()
 
-    // GitHub Packages for CI/CD (requires GITHUB_TOKEN)
-    if (System.getenv("GITHUB_TOKEN") != null) {
-        maven {
-            url = uri("https://maven.pkg.github.com/cavarest/rcon")
-            credentials {
-                username = System.getenv("GITHUB_ACTOR") ?: "anonymous"
-                password = System.getenv("GITHUB_TOKEN") ?: ""
-            }
+    // GitHub Packages for rcon library
+    maven {
+        url = uri("https://maven.pkg.github.com/cavarest/rcon")
+        credentials {
+            username = System.getenv("GITHUB_ACTOR") ?: "anonymous"
+            password = System.getenv("GITHUB_TOKEN") ?: ""
         }
     }
 }

@@ -1,8 +1,10 @@
 = PILAF: Minecraft Plugin Integration Testing Framework
 
-image:https://img.shields.io/gem/v/lutaml-model.svg[RubyGems Version]
-image:https://img.shields.io/github/license/lutaml/lutaml-model.svg[License]
-image:https://github.com/lutaml/lutaml-model/actions/workflows/rake.yml/badge.svg["Build", link="https://github.com/lutaml/lutaml-model/actions/workflows/rake.yml"]
+image:https://img.shields.io/badge/Java-17%2B-blue[Java Version]
+image:https://img.shields.io/badge/Gradle-7.6-green[Gradle Version]
+image:https://img.shields.io/badge/License-MIT-yellow[License]
+image:https://github.com/cavarest/pilaf/actions/workflows/unit-tests.yml/badge.svg["Unit Tests", link="https://github.com/cavarest/pilaf/actions/workflows/unit-tests.yml"]
+image:https://github.com/cavarest/pilaf/actions/workflows/integration-tests.yml/badge.svg["Integration Tests", link="https://github.com/cavarest/pilaf/actions/workflows/integration-tests.yml"]
 
 PILAF (Paper Integration Layer for Automation Functions) is a comprehensive YAML
 story-driven testing framework specifically designed for PaperMC Minecraft
@@ -13,38 +15,6 @@ functionality.
 == Purpose
 
 Traditional Minecraft plugin testing requires extensive Java code to simulate player actions, execute server commands, and validate results. PILAF eliminates this complexity by providing a YAML-based story format that non-developers can understand and maintain.
-
-**Instead of this:**
-```java
-// 150+ lines of complex Java integration test code
-@Test
-void testLightningAbility() throws Exception {
-    // Setup player connection
-    // Connect to Mineflayer bridge
-    // Execute RCON commands
-    // Simulate player actions
-    // Wait for responses
-    // Validate results
-    // Clean up resources
-}
-```
-
-**You write this:**
-```yaml
-# 34 lines of readable YAML
-name: "Lightning Ability Test"
-steps:
-  - action: "execute_rcon_command"
-    command: "summon zombie ~ ~5 ~ {CustomName:'\"TestTarget\"'}"
-  - action: "execute_player_command"
-    player: "test_player"
-    command: "/ability 1"
-  - action: "wait"
-    duration: 2000
-  - action: "get_entities_in_view"
-    player: "test_player"
-    store_as: "entities_after"
-```
 
 == Architecture
 
@@ -84,7 +54,8 @@ steps:
 == Prerequisites
 
 === System Requirements
-- Java 21+
+- Java 17 or higher
+- Gradle 7.6 (wrapper included)
 - Docker & Docker Compose (for full integration testing)
 - Running PaperMC server or compatible Minecraft server
 
@@ -95,14 +66,193 @@ PILAF requires these services for full functionality:
 2. **RCON Server** (localhost:25575)
 3. **Mineflayer Bridge** (localhost:3000)
 
-=== Docker Setup
+== Installation
 
-Use the provided Docker Compose configuration for complete testing environment:
+=== Using Gradle
 
-```bash
-# Start the complete PILAF stack
-docker-compose -f lib/pilaf/docker/docker-compose.pilaf.yml up -d
-```
+Add PILAF to your `build.gradle`:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.cavarest:pilaf:0.1.0'
+}
+----
+
+Note: PILAF is published to GitHub Packages. Ensure you have authentication configured:
+
+[source,groovy]
+----
+repositories {
+    mavenCentral()
+    maven {
+        url = uri("https://maven.pkg.github.com/cavarest/pilaf")
+        credentials {
+            username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+            password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
+}
+----
+
+=== Building from Source
+
+[source,shell]
+----
+./gradlew clean build
+----
+
+The JAR file will be generated at `build/libs/pilaf-0.1.0.jar`.
+
+== Testing
+
+This project includes both unit tests and integration tests to ensure code quality and reliability.
+
+=== Unit Tests
+
+Unit tests verify the core functionality without requiring external services:
+
+[source,shell]
+----
+./gradlew test
+----
+
+Unit tests are fast and suitable for local development. Test reports are generated at `build/reports/tests/test/index.html`.
+
+=== Integration Tests
+
+Integration tests verify PILAF works correctly against a real Minecraft server:
+
+[source,shell]
+----
+./gradlew integrationTest
+----
+
+Integration tests require Docker and take longer to run. They are automatically skipped when no Docker daemon is available.
+
+To skip integration tests locally:
+
+[source,shell]
+----
+SKIP_INTEGRATION_TESTS=true ./gradlew test
+----
+
+=== Test Configuration
+
+Tests are organized using JUnit 5 tags:
+
+* *Unit tests*: Tagged with `@Tag("unit")` or no tag, run with `./gradlew test`
+* *Integration tests*: Tagged with `@Tag("integration")`, run with `./gradlew integrationTest`
+
+The default `test` task excludes integration tests, ensuring fast local test execution.
+
+=== GitHub Actions Workflows
+
+The project includes the following CI/CD workflows:
+
+[cols="2,3,3"]
+|===
+| Workflow | Trigger | Purpose
+
+| Unit Tests | On push to main | Runs unit tests on Java 17 and 21
+
+| Integration Tests | On push to main | Tests against Minecraft Paper 1.21.8 server
+
+| Release | Manual, git tag, or GitHub release | Builds, publishes to GitHub Packages, and uploads JAR to GitHub Releases
+|===
+
+== Development Workflow
+
+This section describes the development workflow, testing procedures, and release process.
+
+=== Pre-Release Checklist
+
+Before creating a release, ensure all tests pass:
+
+. Run unit tests:
++
+[source,shell]
+----
+./gradlew test
+----
+
+. Run integration tests (requires Docker):
++
+[source,shell]
+----
+./gradlew integrationTest
+----
+
+. Verify all code quality checks pass:
++
+[source,shell]
+----
+./gradlew check
+----
+
+=== Creating a Release
+
+Releases are automated using GitHub Actions. To create a release:
+
+==== Option 1: GitHub Release UI (Recommended)
+
+. Go to https://github.com/cavarest/pilaf/releases/new[new release page]
+. Create a new tag (e.g., `v0.1.0`)
+. Add release notes (optional)
+. Click "Publish release"
+. The `Release` workflow will automatically:
+  - Build the project
+  - Publish to GitHub Packages
+  - Upload JAR to GitHub Releases
+
+==== Option 2: Manual Workflow Trigger
+
+. Navigate to https://github.com/cavarest/pilaf/actions/workflows/publish-release.yml[Release workflow]
+. Click "Run workflow"
+. Enter:
+  - `release-version`: e.g., `0.1.0`
+  - `post-release-version`: e.g., `0.1.1-SNAPSHOT`
+. Click "Run workflow"
+. The workflow will:
+  - Update version.properties
+  - Commit and push changes (creating the tag)
+  - Build and publish to GitHub Packages
+  - Upload JAR to GitHub Releases
+
+==== Option 3: Push a Git Tag
+
+[source,shell]
+----
+# Create and push a version tag
+git tag v0.1.0
+git push origin v0.1.0
+----
+
+The `Release` workflow will trigger automatically.
+
+=== Version Management
+
+The project version is defined in `version.properties`. To update the version:
+
+. Edit `version.properties`:
++
+[source,properties]
+----
+version=0.2.0
+----
+
+. Commit and tag appropriately
+
+=== Local Build
+
+To build the project locally without running tests:
+
+[source,shell]
+----
+./gradlew clean build -x test
+----
+
+The JAR file will be generated at `build/libs/pilaf-{version}.jar`.
 
 == Quick Start Guide
 
