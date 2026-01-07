@@ -35,7 +35,7 @@ dependencies {
     implementation 'io.pebbletemplates:pebble:3.2.2'
 
     // JSON Diff for semantic state comparison
-    implementation 'com.flipkart.zjsonpatch:0.4.16'
+    implementation 'com.flipkart.zjsonpatch:zjsonpatch:0.4.16'
 
     // Jackson for JSON parsing (required by zjsonpatch)
     implementation 'com.fasterxml.jackson.core:jackson-core:2.17.0'
@@ -52,7 +52,7 @@ dependencies {
     implementation 'info.picocli:picocli:4.7.5'
 
     // RCON client - use mavenLocal() for CI-built library
-    implementation 'org.cavarest:cavarest-rcon:0.1.2'
+    implementation 'org.cavarest:cavarest-rcon:0.1.3-SNAPSHOT'
 }
 
 // Create fat JAR without Shadow plugin
