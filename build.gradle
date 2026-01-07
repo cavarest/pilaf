@@ -8,24 +8,8 @@ repositories {
     mavenCentral()
 
     // Local Maven repository for CI builds (rcon library built from source)
+    // In CI, we build rcon locally and publish to mavenLocal()
     mavenLocal()
-
-    // GitHub Packages for rcon library (ONLY used for local development when CI-built library unavailable)
-    // In CI, we build rcon locally and publish to mavenLocal(), so GitHub Packages is never needed
-    if (System.getenv("GITHUB_TOKEN") == null) {
-        // Only add GitHub Packages when NOT in CI (development mode)
-        // In CI, GITHUB_TOKEN is always set, so this block is skipped
-        maven {
-            url = uri("https://maven.pkg.github.com/cavarest/rcon")
-            credentials {
-                username = System.getenv("GITHUB_ACTOR") ?: "anonymous"
-                password = System.getenv("GITHUB_TOKEN") ?: ""
-            }
-            content {
-                includeGroup "org.cavarest"
-            }
-        }
-    }
 }
 
 group = 'org.cavarest'
@@ -51,7 +35,7 @@ dependencies {
     implementation 'io.pebbletemplates:pebble:3.2.2'
 
     // JSON Diff for semantic state comparison
-    implementation 'com.flipkart.zjsonpatch:zjsonpatch:0.4.16'
+    implementation 'com.flipkart.zjsonpatch:0.4.16'
 
     // Jackson for JSON parsing (required by zjsonpatch)
     implementation 'com.fasterxml.jackson.core:jackson-core:2.17.0'
@@ -67,21 +51,8 @@ dependencies {
     // Picocli for CLI
     implementation 'info.picocli:picocli:4.7.5'
 
-    // RCON client - use local maven repo in CI, local JAR for development
-    // Always check mavenLocal() first for CI-built dependencies
-    implementation ('org.cavarest:cavarest-rcon:0.1.2') {
-        // Force resolution from mavenLocal if available (CI builds)
-        // Fall back to GitHub Packages if not found locally
-        if (System.getenv("GITHUB_TOKEN") != null) {
-            // In CI, prefer mavenLocal which has the freshly built library
-            // Gradle will automatically check mavenLocal before other repos
-        }
-    }
-
-    // Development fallback: use local JAR when maven repos are unavailable
-    if (!System.getenv("GITHUB_TOKEN") && file('../rcon/build/libs/cavarest-rcon-0.1.2-SNAPSHOT.jar').exists()) {
-        implementation files('../rcon/build/libs/cavarest-rcon-0.1.2-SNAPSHOT.jar')
-    }
+    // RCON client - use mavenLocal() for CI-built library
+    implementation 'org.cavarest:cavarest-rcon:0.1.2'
 }
 
 // Create fat JAR without Shadow plugin
