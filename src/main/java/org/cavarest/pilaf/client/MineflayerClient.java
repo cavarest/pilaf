@@ -239,13 +239,97 @@ public class MineflayerClient {
             if (kv.length == 2) {
                 String key = kv[0].trim().replaceAll("\"", "");
                 String val = kv[1].trim();
-                if (val.startsWith("\"")) result.put(key, val.substring(1, val.length() - 1));
-                else if (val.equals("true")) result.put(key, true);
-                else if (val.equals("false")) result.put(key, false);
-                else if (val.contains(".")) result.put(key, Double.parseDouble(val));
-                else {
-                    try { result.put(key, Long.parseLong(val)); }
-                    catch (Exception e) { result.put(key, val); }
+                if (val.startsWith("\"")) {
+                    // String value
+                    if (val.endsWith("\"") && val.length() > 1) {
+                        result.put(key, val.substring(1, val.length() - 1));
+                    } else {
+                        result.put(key, val);
+                    }
+                } else if (val.equals("true")) {
+                    result.put(key, true);
+                } else if (val.equals("false")) {
+                    result.put(key, false);
+                } else if (val.equals("null")) {
+                    result.put(key, null);
+                } else if (val.startsWith("{")) {
+                    // Nested object
+                    result.put(key, parseJsonSimple(val));
+                } else if (val.startsWith("[")) {
+                    // Array
+                    result.put(key, parseJsonArray(val));
+                } else if (val.contains(".")) {
+                    try {
+                        result.put(key, Double.parseDouble(val));
+                    } catch (Exception e) {
+                        result.put(key, val);
+                    }
+                } else {
+                    try {
+                        result.put(key, Long.parseLong(val));
+                    } catch (Exception e) {
+                        result.put(key, val);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    private List<Object> parseJsonArray(String json) {
+        List<Object> result = new ArrayList<>();
+        json = json.trim();
+        if (!json.startsWith("[") || !json.endsWith("]")) return result;
+        json = json.substring(1, json.length() - 1);
+        if (json.isEmpty()) return result;
+
+        List<String> items = new ArrayList<>();
+        int depth = 0;
+        int start = 0;
+        boolean inQuotes = false;
+        for (int i = 0; i < json.length(); i++) {
+            char c = json.charAt(i);
+            if (c == '"' && (i == 0 || json.charAt(i - 1) != '\\')) {
+                inQuotes = !inQuotes;
+            } else if (!inQuotes) {
+                if (c == '{' || c == '[') depth++;
+                else if (c == '}' || c == ']') depth--;
+                else if (c == ',' && depth == 0) {
+                    items.add(json.substring(start, i).trim());
+                    start = i + 1;
+                }
+            }
+        }
+        items.add(json.substring(start).trim());
+
+        for (String item : items) {
+            if (item.startsWith("{")) {
+                result.add(parseJsonSimple(item));
+            } else if (item.startsWith("[")) {
+                result.add(parseJsonArray(item));
+            } else if (item.startsWith("\"")) {
+                if (item.endsWith("\"") && item.length() > 1) {
+                    result.add(item.substring(1, item.length() - 1));
+                } else {
+                    result.add(item);
+                }
+            } else if (item.equals("true")) {
+                result.add(true);
+            } else if (item.equals("false")) {
+                result.add(false);
+            } else if (item.equals("null")) {
+                result.add(null);
+            } else if (item.contains(".")) {
+                try {
+                    result.add(Double.parseDouble(item));
+                } catch (Exception e) {
+                    result.add(item);
+                }
+            } else {
+                try {
+                    result.add(Long.parseLong(item));
+                } catch (Exception e) {
+                    result.add(item);
                 }
             }
         }
