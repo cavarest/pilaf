@@ -10,7 +10,7 @@ import java.util.*;
 
 /**
  * CLI runner for PILAF integration tests.
- * Usage: java -jar pilaf.jar [options] <story-files...>
+ * Usage: java -jar pilaf.jar [options] &lt;story-files...&gt;
  */
 public class PilafRunner {
 
