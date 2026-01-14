@@ -1,0 +1,103 @@
+# Test: Player Management Commands
+# Category: Server Commands
+# Purpose: Tests player administration commands like op, gamemode, clear
+
+name: "Player Management Test"
+description: |
+  Tests player management commands including operator status,
+  gamemode changes, and inventory clearing.
+
+backend: mineflayer
+
+setup:
+  - action: "connect"
+    player: "pilaf_admin"
+    name: "Connect admin player"
+
+  - action: "wait"
+    duration: 5
+    name: "Wait for connection"
+
+  - action: "servercommand"
+    command: "say [Pilaf] Starting player management test..."
+    name: "Announce test start"
+
+  - action: "servercommand"
+    command: "op pilaf_admin"
+    name: "Make admin player an operator"
+
+steps:
+  # Test 1: Toggle operator status
+  - action: "servercommand"
+    command: "deop pilaf_admin"
+    name: "Remove operator status"
+
+  - action: "servercommand"
+    command: "op pilaf_admin"
+    name: "Restore operator status"
+
+  # Test 2: Set gamemode to survival
+  - action: "servercommand"
+    command: "gamemode survival pilaf_admin"
+    name: "Set player to survival mode"
+
+  # Test 3: Set gamemode to creative
+  - action: "servercommand"
+    command: "gamemode creative pilaf_admin"
+    name: "Set player to creative mode"
+
+  # Test 4: Set gamemode to spectator
+  - action: "servercommand"
+    command: "gamemode spectator pilaf_admin"
+    name: "Set player to spectator mode"
+
+  - action: "wait"
+    duration: 2
+    name: "Wait in spectator mode"
+
+  # Test 5: Return to creative mode
+  - action: "servercommand"
+    command: "gamemode creative pilaf_admin"
+    name: "Restore creative mode"
+
+  # Test 6: Give items for inventory test
+  - action: "servercommand"
+    command: "give pilaf_admin diamond_sword 1"
+    name: "Give diamond sword"
+
+  - action: "servercommand"
+    command: "give pilaf_admin golden_apple 5"
+    name: "Give golden apples"
+
+  # Test 7: Check inventory
+  - action: "getinventory"
+    player: "pilaf_admin"
+    name: "Check inventory before clear"
+    storeAs: "inventory_before_clear"
+
+  # Test 8: Clear entire inventory
+  - action: "servercommand"
+    command: "clear pilaf_admin"
+    name: "Clear all inventory"
+
+  - action: "getinventory"
+    player: "pilaf_admin"
+    name: "Check inventory after full clear"
+    storeAs: "inventory_after_clear"
+
+cleanup:
+  - action: "servercommand"
+    command: "say [Pilaf] Player management test completed"
+    name: "Announce completion"
+
+  - action: "servercommand"
+    command: "clear pilaf_admin"
+    name: "Final inventory clear"
+
+  - action: "servercommand"
+    command: "gamemode survival pilaf_admin"
+    name: "Set survival mode"
+
+  - action: "disconnect"
+    player: "pilaf_admin"
+    name: "Disconnect test player"

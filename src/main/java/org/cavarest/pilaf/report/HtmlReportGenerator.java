@@ -18,7 +18,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Generates beautiful HTML SPA-style test reports for PILAF.
+ * Generates beautiful HTML SPA-style test reports for Pilaf.
  * Uses Pebble template engine for clean separation of template and logic.
  */
 public class HtmlReportGenerator {
@@ -30,6 +30,18 @@ public class HtmlReportGenerator {
         return new PebbleEngine.Builder().build();
     }
 
+    /**
+     * Reads a resource file and returns its content as a string.
+     */
+    private static String readResourceFile(String resourcePath) throws IOException {
+        try (InputStream is = HtmlReportGenerator.class.getClassLoader().getResourceAsStream(resourcePath)) {
+            if (is == null) {
+                throw new IOException("Resource not found: " + resourcePath);
+            }
+            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
+    }
+
     public static void generate(String suiteName, boolean passed, LocalDateTime startTime,
             LocalDateTime endTime, List<TestReporter.TestStory> stories,
             String serverLogs, String clientLogs, String outputDir) throws IOException {
@@ -37,10 +49,12 @@ public class HtmlReportGenerator {
         // Create fresh engine each time to avoid template caching issues
         PebbleEngine engine = createEngine();
 
-        // Load template (CSS is inline in template now)
-        PebbleTemplate template = engine.getTemplate("templates/report.peb");
+        // Load Vue template (SPA-style, client-side rendering)
+        PebbleTemplate template = engine.getTemplate("templates/report-vue.peb");
 
-        // No external CSS needed - styles are inline in template
+        // Read CSS and JS content from resource files
+        String cssContent = readResourceFile("templates/report.css");
+        String jsContent = readResourceFile("templates/report-vue.js");
 
         // Calculate stats
         long durationMs = Duration.between(startTime, endTime).toMillis();
@@ -60,6 +74,14 @@ public class HtmlReportGenerator {
         context.put("storiesFailed", storiesFailed);
         context.put("generatedAt", LocalDateTime.now().format(DATE_FORMAT));
         context.put("stories", transformStories(stories));
+
+        // Add CSS and JS content for inlining
+        context.put("cssContent", cssContent);
+        context.put("jsContent", jsContent);
+
+        // Serialize stories as JSON for Alpine.js SPA
+        String storiesJson = serializeStoriesToJson(stories, suiteName, passed, startTime, endTime);
+        context.put("storiesJson", storiesJson);
 
         // Add flat steps list for two-pane layout
         // Use steps from stories if available, otherwise use legacy steps list
@@ -104,6 +126,22 @@ public class HtmlReportGenerator {
     }
 
     /**
+     * Serializes all stories data to JSON string for Alpine.js SPA.
+     */
+    private static String serializeStoriesToJson(List<TestReporter.TestStory> stories, String suiteName, boolean passed, LocalDateTime startTime, LocalDateTime endTime) throws IOException {
+        Map<String, Object> reportData = new LinkedHashMap<>();
+        reportData.put("suiteName", suiteName);
+        reportData.put("passed", passed);
+        reportData.put("startTime", startTime.format(DATE_FORMAT));
+        reportData.put("endTime", endTime.format(DATE_FORMAT));
+        reportData.put("durationMs", Duration.between(startTime, endTime).toMillis());
+        reportData.put("generatedAt", LocalDateTime.now().format(DATE_FORMAT));
+        List<Map<String, Object>> transformedStories = transformStories(stories);
+        reportData.put("stories", transformedStories);
+        return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(reportData);
+    }
+
+    /**
      * Transforms TestStory objects into template-friendly maps.
      */
     private static List<Map<String, Object>> transformStories(List<TestReporter.TestStory> stories) {
@@ -130,7 +168,7 @@ public class HtmlReportGenerator {
     }
 
     private static Map<String, Object> transformStep(TestReporter.TestStep step) {
-        Map<String, Object> map = new HashMap<>();
+        Map<String, Object> map = new LinkedHashMap<>();
         map.put("name", step.name);
         map.put("passed", step.passed);
         map.put("expected", step.expected);
@@ -159,13 +197,12 @@ public class HtmlReportGenerator {
         map.put("actionType", actionType);
 
         // Actual result type inherits from action type for better labeling
-        if (step.actual != null) {
-            map.put("actual", step.actual);
-            map.put("actualType", detectResultType(step.actual, actionType));
-            // Format the actual response for display
-            String formattedActual = formatResponseForDisplay(step.actual);
-            map.put("actualHtml", formattedActual);
-        }
+        // Always include actual field - show "EMPTY RESPONSE" if null
+        String actualValue = (step.actual != null) ? step.actual : "EMPTY RESPONSE";
+        map.put("actual", actualValue);
+        map.put("actualType", detectResultType(actualValue, actionType));
+        // Store raw JSON - JavaScript will render it with the tree viewer
+        map.put("actualHtml", null);  // No pre-rendered HTML, let JS handle it
 
         // Pre-render HTML for states
         map.put("stateBeforeHtml", renderState(step.stateBefore));
@@ -182,7 +219,310 @@ public class HtmlReportGenerator {
 
         // Transform evidence
         map.put("evidence", transformEvidence(step.evidence));
+
+        // Execution context - always include, with defaults
+        Map<String, Object> executionContext = new LinkedHashMap<>();
+        executionContext.put("executor", step.executor != null ? step.executor : "UNKNOWN");
+        if (step.executorPlayer != null) {
+            executionContext.put("executorPlayer", step.executorPlayer);
+        }
+        if (step.isOperator != null) {
+            executionContext.put("isOperator", step.isOperator);
+        }
+        map.put("executionContext", executionContext);
+
         return map;
+    }
+
+    /**
+     * Renders a response as a collapsible JSON tree HTML structure.
+     */
+    private static String renderCollapsibleJsonTree(String response) {
+        if (response == null || response.trim().isEmpty()) {
+            return "";
+        }
+
+        String trimmed = response.trim();
+        Object data = null;
+
+        // Try to parse as JSON
+        try {
+            data = MAPPER.readValue(trimmed, Object.class);
+        } catch (Exception e) {
+            // Try to convert Java object notation
+            String converted = convertJavaToJson(trimmed);
+            if (converted != null) {
+                try {
+                    data = MAPPER.readValue(converted, Object.class);
+                } catch (Exception e2) {
+                    // Return as plain text if parsing fails
+                    return escapeHtml(response);
+                }
+            } else {
+                return escapeHtml(response);
+            }
+        }
+
+        // Generate collapsible tree HTML
+        return renderJsonTree(data, "", 0);
+    }
+
+    /**
+     * Recursively renders a JSON node as collapsible HTML.
+     */
+    private static String renderJsonTree(Object value, String path, int depth) {
+        String type = getValueType(value);
+        String nodeId = path.isEmpty() ? "root" : path;
+        boolean hasChildren = type.equals("object") || type.equals("array");
+
+        StringBuilder html = new StringBuilder();
+        html.append("<div class=\"json-tree\">");
+        html.append(renderJsonNode(value, path, depth, hasChildren, nodeId));
+        html.append("</div>");
+
+        return html.toString();
+    }
+
+    /**
+     * Renders a single JSON node with optional children.
+     */
+    private static String renderJsonNode(Object value, String path, int depth, boolean hasChildren, String nodeId) {
+        String type = getValueType(value);
+        StringBuilder html = new StringBuilder();
+
+        html.append("<div class=\"line\">");
+
+        if (hasChildren) {
+            html.append("<span class=\"toggle collapsed\" onclick=\"toggleNode(this, '").append(escapeHtml(nodeId)).append("')\"></span>");
+        } else {
+            html.append("<span class=\"toggle\" style=\"visibility: hidden;\"></span>");
+        }
+
+        if (!path.isEmpty()) {
+            String key = path.contains(".") ? path.substring(path.lastIndexOf('.') + 1) : path;
+            if (key.contains("[")) {
+                key = key.substring(key.indexOf('['));
+            }
+            html.append("<span class=\"key\">").append(escapeHtml(key)).append("</span>: ");
+        }
+
+        switch (type) {
+            case "object":
+                @SuppressWarnings("unchecked")
+                Map<String, Object> obj = (Map<String, Object>) value;
+                html.append("<span class=\"bracket\">{</span>");
+                html.append("<div class=\"children\" id=\"").append(escapeHtml(nodeId)).append("_children\">");
+                String[] keys = obj.keySet().toArray(new String[0]);
+                for (int i = 0; i < keys.length; i++) {
+                    String key = keys[i];
+                    String childPath = path.isEmpty() ? key : path + "." + key;
+                    html.append(renderJsonNode(obj.get(key), childPath, depth + 1, false, childPath));
+                    if (i < keys.length - 1) {
+                        html.append(",");
+                    }
+                    html.append("");
+                }
+                html.append("</div>");
+                html.append("<span class=\"bracket\">}</span>");
+                break;
+
+            case "array":
+                @SuppressWarnings("unchecked")
+                List<Object> arr = (List<Object>) value;
+                html.append("<span class=\"bracket\">[</span>");
+                html.append("<div class=\"children\" id=\"").append(escapeHtml(nodeId)).append("_children\">");
+                for (int i = 0; i < arr.size(); i++) {
+                    String childPath = path + "[" + i + "]";
+                    html.append(renderJsonNode(arr.get(i), childPath, depth + 1, false, childPath));
+                    if (i < arr.size() - 1) {
+                        html.append(",");
+                    }
+                    html.append("");
+                }
+                html.append("</div>");
+                html.append("<span class=\"bracket\">]</span>");
+                break;
+
+            case "string":
+                html.append("<span class=\"string\">\"").append(escapeHtml((String) value)).append("\"</span>");
+                break;
+
+            case "number":
+                html.append("<span class=\"number\">").append(value).append("</span>");
+                break;
+
+            case "boolean":
+                html.append("<span class=\"boolean\">").append(value).append("</span>");
+                break;
+
+            case "null":
+                html.append("<span class=\"null\">null</span>");
+                break;
+
+            default:
+                html.append("<span class=\"string\">\"").append(escapeHtml(String.valueOf(value))).append("\"</span>");
+        }
+
+        html.append("</div>");
+        return html.toString();
+    }
+
+    /**
+     * Gets the type of a JSON value.
+     */
+    private static String getValueType(Object value) {
+        if (value == null) return "null";
+        if (value instanceof Map) return "object";
+        if (value instanceof List) return "array";
+        if (value instanceof String) return "string";
+        if (value instanceof Number) return "number";
+        if (value instanceof Boolean) return "boolean";
+        return "unknown";
+    }
+
+    /**
+     * Converts Java object notation to JSON.
+     * Handles patterns like {items=[{name=value}]} -> {"items":[{"name":"value"}]}
+     */
+    private static String convertJavaToJson(String javaStr) {
+        if (javaStr == null || javaStr.isEmpty()) return null;
+        if (!javaStr.contains("=") && !javaStr.contains("[")) return null;
+
+        try {
+            return convertJavaObjectToJson(javaStr.trim());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Recursively converts Java object notation to JSON.
+     */
+    private static String convertJavaObjectToJson(String javaStr) {
+        javaStr = javaStr.trim();
+
+        // Handle empty or simple values
+        if (javaStr.isEmpty()) return "";
+
+        // Check if it's a string (wrapped in quotes)
+        if (javaStr.startsWith("\"") && javaStr.endsWith("\"")) {
+            return javaStr;
+        }
+
+        // Check if it's a number
+        if (javaStr.matches("-?\\d+(\\.\\d+)?")) {
+            return javaStr;
+        }
+
+        // Check if it's a boolean or null
+        if (javaStr.equals("true") || javaStr.equals("false") || javaStr.equals("null")) {
+            return javaStr;
+        }
+
+        // Handle array notation: [item1, item2, ...]
+        if (javaStr.startsWith("[") && javaStr.endsWith("]")) {
+            String content = javaStr.substring(1, javaStr.length() - 1).trim();
+            if (content.isEmpty()) {
+                return "[]";
+            }
+            StringBuilder result = new StringBuilder("[");
+            int depth = 0;
+            int start = 0;
+            boolean inString = false;
+
+            for (int i = 0; i < content.length(); i++) {
+                char c = content.charAt(i);
+                if (c == '"' && (i == 0 || content.charAt(i - 1) != '\\')) {
+                    inString = !inString;
+                }
+                if (!inString) {
+                    if (c == '[' || c == '{') depth++;
+                    if (c == ']' || c == '}') depth--;
+                    if (depth == 0 && c == ',') {
+                        String item = content.substring(start, i).trim();
+                        if (!item.isEmpty()) {
+                            result.append(convertJavaObjectToJson(item)).append(", ");
+                        }
+                        start = i + 1;
+                    }
+                }
+            }
+
+            String lastItem = content.substring(start).trim();
+            if (!lastItem.isEmpty()) {
+                result.append(convertJavaObjectToJson(lastItem));
+            }
+
+            // Remove trailing comma
+            if (result.length() > 1 && result.charAt(result.length() - 1) == ',') {
+                result.setLength(result.length() - 1);
+            }
+            result.append("]");
+            return result.toString();
+        }
+
+        // Handle object notation: {key1=value1, key2=value2, ...}
+        if (javaStr.startsWith("{") && javaStr.endsWith("}")) {
+            String content = javaStr.substring(1, javaStr.length() - 1).trim();
+            if (content.isEmpty()) {
+                return "{}";
+            }
+
+            StringBuilder result = new StringBuilder("{");
+            int depth = 0;
+            int keyStart = 0;
+            int valueStart = -1;
+            boolean inString = false;
+            boolean foundEquals = false;
+
+            for (int i = 0; i < content.length(); i++) {
+                char c = content.charAt(i);
+                if (c == '"' && (i == 0 || content.charAt(i - 1) != '\\')) {
+                    inString = !inString;
+                }
+                if (!inString) {
+                    if (c == '[' || c == '{') depth++;
+                    if (c == ']' || c == '}') depth--;
+                    if (depth == 0) {
+                        if (c == '=' && !foundEquals) {
+                            String key = content.substring(keyStart, i).trim();
+                            if (!key.isEmpty()) {
+                                result.append("\"").append(escapeJsonKey(key)).append("\": ");
+                            }
+                            valueStart = i + 1;
+                            foundEquals = true;
+                        }
+                        if (c == ',' && foundEquals) {
+                            String value = content.substring(valueStart, i).trim();
+                            if (!value.isEmpty()) {
+                                result.append(convertJavaObjectToJson(value)).append(", ");
+                            }
+                            keyStart = i + 1;
+                            valueStart = -1;
+                            foundEquals = false;
+                        }
+                    }
+                }
+            }
+
+            // Handle last key-value pair
+            if (foundEquals && valueStart < content.length()) {
+                String value = content.substring(valueStart).trim();
+                if (!value.isEmpty()) {
+                    result.append(convertJavaObjectToJson(value));
+                }
+            }
+
+            result.append("}");
+            return result.toString();
+        }
+
+        // Fallback: return as-is (escaped)
+        return "\"" + escapeHtml(javaStr) + "\"";
+    }
+
+    private static String escapeJsonKey(String key) {
+        return key.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
     }
 
     /**

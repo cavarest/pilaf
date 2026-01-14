@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * HeadlessMc backend for PILAF test execution.
+ * HeadlessMc backend for Pilaf test execution.
  * Uses HeadlessMc to launch and manage Minecraft servers.
  *
  * Limitations:

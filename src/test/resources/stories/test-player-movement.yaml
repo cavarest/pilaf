@@ -1,0 +1,101 @@
+# Test: Player Movement
+# Category: Player Commands
+# Purpose: Tests player movement, positioning, and teleport commands
+
+name: "Player Movement Test"
+description: |
+  Tests player movement commands including position retrieval,
+  teleportation, and position comparison.
+
+backend: mineflayer
+
+setup:
+  - action: "connect"
+    player: "pilaf_mover"
+    name: "Connect movement test player"
+
+  - action: "wait"
+    duration: 5
+    name: "Wait for connection"
+
+  - action: "servercommand"
+    command: "say [Pilaf] Starting player movement test..."
+    name: "Announce test start"
+
+  - action: "servercommand"
+    command: "gamemode creative pilaf_mover"
+    name: "Set player to creative mode"
+
+steps:
+  # Test 1: Get initial position
+  - action: "get_player_position"
+    player: "pilaf_mover"
+    name: "Get initial player position"
+    storeAs: "position_initial"
+
+  # Test 2: Teleport to new location
+  - action: "servercommand"
+    command: "tp pilaf_mover 100 64 100"
+    name: "Teleport player to new location"
+
+  - action: "wait"
+    duration: 3
+    name: "Wait for teleport"
+
+  - action: "get_player_position"
+    player: "pilaf_mover"
+    name: "Get position after teleport"
+    storeAs: "position_after_teleport"
+
+  # Test 3: Compare positions
+  - action: "compare_states"
+    state1: "position_initial"
+    state2: "position_after_teleport"
+    name: "Compare initial and teleported positions"
+    storeAs: "position_comparison"
+
+  # Test 4: Teleport to different coordinates
+  - action: "servercommand"
+    command: "tp pilaf_mover -50 70 -50"
+    name: "Teleport to negative coordinates"
+
+  - action: "wait"
+    duration: 3
+    name: "Wait for teleport"
+
+  - action: "get_player_position"
+    player: "pilaf_mover"
+    name: "Get position after second teleport"
+    storeAs: "position_final"
+
+  # Test 5: Set spawn point
+  - action: "servercommand"
+    command: "spawnpoint pilaf_mover 0 64 0"
+    name: "Set player spawn point"
+
+  # Test 6: Teleport back to origin
+  - action: "servercommand"
+    command: "tp pilaf_mover 0 64 0"
+    name: "Teleport back to origin"
+
+  - action: "wait"
+    duration: 3
+    name: "Wait for teleport"
+
+  - action: "get_player_position"
+    player: "pilaf_mover"
+    name: "Get final position"
+    storeAs: "position_origin"
+
+cleanup:
+  - action: "servercommand"
+    command: "say [Pilaf] Player movement test completed"
+    name: "Announce completion"
+
+  - action: "servercommand"
+    command: "tp pilaf_mover 0 64 0"
+    name: "Return player to spawn"
+
+  - action: "disconnect"
+    player: "pilaf_mover"
+    name: "Disconnect test player"

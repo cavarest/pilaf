@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
- * HTTP client for the PILAF Mineflayer Bridge.
+ * HTTP client for the Pilaf Mineflayer Bridge.
  * Communicates with the Node.js bridge server to control Minecraft bots.
  */
 public class MineflayerClient {

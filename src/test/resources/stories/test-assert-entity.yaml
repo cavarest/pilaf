@@ -1,0 +1,130 @@
+# Test: Entity Existence Assertions
+# Category: Assertions
+# Purpose: Tests entity existence and verification assertions
+
+name: "Entity Assertions Test"
+description: |
+  Tests entity existence assertions.
+  Demonstrates verifying entities are present or absent.
+
+backend: mineflayer
+
+setup:
+  - action: "connect"
+    player: "pilaf_assert"
+    name: "Connect assertion test player"
+
+  - action: "wait"
+    duration: 5
+    name: "Wait for connection"
+
+  - action: "servercommand"
+    command: "say [Pilaf] Starting entity assertions test..."
+    name: "Announce test start"
+
+  - action: "servercommand"
+    command: "gamemode creative pilaf_assert"
+    name: "Set creative mode"
+
+steps:
+  # Test 1: Get initial entities (should be empty)
+  - action: "getentities"
+    player: "pilaf_assert"
+    name: "Get initial entities"
+    storeAs: "entities_before"
+
+  # Test 2: Spawn entities for testing
+  - action: "servercommand"
+    command: "summon zombie 10 65 10"
+    name: "Spawn test zombie"
+
+  - action: "wait"
+    duration: 2
+    name: "Wait for spawn"
+
+  - action: "servercommand"
+    command: "summon cow 15 65 15"
+    name: "Spawn test cow"
+
+  - action: "wait"
+    duration: 2
+    name: "Wait for spawn"
+
+  # Test 3: Get entities after spawning
+  - action: "getentities"
+    player: "pilaf_assert"
+    name: "Get entities after spawning"
+    storeAs: "entities_after"
+
+  # Test 4: Compare to verify entities were added
+  - action: "compare_states"
+    state1: "entities_before"
+    state2: "entities_after"
+    name: "Compare entity counts"
+    storeAs: "entity_change"
+
+  - action: "print_state_comparison"
+    variableName: "entity_change"
+    name: "Print entity change"
+
+  # Test 5: Store entity count
+  - action: "store_state"
+    variableName: "entity_count"
+    fromCommandResult: "entities_after"
+    name: "Store entity count"
+
+  # Test 6: Print final entity state
+  - action: "print_stored_state"
+    variableName: "entities_after"
+    name: "Print final entity state"
+
+  # Test 7: Verify entities exist (conceptual assertion)
+  - action: "servercommand"
+    command: "say [Pilaf] Verifying entities exist..."
+    name: "Announce verification"
+
+  # Test 8: Spawn additional entity
+  - action: "servercommand"
+    command: "summon skeleton 20 65 20"
+    name: "Spawn skeleton"
+
+  - action: "wait"
+    duration: 2
+    name: "Wait for spawn"
+
+  - action: "getentities"
+    player: "pilaf_assert"
+    name: "Get entities after skeleton"
+    storeAs: "entities_final"
+
+  # Test 9: Final comparison
+  - action: "compare_states"
+    state1: "entities_after"
+    state2: "entities_final"
+    name: "Compare final entity counts"
+    storeAs: "entity_final_change"
+
+  - action: "print_state_comparison"
+    variableName: "entity_final_change"
+    name: "Print final entity change"
+
+cleanup:
+  - action: "servercommand"
+    command: "kill @e[type=zombie,x=10,y=65,z=10,distance=..20]"
+    name: "Remove zombie"
+
+  - action: "servercommand"
+    command: "kill @e[type=cow,x=15,y=65,z=15,distance=..20]"
+    name: "Remove cow"
+
+  - action: "servercommand"
+    command: "kill @e[type=skeleton,x=20,y=65,z=20,distance=..20]"
+    name: "Remove skeleton"
+
+  - action: "servercommand"
+    command: "say [Pilaf] Entity assertions test completed"
+    name: "Announce completion"
+
+  - action: "disconnect"
+    player: "pilaf_assert"
+    name: "Disconnect test player"

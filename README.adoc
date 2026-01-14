@@ -23,23 +23,23 @@ Traditional Minecraft plugin testing requires extensive Java code to simulate pl
 .PILAF Testing Architecture
 [source]
 ----
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│ YAML Story  │    │   PILAF     │    │   Backend   │    │ Minecraft   │
-│             │    │  Framework  │    │  Interface  │    │   Server    │
-│ • Setup     │───▶│             │───▶│             │───▶│             │
-│ • Steps     │    │ • Parser    │    │ • Mineflayer│    │ • Players   │
-│ • Cleanup   │    │ • Executor  │    │ • RCON      │    │ • Commands  │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-                            │                 │                 │
-                            ▼                 ▼                 ▼
-                    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-                    │   State     │    │  Report     │    │   Docker    │
-                    │ Management  │    │ Generator   │    │ Orchestrator│
-                    │             │    │             │    │             │
-                    │ • Variables │    │ • HTML      │    │ • Server    │
-                    │ • Compare   │    │ • Screenshots│    │ • Services  │
-                    │ • JSONPath  │    │ • Logs      │    │ • Cleanup   │
-                    └─────────────┘    └─────────────┘    └─────────────┘
+┌─────────────┐    ┌─────────────┐     ┌──────────────┐   ┌─────────────┐
+│ YAML Story  │    │   PILAF     │     │   Backend    │   │ Minecraft   │
+│             │    │  Framework  │     │  Interface   │   │   Server    │
+│ • Setup     │───▶│             │────▶│              │──▶│             │
+│ • Steps     │    │ • Parser    │     │ • Mineflayer │   │ • Players   │
+│ • Cleanup   │    │ • Executor  │     │ • RCON       │   │ • Commands  │
+└─────────────┘    └─────────────┘     └──────────────┘   └─────────────┘
+                            │                 │                  │
+                            ▼                 ▼                  ▼
+                    ┌─────────────┐    ┌──────────────┐   ┌─────────────┐
+                    │   State     │    │  Report      │   │   Docker    │
+                    │ Management  │    │ Generator    │   │ Orchestrator│
+                    │             │    │              │   │             │
+                    │ • Variables │    │ • HTML       │   │ • Server    │
+                    │ • Compare   │    │ • Screenshots│   │ • Services  │
+                    │ • JSONPath  │    │ • Logs       │   │ • Cleanup   │
+                    └─────────────┘    └──────────────┘   └─────────────┘
 ----
 
 === Core Components

@@ -24,6 +24,7 @@ public class StoryComparison {
 
     /**
      * Sets whether the story comparison is consistent across backends
+     * @param consistent true if consistent, false otherwise
      */
     public void setConsistent(boolean consistent) {
         this.consistent = consistent;
@@ -31,6 +32,7 @@ public class StoryComparison {
 
     /**
      * Sets the list of inconsistencies found
+     * @param inconsistencies the list of inconsistency descriptions
      */
     public void setInconsistencies(List<String> inconsistencies) {
         this.inconsistencies = inconsistencies != null ? inconsistencies : new ArrayList<>();
@@ -38,6 +40,8 @@ public class StoryComparison {
 
     /**
      * Adds a test result from a specific backend
+     * @param backendName the name of the backend
+     * @param result the test result
      */
     public void addBackendResult(String backendName, TestResult result) {
         backendResults.put(backendName, result);
@@ -45,6 +49,8 @@ public class StoryComparison {
 
     /**
      * Gets the test result from a specific backend
+     * @param backendName the name of the backend
+     * @return the test result, or null if not found
      */
     public TestResult getBackendResult(String backendName) {
         return backendResults.get(backendName);
@@ -52,6 +58,7 @@ public class StoryComparison {
 
     /**
      * Gets all backend results
+     * @return unmodifiable map of backend names to results
      */
     public Map<String, TestResult> getBackendResults() {
         return Collections.unmodifiableMap(backendResults);
@@ -59,6 +66,7 @@ public class StoryComparison {
 
     /**
      * Gets the story file name
+     * @return the story file path
      */
     public String getStoryFile() {
         return storyFile;
@@ -66,6 +74,7 @@ public class StoryComparison {
 
     /**
      * Checks if the story is consistent across all backends
+     * @return true if consistent, false otherwise
      */
     public boolean isConsistent() {
         return consistent;
@@ -73,6 +82,7 @@ public class StoryComparison {
 
     /**
      * Gets the list of inconsistencies
+     * @return unmodifiable list of inconsistency descriptions
      */
     public List<String> getInconsistencies() {
         return Collections.unmodifiableList(inconsistencies);

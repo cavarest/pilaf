@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# PILAF Test Automation Script
-# This script compiles PILAF, starts Docker services, runs tests, and cleans up.
+# Pilaf Test Automation Script
+# This script compiles Pilaf, starts Docker services, runs tests, and cleans up.
 #
 # Usage: ./run-pilaf-test.sh [options]
-#   -b, --build       Build PILAF before running
+#   -b, --build       Build Pilaf before running
 #   -s, --skip-build  Skip building (use existing build)
 #   -c, --config      Specify config file (default: config-demo.yaml)
 #   -t, --story       Specify story file (default: demo-story.yaml)
@@ -18,7 +18,7 @@ set -e
 BUILD=false
 SKIP_BUILD=false
 CONFIG_FILE="config-demo.yaml"
-STORY_FILE="demo-story.yaml"
+STORY_FILE="examples/"
 VERBOSE=""
 DOCKER_DIR="docker"
 WAIT_TIME=90
@@ -194,7 +194,7 @@ cleanup() {
 trap cleanup EXIT
 
 # Main execution
-echo_step "PILAF Test Automation"
+echo_step "Pilaf Test Automation"
 
 # Step 0: Ensure we have a valid JDK 21
 echo_info "Checking Java environment..."
@@ -211,15 +211,15 @@ fi
 # Verify Java version
 java -version 2>&1 | head -3
 
-# Step 1: Build PILAF if requested or if not skipping
+# Step 1: Build Pilaf if requested or if not skipping
 if [ "$SKIP_BUILD" = false ]; then
-    echo_info "Building PILAF..."
+    echo_info "Building Pilaf..."
     if [ "$BUILD" = true ] || [ ! -f "build/libs/pilaf-*.jar" ]; then
         ./gradlew clean build -x test
-        echo_success "PILAF built successfully"
+        echo_success "Pilaf built successfully"
     else
         ./gradlew build -x test
-        echo_success "PILAF built (incremental)"
+        echo_success "Pilaf built (incremental)"
     fi
 else
     echo_info "Skipping build (--skip-build)"
@@ -240,10 +240,10 @@ wait_for_server || {
 }
 
 # Step 4: Run tests
-echo_step "Running PILAF tests..."
-echo_info "Config: $CONFIG_FILE, Story: $STORY_FILE"
+echo_step "Running Pilaf tests..."
+echo_info "Config: $CONFIG_FILE, Stories: $STORY_FILE"
 
-./gradlew run --args="--config $CONFIG_FILE $STORY_FILE $VERBOSE"
+./gradlew run --args="--config $CONFIG_FILE --stories $STORY_FILE $VERBOSE"
 
 if [ $? -eq 0 ]; then
     echo_success "Tests completed successfully!"
@@ -256,9 +256,9 @@ fi
 echo_step "Test Complete"
 echo ""
 echo -e "${GREEN}📊 Test Report (HTML):${NC}"
-echo -e "${GREEN}   target/pilaf-reports/PILAF_CLI_Test_Run_report.html${NC}"
+echo -e "${GREEN}   target/pilaf-reports/Pilaf_CLI_Test_Run_report.html${NC}"
 echo ""
 echo -e "${GREEN}📄 Other Reports:${NC}"
-echo -e "${GREEN}   target/pilaf-reports/PILAF_CLI_Test_Run_report.json${NC}"
-echo -e "${GREEN}   target/pilaf-reports/PILAF_CLI_Test_Run_report.txt${NC}"
-echo -e "${GREEN}   target/pilaf-reports/TEST-PILAF_CLI_Test_Run.xml${NC}"
+echo -e "${GREEN}   target/pilaf-reports/Pilaf_CLI_Test_Run_report.json${NC}"
+echo -e "${GREEN}   target/pilaf-reports/Pilaf_CLI_Test_Run_report.txt${NC}"
+echo -e "${GREEN}   target/pilaf-reports/TEST-Pilaf_CLI_Test_Run.xml${NC}"

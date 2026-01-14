@@ -5,7 +5,7 @@ client_backend: headlessmc
 # Server settings
 server_version: "1.21.5"
 rcon_host: localhost
-rcon_port: 25575
+rcon_port: 35125
 rcon_password: dragon123
 
 # HeadlessMc settings

@@ -1,0 +1,88 @@
+# Test: Entity Spawning and Management
+# Category: Server Commands
+# Purpose: Tests entity spawning, health management, and removal
+
+name: "Entity Spawning Test"
+description: |
+  Tests entity spawning commands including various entity types,
+  entity health management, and entity removal operations.
+
+backend: mineflayer
+
+setup:
+  - action: "connect"
+    player: "pilaf_tester"
+    name: "Connect test player"
+
+  - action: "wait"
+    duration: 5
+    name: "Wait for connection"
+
+  - action: "servercommand"
+    command: "say [Pilaf] Starting entity spawning test..."
+    name: "Announce test start"
+
+  - action: "servercommand"
+    command: "gamemode creative pilaf_tester"
+    name: "Set player to creative mode"
+
+steps:
+  # Test 1: Capture initial entity count
+  - action: "getentities"
+    player: "pilaf_tester"
+    name: "Get initial entities"
+    storeAs: "entities_initial"
+
+  # Test 2: Spawn a zombie
+  - action: "servercommand"
+    command: "summon zombie 5 65 5"
+    name: "Spawn zombie"
+
+  - action: "wait"
+    duration: 2
+    name: "Wait for spawn"
+
+  # Test 3: Spawn a cow
+  - action: "servercommand"
+    command: "summon cow 10 65 10"
+    name: "Spawn cow"
+
+  - action: "wait"
+    duration: 2
+    name: "Wait for spawn"
+
+  # Test 4: Spawn a creeper
+  - action: "servercommand"
+    command: "summon creeper -5 65 -5"
+    name: "Spawn creeper"
+
+  - action: "wait"
+    duration: 2
+    name: "Wait for spawn"
+
+  # Test 5: Get updated entity count
+  - action: "getentities"
+    player: "pilaf_tester"
+    name: "Get entities after spawning"
+    storeAs: "entities_after_spawn"
+
+cleanup:
+  - action: "servercommand"
+    command: "kill @e[type=zombie,x=5,y=65,z=5,distance=..20]"
+    name: "Remove spawned zombie"
+
+  - action: "servercommand"
+    command: "kill @e[type=cow,x=10,y=65,z=10,distance=..20]"
+    name: "Remove spawned cow"
+
+  - action: "servercommand"
+    command: "kill @e[type=creeper,x=-5,y=65,z=-5,distance=..20]"
+    name: "Remove spawned creeper"
+
+  - action: "servercommand"
+    command: "say [Pilaf] Entity spawning test completed"
+    name: "Announce completion"
+
+  - action: "disconnect"
+    player: "pilaf_tester"
+    name: "Disconnect test player"

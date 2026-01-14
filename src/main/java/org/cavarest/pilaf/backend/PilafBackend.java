@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Backend interface for PILAF test execution.
+ * Backend interface for Pilaf test execution.
  * Implementations provide different ways to interact with Minecraft servers.
  */
 public interface PilafBackend {

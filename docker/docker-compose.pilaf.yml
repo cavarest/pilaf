@@ -14,8 +14,8 @@ services:
     image: itzg/minecraft-server:java21
     container_name: pilaf-papermc
     ports:
-      - "25565:25565"  # Minecraft server port
-      - "25575:25575"  # RCON port
+      - "35115:25565"  # Minecraft server port (external:35115 -> internal:25565)
+      - "35125:25575"  # RCON port (external:35125 -> internal:25575)
     volumes:
       # World data and configs - these persist across restarts
       - papermc-data:/data
@@ -68,7 +68,7 @@ services:
       dockerfile: Dockerfile
     container_name: pilaf-mineflayer-bridge
     ports:
-      - "3000:3000"  # PILAF API port
+      - "8888:3000"  # Mineflayer API port (external:8888 -> internal:3000)
     environment:
       # Minecraft Connection
       - MC_HOST=papermc

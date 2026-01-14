@@ -1,0 +1,101 @@
+# Test: Entity Lifecycle Test
+# Category: Combined Workflows
+# Purpose: Tests complete entity lifecycle: spawn, verify, interact, remove
+
+name: "Entity Lifecycle Test"
+description: |
+  Tests the complete entity lifecycle including spawning,
+  verifying existence, and removal.
+
+backend: mineflayer
+
+setup:
+  - action: "connect"
+    player: "pilaf_lifecycle"
+    name: "Connect lifecycle test player"
+
+  - action: "wait"
+    duration: 5
+    name: "Wait for connection"
+
+  - action: "servercommand"
+    command: "say [Pilaf] Starting entity lifecycle test..."
+    name: "Announce test start"
+
+  - action: "servercommand"
+    command: "gamemode creative pilaf_lifecycle"
+    name: "Set creative mode"
+
+steps:
+  # Phase 1: Spawn Phase
+  - action: "getentities"
+    player: "pilaf_lifecycle"
+    name: "Get initial entity count"
+    storeAs: "entities_start"
+
+  - action: "servercommand"
+    command: "summon zombie 50 65 50"
+    name: "Spawn zombie"
+
+  - action: "wait"
+    duration: 2
+    name: "Wait for spawn"
+
+  - action: "servercommand"
+    command: "summon cow 55 65 55"
+    name: "Spawn cow"
+
+  - action: "wait"
+    duration: 2
+    name: "Wait for spawn"
+
+  # Phase 2: Verify Phase
+  - action: "getentities"
+    player: "pilaf_lifecycle"
+    name: "Get entity count after spawning"
+    storeAs: "entities_spawned"
+
+  - action: "compare_states"
+    state1: "entities_start"
+    state2: "entities_spawned"
+    name: "Compare entity counts"
+    storeAs: "spawn_comparison"
+
+  - action: "print_state_comparison"
+    variableName: "spawn_comparison"
+    name: "Print spawn comparison"
+
+  # Phase 3: Additional Spawn
+  - action: "servercommand"
+    command: "summon pig 60 65 60"
+    name: "Spawn pig"
+
+  - action: "wait"
+    duration: 2
+    name: "Wait for spawn"
+
+  - action: "getentities"
+    player: "pilaf_lifecycle"
+    name: "Get final entity count"
+    storeAs: "entities_final"
+
+cleanup:
+  - action: "servercommand"
+    command: "kill @e[type=zombie,x=50,y=65,z=50,distance=..30]"
+    name: "Remove zombies"
+
+  - action: "servercommand"
+    command: "kill @e[type=cow,x=55,y=65,z=55,distance=..30]"
+    name: "Remove cows"
+
+  - action: "servercommand"
+    command: "kill @e[type=pig,x=60,y=65,z=60,distance=..30]"
+    name: "Remove pigs"
+
+  - action: "servercommand"
+    command: "say [Pilaf] Entity lifecycle test completed"
+    name: "Announce completion"
+
+  - action: "disconnect"
+    player: "pilaf_lifecycle"
+    name: "Disconnect test player"

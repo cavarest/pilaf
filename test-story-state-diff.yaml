@@ -1,0 +1,85 @@
+# Pilaf State Diff Test Story
+# Demonstrates state capture, comparison, and assertion testing
+
+name: "State Diff and Assertion Test"
+description: "Tests state capture and comparison with inventory items"
+
+setup:
+  # Connect player for state testing
+  - action: "connect_player"
+    player: "pilaf_tester"
+
+  # Wait for player to fully connect
+  - action: "wait"
+    duration: 5000
+
+steps:
+  # STEP 1: Capture initial player state (empty inventory)
+  - action: "get_player_inventory"
+    player: "pilaf_tester"
+    store_state: "initial_inventory"
+    assertions:
+      - type: "assert_response_contains"
+        source: "inventory"
+        contains: "items"
+        message: "Initial inventory should have items field"
+
+  # STEP 2: Give item to player (this will change state)
+  - action: "give_item"
+    player: "pilaf_tester"
+    item: "diamond_sword"
+    count: 1
+
+  # STEP 3: Wait for item to be received
+  - action: "wait"
+    duration: 2000
+
+  # STEP 4: Capture state after giving item
+  - action: "get_player_inventory"
+    player: "pilaf_tester"
+    store_state: "after_give_inventory"
+
+  # STEP 5: Verify player has item using assertion
+  - action: "get_player_inventory"
+    player: "pilaf_tester"
+    assertions:
+      - type: "assert_player_has_item"
+        player: "pilaf_tester"
+        item: "diamond_sword"
+        message: "Player should have diamond sword after receiving it"
+
+  # STEP 6: Give another item
+  - action: "give_item"
+    player: "pilaf_tester"
+    item: "bow"
+    count: 1
+
+  # STEP 7: Wait for item
+  - action: "wait"
+    duration: 2000
+
+  # STEP 8: Capture final inventory state
+  - action: "get_player_inventory"
+    player: "pilaf_tester"
+    store_state: "final_inventory"
+
+  # STEP 9: Print stored states for verification
+  - action: "print_stored_state"
+    variable: "initial_inventory"
+    message: "Initial inventory state"
+
+  - action: "print_stored_state"
+    variable: "final_inventory"
+    message: "Final inventory state"
+
+  # STEP 10: Get server info to verify server is running
+  - action: "get_server_info"
+    assertions:
+      - type: "assert_condition"
+        condition: "true"
+        message: "Server should be running"
+
+cleanup:
+  # Clean up - disconnect player
+  - action: "disconnect_player"
+    player: "pilaf_tester"

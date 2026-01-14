@@ -1,7 +1,8 @@
 package org.cavarest.pilaf.config;
 
 import org.cavarest.pilaf.client.MineflayerClient;
-import org.cavarest.pilaf.rcon.RconClient;
+import org.cavarest.rcon.RconClient;
+import java.io.IOException;
 
 import java.net.URI;
 import java.net.http.*;
@@ -13,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
- * Manages all service connections for PILAF tests.
+ * Manages all service connections for Pilaf tests.
  * Handles HTTP client, RCON client, and Mineflayer bridge connections with health checking.
  */
 public class ConnectionManager {
@@ -56,7 +57,7 @@ public class ConnectionManager {
             return;
         }
 
-        logger.info("Initializing PILAF connections: " + config);
+        logger.info("Initializing Pilaf connections: " + config);
 
         // Test HTTP connectivity first
         if (!config.isSkipHealthChecks()) {
@@ -65,14 +66,10 @@ public class ConnectionManager {
 
         // Connect RCON
         try {
-            if (rconClient.connect()) {
-                logger.info("RCON connected to " + config.getRconHost() + ":" + config.getRconPort());
-                serviceHealth.put("rcon", true);
-            } else {
-                logger.warning("RCON authentication failed");
-                serviceHealth.put("rcon", false);
-            }
-        } catch (Exception e) {
+            rconClient.connect();
+            logger.info("RCON connected to " + config.getRconHost() + ":" + config.getRconPort());
+            serviceHealth.put("rcon", true);
+        } catch (IOException e) {
             logger.warning("RCON not available: " + e.getMessage());
             serviceHealth.put("rcon", false);
         }
@@ -96,6 +93,8 @@ public class ConnectionManager {
 
     /**
      * Connect a bot player to the server.
+     * @param username the player username to connect
+     * @throws Exception if connection fails
      */
     public void connectPlayer(String username) throws Exception {
         ensureInitialized();
@@ -110,6 +109,7 @@ public class ConnectionManager {
 
     /**
      * Disconnect a bot player from the server.
+     * @param username the player username to disconnect
      */
     public void disconnectPlayer(String username) {
         if (!connectedPlayers.containsKey(username)) {
@@ -142,7 +142,11 @@ public class ConnectionManager {
         ensureInitialized();
 
         if (Boolean.TRUE.equals(serviceHealth.get("rcon"))) {
-            return rconClient.executeCommand(command);
+            try {
+                return rconClient.sendCommand(command);
+            } catch (IOException e) {
+                throw new RuntimeException("RCON command failed", e);
+            }
         } else {
             throw new IllegalStateException("RCON not available");
         }
@@ -199,7 +203,7 @@ public class ConnectionManager {
             return;
         }
 
-        logger.info("Cleaning up PILAF connections");
+        logger.info("Cleaning up Pilaf connections");
 
         // Disconnect all players
         for (String player : new java.util.ArrayList<>(connectedPlayers.keySet())) {
@@ -209,9 +213,9 @@ public class ConnectionManager {
         // Close RCON connection
         try {
             if (rconClient != null) {
-                rconClient.disconnect();
+                rconClient.close();
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.warning("Error closing RCON: " + e.getMessage());
         }
 

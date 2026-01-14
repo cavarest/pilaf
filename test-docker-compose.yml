@@ -5,8 +5,8 @@ services:
     image: itzg/minecraft-server:java21
     container_name: pilaf-minecraft
     ports:
-      - "25565:25565"  # Minecraft server port
-      - "25575:25575"  # RCON port
+      - "35115:25565"  # Minecraft server port (external:35115 -> internal:25565)
+      - "35125:25575"  # RCON port (external:35125 -> internal:25575)
     volumes:
       - minecraft-data:/data
     environment:
@@ -23,7 +23,7 @@ services:
       - RCON_PORT=25575
 
       # Server Configuration
-      - SERVER_NAME=PILAF-Test-Server
+      - SERVER_NAME=Pilaf-Test-Server
       - MAX_PLAYERS=10
       - ONLINE_MODE=false
       - GAMEMODE=survival
@@ -38,7 +38,7 @@ services:
     image: node:18-alpine
     container_name: pilaf-mineflayer
     ports:
-      - "3000:3000"  # PILAF API port
+      - "3000:3000"  # Pilaf API port
     volumes:
       - ./mineflayer-bridge:/app
     working_dir: /app

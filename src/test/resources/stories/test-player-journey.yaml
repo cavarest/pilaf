@@ -1,0 +1,101 @@
+# Test: Player Journey Test
+# Category: Combined Workflows
+# Purpose: Tests a complete player journey from connection to disconnection
+
+name: "Player Journey Test"
+description: |
+  Tests a complete player journey including connection,
+  environment exploration, item collection, and disconnection.
+
+backend: mineflayer
+
+setup:
+  - action: "servercommand"
+    command: "say [Pilaf] Starting player journey test..."
+    name: "Announce test start"
+
+steps:
+  # Step 1: Connect player
+  - action: "connect"
+    player: "pilaf_journey"
+    name: "Connect player"
+
+  - action: "wait"
+    duration: 5
+    name: "Wait for connection"
+
+  # Step 2: Initial status check
+  - action: "get_player_health"
+    player: "pilaf_journey"
+    name: "Get initial health"
+    storeAs: "health_start"
+
+  - action: "get_player_position"
+    player: "pilaf_journey"
+    name: "Get initial position"
+    storeAs: "position_start"
+
+  # Step 3: Exploration
+  - action: "servercommand"
+    command: "tp pilaf_journey 200 64 200"
+    name: "Teleport to location 1"
+
+  - action: "wait"
+    duration: 3
+    name: "Wait"
+
+  - action: "get_player_position"
+    player: "pilaf_journey"
+    name: "Get position 1"
+    storeAs: "position_1"
+
+  # Step 4: Item collection
+  - action: "servercommand"
+    command: "tp pilaf_journey 0 64 0"
+    name: "Return to spawn"
+
+  - action: "wait"
+    duration: 3
+    name: "Wait"
+
+  - action: "servercommand"
+    command: "give pilaf_journey wooden_pickaxe 1"
+    name: "Give pickaxe"
+
+  - action: "servercommand"
+    command: "give pilaf_journey stone_sword 1"
+    name: "Give sword"
+
+  - action: "getinventory"
+    player: "pilaf_journey"
+    name: "Get inventory after items"
+    storeAs: "inventory_items"
+
+  # Step 5: Environment check
+  - action: "get_weather"
+    name: "Get weather"
+    storeAs: "weather_journey"
+
+  - action: "getentities"
+    player: "pilaf_journey"
+    name: "Get nearby entities"
+    storeAs: "entities_journey"
+
+  # Step 6: Final position
+  - action: "get_player_position"
+    player: "pilaf_journey"
+    name: "Get final position"
+    storeAs: "position_end"
+
+  - action: "servercommand"
+    command: "say [Pilaf] Player journey completed"
+    name: "Announce completion"
+
+cleanup:
+  - action: "servercommand"
+    command: "clear pilaf_journey"
+    name: "Clear inventory"
+
+  - action: "disconnect"
+    player: "pilaf_journey"
+    name: "Disconnect player"

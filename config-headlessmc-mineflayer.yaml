@@ -5,7 +5,7 @@ client_backend: mineflayer
 # Server settings
 server_version: "1.21.5"
 rcon_host: localhost
-rcon_port: 25575
+rcon_port: 35125
 rcon_password: dragon123
 
 # HeadlessMc server settings
@@ -13,4 +13,4 @@ auto_launch: true
 rcon_fallback: true
 
 # Mineflayer client settings
-mineflayer_url: http://localhost:3000
+mineflayer_url: http://localhost:8888
