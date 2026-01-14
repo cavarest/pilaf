@@ -1,0 +1,632 @@
+---
+layout: default
+title: Player Commands Reference
+nav_order: 2
+description: "Reference for primitive player commands in Pilaf"
+parent: Command Reference
+permalink: /reference/player-commands/
+---
+
+== Player Commands Reference
+
+[.lead]
+Primitive player commands are framework-level operations for player lifecycle management and command execution that cannot be accomplished using normal Minecraft player commands.
+
+== Overview
+
+Pilaf provides primitive player commands for framework-level operations:
+
+* **Player Lifecycle**: Connect and disconnect players through testing clients
+* **Command Execution**: Execute Minecraft commands as a player
+
+[TIP]
+====
+**Primitive Commands vs. Player Commands**
+
+Primitive player commands are framework-level operations that cannot be done with Minecraft commands:
+- Player connection/disconnection through testing clients (Mineflayer, HeadlessMc)
+- Command execution through the testing framework
+
+For in-game player actions, use `PLAYER_COMMAND` with standard Minecraft syntax:
+- Movement (`/tp`)
+- Items (`/give`, `/clear`)
+- Interactions (click simulation, `/attack`)
+- Data queries (`/data get entity @s`)
+====
+
+=== Command Execution Flow
+
+[source]
+----
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         Pilaf Test Story                                 │
+│  ┌─────────────────┐    ┌──────────────────┐    ┌────────────────────┐ │
+│  │  Player Action  │───►│ Mineflayer Bridge│───►│  Minecraft Client  │ │
+│  │  (Framework)    │    │   (Node.js)      │    │   (Headless)       │ │
+│  └─────────────────┘    └──────────────────┘    └────────────────────┘ │
+│                              │                                          │
+│                              ▼                                          │
+│                       ┌──────────────────┐                              │
+│                       │   Response       │                              │
+│                       │   Parsing        │                              │
+│                       └──────────────────┘                              │
+└─────────────────────────────────────────────────────────────────────────┘
+----
+
+=== Prerequisites
+
+Before using player commands, ensure:
+
+1. The Mineflayer bridge server is running and healthy (for Mineflayer backend)
+2. The Minecraft server is accessible and accepting connections
+3. Player names are unique and not already connected
+4. The server allows connections from the bridge IP
+
+'''
+
+[[connect_player]]
+=== CONNECT_PLAYER
+
+[.lead]
+Connect a player to the Minecraft server using the Mineflayer bridge. This is a framework-level primitive that establishes a player session through the testing client.
+
+==== Syntax
+
+[source,yaml]
+----
+- action: "CONNECT_PLAYER"
+  player: "player_name"                  # <1>
+  id: "unique_step_id"                   # <2>
+  name: "Human-readable name"            # <3>
+----
+
+<1> Player username to connect (must be unique)
+<2> Step ID for output referencing (optional)
+<3> Descriptive name for logging and reports (optional)
+
+==== Parameters
+
+[cols="1,1,2,3"]
+|===
+|Parameter |Type |Required |Description
+
+|`action`
+|string
+|Yes
+|Must be `"CONNECT_PLAYER"`
+
+|`player`
+|string
+|Yes
+|Player username to connect (must not already be connected)
+
+|`id`
+|string
+|No
+|Step identifier for referencing outputs
+
+|`name`
+|string
+|No
+|Human-readable description for reports
+|===
+
+==== Outputs
+
+[cols="1,2,3"]
+|===
+|Output |Type |Description
+
+|`result`
+|string
+|Connection status message
+
+|`status`
+|string
+|`"success"` or `"failure"`
+
+|`message`
+|string
+|Detailed status information
+
+|`player`
+|string
+|Name of connected player
+|===
+
+==== Response Structure
+
+[source,json]
+----
+{
+  "result": "Player pilaf_tester connected successfully",
+  "status": "success",
+  "message": "Connection established to localhost:25565",
+  "player": "pilaf_tester"
+}
+----
+
+==== Example
+
+[source,yaml]
+----
+# Connect a test player
+- action: "CONNECT_PLAYER"
+  id: "connect_tester"
+  name: "Connect test player"
+  player: "pilaf_tester"
+----
+
+==== Related Commands
+
+* <<disconnect_player,DISCONNECT_PLAYER>> - Disconnect player
+* <<player_command,PLAYER_COMMAND>> - Execute command as player
+* link:workflow-assertion-commands.html#check_service_health[CHECK_SERVICE_HEALTH] - Verify backend health
+
+'''
+
+[[disconnect_player]]
+=== DISCONNECT_PLAYER
+
+[.lead]
+Disconnect a player from the Minecraft server. This is a framework-level primitive for clean player session termination.
+
+==== Syntax
+
+[source,yaml]
+----
+- action: "DISCONNECT_PLAYER"
+  player: "player_name"                  # <1>
+  id: "unique_step_id"                   # <2>
+  name: "Human-readable name"            # <3>
+----
+
+<1> Player username to disconnect
+<2> Step ID for output referencing (optional)
+<3> Descriptive name (optional)
+
+==== Parameters
+
+[cols="1,1,2,3"]
+|===
+|Parameter |Type |Required |Description
+
+|`action`
+|string
+|Yes
+|Must be `"DISCONNECT_PLAYER"`
+
+|`player`
+|string
+|Yes
+|Player username to disconnect
+
+|`id`
+|string
+|No
+|Step identifier
+
+|`name`
+|string
+|No
+|Human-readable description
+|===
+
+==== Outputs
+
+[cols="1,2,3"]
+|===
+|Output |Type |Description
+
+|`result`
+|string
+|Disconnection status message
+
+|`status`
+|string
+|`"success"` or `"failure"`
+
+|`message`
+|string
+|Detailed status information
+
+|`player`
+|string
+|Name of disconnected player
+|===
+
+==== Example
+
+[source,yaml]
+----
+# Disconnect test player
+- action: "DISCONNECT_PLAYER"
+  id: "disconnect_tester"
+  name: "Disconnect test player"
+  player: "pilaf_tester"
+----
+
+==== Related Commands
+
+* <<connect_player,CONNECT_PLAYER>> - Connect player
+* <<player_command,PLAYER_COMMAND>> - Execute command before disconnect
+
+'''
+
+[[player_command]]
+=== PLAYER_COMMAND
+
+[.lead]
+Execute a Minecraft server command *as a player* through the RCON interface. This framework primitive allows executing any player command using standard Minecraft syntax.
+
+==== Syntax
+
+[source,yaml]
+----
+- action: "PLAYER_COMMAND"
+  id: "unique_step_id"                   # <1>
+  name: "Human-readable name"            # <2>
+  player: "player_name"                  # <3>
+  command: "minecraft_command"           # <4>
+----
+
+<1> Step ID for output referencing
+<2> Descriptive name for logging
+<3> Player to execute command as
+<4> Complete Minecraft command
+
+==== Parameters
+
+[cols="1,1,2,3"]
+|===
+|Parameter |Type |Required |Description
+
+|`action`
+|string
+|Yes
+|Must be `"PLAYER_COMMAND"`
+
+|`id`
+|string
+|No
+|Step identifier for output referencing
+
+|`name`
+|string
+|No
+|Human-readable description
+
+|`player`
+|string
+|Yes
+|Player name to execute command as
+
+|`command`
+|string
+|Yes
+|Complete Minecraft command (e.g., `"give @p diamond"`)
+|===
+
+==== Outputs
+
+[cols="1,2,3"]
+|===
+|Output |Type |Description
+
+|`result`
+|string
+|Full command response from the server
+
+|`status`
+|string
+|`"success"` or `"failure"`
+
+|`message`
+|string
+|Human-readable status message
+|===
+
+==== Common Minecraft Player Commands
+
+Use `PLAYER_COMMAND` with these standard Minecraft commands:
+
+[cols="2,3"]
+|===
+|Minecraft Command |Purpose
+
+|`give <player> <item> [count]`
+|Give items to player
+
+|`clear [player] [item] [count]`
+|Clear player inventory
+
+|`teleport <target> <destination>`
+|Teleport entity
+
+|`tp <player> <destination>`
+|Teleport player
+
+|`effect give <player> <effect>`
+|Give status effect
+
+|`data get entity @s`
+|Get player data (position, inventory, etc.)
+
+|`gamemode <mode> [player]`
+|Change game mode
+|===
+
+==== Example
+
+[source,yaml]
+----
+# Give player a diamond
+- action: "PLAYER_COMMAND"
+  id: "give_diamond"
+  name: "Give diamond to player"
+  player: "pilaf_tester"
+  command: "give @p diamond"
+
+# Get player position
+- action: "PLAYER_COMMAND"
+  id: "get_pos"
+  name: "Get player position"
+  player: "pilaf_tester"
+  command: "data get entity @s Pos"
+
+# Teleport player
+- action: "PLAYER_COMMAND"
+  name: "Teleport to spawn"
+  player: "pilaf_tester"
+  command: "tp @p 0 100 0"
+----
+
+==== Related Commands
+
+* <<execute_player_command,EXECUTE_PLAYER_COMMAND>> - Execute through Mineflayer client
+* link:server-commands.html#server_command[SERVER_COMMAND] - Execute server command
+* link:workflow-assertion-commands.html#extract_with_jsonpath[EXTRACT_WITH_JSONPATH] - Extract values from response
+
+'''
+
+[[execute_player_command]]
+=== EXECUTE_PLAYER_COMMAND
+
+[.lead]
+Execute a command as a connected player through the Mineflayer client. This framework primitive sends commands through the Mineflayer bridge rather than RCON.
+
+==== Syntax
+
+[source,yaml]
+----
+- action: "EXECUTE_PLAYER_COMMAND"
+  id: "unique_step_id"                   # <1>
+  name: "Human-readable name"            # <2>
+  player: "player_name"                  # <3>
+  command: "/command or command"         # <4>
+----
+
+<1> Step ID for output referencing
+<2> Descriptive name (optional)
+<3> Player to execute as
+<4> Command (with or without `/`)
+
+==== Parameters
+
+[cols="1,1,2,3"]
+|===
+|Parameter |Type |Required |Description
+
+|`action`
+|string
+|Yes
+|Must be `"EXECUTE_PLAYER_COMMAND"`
+
+|`id`
+|string
+|No
+|Step identifier
+
+|`name`
+|string
+|No
+|Human-readable description
+
+|`player`
+|string
+|Yes
+|Player to execute command as
+
+|`command`
+|string
+|Yes
+|Command to execute (with or without `/`)
+|===
+
+==== Outputs
+
+[cols="1,2,3"]
+|===
+|Output |Type |Description
+
+|`result`
+|string
+|Command response
+
+|`status`
+|string
+|`"success"` or `"failure"`
+
+|`message`
+|string
+|Status message
+
+|`player`
+|string
+|Player who executed
+|===
+
+==== Example
+
+[source,yaml]
+----
+# Connect player first
+- action: "CONNECT_PLAYER"
+  name: "Connect test player"
+  player: "pilaf_tester"
+
+# Execute player command
+- action: "EXECUTE_PLAYER_COMMAND"
+  id: "set_home"
+  name: "Set home location"
+  player: "pilaf_tester"
+  command: "/home set"
+
+# Execute home teleport
+- action: "EXECUTE_PLAYER_COMMAND"
+  id: "go_home"
+  name: "Teleport to home"
+  player: "pilaf_tester"
+  command: "/home"
+----
+
+==== Related Commands
+
+* <<execute_player_raw,EXECUTE_PLAYER_RAW>> - Raw command execution
+* <<connect_player,CONNECT_PLAYER>> - Connect player first
+
+'''
+
+[[execute_player_raw]]
+=== EXECUTE_PLAYER_RAW
+
+[.lead]
+Execute a raw command as a player without any processing. This framework primitive provides direct access to the player's command channel.
+
+==== Syntax
+
+[source,yaml]
+----
+- action: "EXECUTE_PLAYER_RAW"
+  id: "unique_step_id"                   # <1>
+  name: "Human-readable name"            # <2>
+  player: "player_name"                  # <3>
+  command: "raw_command_string"          # <4>
+----
+
+<1> Step ID for output referencing
+<2> Descriptive name (optional)
+<3> Player to execute as
+<4> Raw command string
+
+==== Parameters
+
+[cols="1,1,2,3"]
+|===
+|Parameter |Type |Required |Description
+
+|`action`
+|string
+|Yes
+|Must be `"EXECUTE_PLAYER_RAW"`
+
+|`id`
+|string
+|No
+|Step identifier
+
+|`name`
+|string
+|No
+|Human-readable description
+
+|`player`
+|string
+|Yes
+|Player to execute command as
+
+|`command`
+|string
+|Yes
+|Raw command string
+|===
+
+==== Outputs
+
+[cols="1,2,3"]
+|===
+|Output |Type |Description
+
+|`result`
+|string
+|Raw response from server
+
+|`status`
+|string
+|`"success"` or `"failure"`
+
+|`message`
+|string
+|Status message
+|===
+
+==== Example
+
+[source,yaml]
+----
+# Connect player
+- action: "CONNECT_PLAYER"
+  name: "Connect player"
+  player: "pilaf_tester"
+
+# Send raw command with NBT data
+- action: "EXECUTE_PLAYER_RAW"
+  id: "give_sword"
+  name: "Give enchanted sword"
+  player: "pilaf_tester"
+  command: "give pilaf_tester diamond_sword 1 {ench:[{id:0,lvl:5}]}"
+----
+
+[NOTE]
+====
+Unlike `EXECUTE_PLAYER_COMMAND`, this sends the command exactly as provided without any preprocessing or argument parsing.
+====
+
+==== Related Commands
+
+* <<execute_player_command,EXECUTE_PLAYER_COMMAND>> - Command with processing
+
+'''
+
+== Command Summary
+
+[cols="2,3,2"]
+|===
+|Command |Purpose |Key Outputs
+
+|link:#connect_player[CONNECT_PLAYER]
+|Connect player to server
+|`player`, `status`
+
+|link:#disconnect_player[DISCONNECT_PLAYER]
+|Disconnect player from server
+|`player`, `status`
+
+|link:#player_command[PLAYER_COMMAND]
+|Execute Minecraft command as player (via RCON)
+|`result`, `status`
+
+|link:#execute_player_command[EXECUTE_PLAYER_COMMAND]
+|Execute command through Mineflayer client
+|`result`, `status`
+
+|link:#execute_player_raw[EXECUTE_PLAYER_RAW]
+|Execute raw command through Mineflayer
+|`result`, `status`
+|===
+
+== See Also
+
+* link:server-commands.html[Server Commands] - Server-side operations
+* link:workflow-assertion-commands.html[Workflow & Assertion Commands] - Control flow and validation
+* link:guides/writing-stories.html[Writing Stories] - How to use commands in stories

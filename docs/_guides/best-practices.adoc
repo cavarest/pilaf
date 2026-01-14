@@ -1,0 +1,417 @@
+---
+layout: default
+title: Best Practices
+nav_order: 2
+parent: Guides
+description: "Tips and patterns for effective Pilaf testing"
+permalink: /guides/best-practices
+---
+
+== Best Practices Guide
+
+This guide provides tips, patterns, and anti-patterns for writing effective Pilaf test stories.
+
+### Story Organization
+
+=== Use Descriptive Names
+
+[cols="2,2"]
+|===
+|Bad |Good
+
+|`test1.yaml`
+|`test-lightning-ability.yaml`
+
+|`item-test.yaml`
+|`test-item-give-command.yaml`
+|===
+
+Include the action being tested and the expected outcome:
+
+[source,yaml]
+----
+name: "Test Lightning Ability - Strikes Ground and Damages Entities"
+description: "Validates that the /lightning command spawns lightning at target location"
+----
+
+=== Group Related Tests
+
+Organize stories by feature:
+
+[source]
+----
+stories/
+├── commands/
+│   ├── test-lightning-command.yaml
+│   ├── test-give-command.yaml
+│   └── test-home-command.yaml
+├── inventory/
+│   ├── test-item-pickup.yaml
+│   └── test-item-drop.yaml
+└── movement/
+    ├── test-player-teleport.yaml
+    └── test-player-flight.yaml
+----
+
+=== Keep Stories Focused
+
+Each story should test one feature or behavior:
+
+[cols="2,2"]
+|===
+|Good |Bad
+
+|Test a single command
+|Test entire plugin functionality
+
+|3-10 steps per story
+|50+ steps in one story
+
+|Clear pass/fail criteria
+|Vague assertions
+|===
+
+### Setup and Cleanup
+
+=== Always Include Cleanup
+
+Ensure your stories don't leave the server in a dirty state:
+
+[source,yaml]
+----
+cleanup:
+  - action: "execute_rcon_command"
+    command: "deop test_player"
+
+  - action: "execute_rcon_command"
+    command: "whitelist remove test_player"
+
+  - action: "execute_rcon_command"
+    command: "kill @e[type=item,name='test_item']"
+----
+
+=== Use Optional for Cleanup
+
+Mark cleanup actions as optional to handle edge cases:
+
+[source,yaml]
+----
+cleanup:
+  - action: "execute_rcon_command"
+    command: "deop test_player"
+    optional: true  # Ignore if player was never opped
+----
+
+=== Reusable Setup Stories
+
+Create shared setup stories for common configurations:
+
+[source,yaml]
+----
+# stories/setup/operator.yaml
+name: "Setup Operator"
+steps:
+  - action: "execute_rcon_command"
+    command: "op $PLAYER_NAME"
+    assertions:
+      - type: "assert_success"
+----
+
+Include in other stories:
+
+[source,yaml]
+----
+setup:
+  - import: "stories/setup/operator.yaml"
+    variables:
+      PLAYER_NAME: "test_player"
+----
+
+### Action Design
+
+=== Prefer Specific Actions
+
+Use specific actions over generic ones:
+
+[cols="2,2"]
+|===
+|Not Recommended |Recommended
+
+|`execute_rcon_command` with `/give`
+|`give_item` action
+
+|`execute_rcon_command` with `/tp`
+|`move_player` action
+
+|Manual state checks
+|`check_inventory` action
+|===
+
+Specific actions provide better error messages and backend optimization.
+
+=== Include Assertions
+
+Always validate the expected outcome:
+
+[source,yaml]
+----
+# Without assertion - blind execution
+- action: "give_item"
+  player: "test_player"
+  item: "diamond_sword"
+
+# With assertion - validates success
+- action: "give_item"
+  player: "test_player"
+  item: "diamond_sword"
+  assertions:
+    - type: "assert_success"
+----
+
+=== Use Appropriate Wait Times
+
+Don't over-wait, but allow for server processing:
+
+[source,yaml]
+----
+# Too short - may fail
+- action: "wait"
+  seconds: 0.1
+
+# Too long - slows down tests
+- action: "wait"
+  seconds: 30
+
+# Appropriate
+- action: "wait"
+  seconds: 2
+----
+
+For event-based waiting, use `wait_for_log`:
+
+[source,yaml]
+----
+# Instead of fixed wait
+- action: "wait"
+  seconds: 10
+
+# Use event-based waiting
+- action: "wait_for_log"
+  pattern: "Player spawned"
+  timeout: 10
+----
+
+### State Management
+
+=== Capture State Before Changes
+
+Always capture the initial state before performing actions:
+
+[source,yaml]
+----
+steps:
+  - action: "capture_state"
+    variable: "inventory_before"
+    target: "inventory"
+    player: "test_player"
+
+  - action: "give_item"
+    player: "test_player"
+    item: "bow"
+
+  - action: "capture_state"
+    variable: "inventory_after"
+    target: "inventory"
+    player: "test_player"
+
+  - action: "assert_state"
+    expected: "inventory_before"
+    actual: "inventory_after"
+    assertion:
+      type: "assert_not_equal"
+----
+
+=== Use Descriptive Variable Names
+
+[cols="2,2"]
+|===
+|Not Recommended |Recommended
+
+|`state1`, `state2`
+|`inventory_before`, `inventory_after`
+
+|`pos1`, `pos2`
+|`location_home`, `location_spawn`
+
+|`data`
+|`player_health`, `server_tps`
+|===
+
+### Assertions
+
+=== Be Specific with Assertions
+
+Instead of generic assertions, use specific types:
+
+[source,yaml]
+----
+# Generic - less informative
+assertions:
+  - type: "assert_success"
+
+# Specific - better error messages
+assertions:
+  - type: "assert_match"
+    pattern: "Diamond Sword"
+----
+
+=== Test Positive and Negative Cases
+
+Test both expected and unexpected behavior:
+
+[source,yaml]
+----
+steps:
+  # Positive case - valid command works
+  - action: "give_item"
+    item: "diamond_sword"
+    assertions:
+      - type: "assert_success"
+
+  # Negative case - invalid item fails gracefully
+  - action: "give_item"
+    item: "nonexistent_item"
+    assertions:
+      - type: "assert_not_match"
+        pattern: "Error"
+        invert: true
+----
+
+=== Use Invert for Negative Assertions
+
+Use `invert: true` to assert something should NOT happen:
+
+[source,yaml]
+----
+- action: "check_log"
+  pattern: "java.lang.Error"
+  assertions:
+    - type: "assert_match"
+      invert: true  # Assert NO errors occurred
+----
+
+### Performance
+
+=== Minimize Wait Times
+
+Use the minimum necessary wait time:
+
+[source,yaml]
+----
+# Instead of
+- action: "wait"
+  seconds: 10
+
+# Use
+- action: "wait"
+  seconds: 1  # Or use wait_for_log
+----
+
+=== Parallel Execution
+
+When supported, run independent tests in parallel (future feature).
+
+=== Efficient Assertions
+
+Avoid redundant checks:
+
+[cols="2,2"]
+|===
+|Not Efficient |Efficient
+
+|Check inventory after every step
+|Check inventory only at key points
+
+|Wait fixed time after each action
+|Use event-based waiting
+
+|Capture full server state
+|Capture only relevant state
+|===
+
+### Error Handling
+
+=== Handle Expected Failures
+
+Test that errors are handled gracefully:
+
+[source,yaml]
+----
+steps:
+  - action: "send_chat"
+    player: "test_player"
+    message: "/invalid_command"
+    assertions:
+      - type: "assert_not_match"
+        pattern: "Internal Error"
+        invert: true  # Should show friendly error, not crash
+----
+
+=== Provide Meaningful Error Messages
+
+Include context in assertions:
+
+[source,yaml]
+----
+- action: "check_log"
+  pattern: "Lightning struck"
+  assertions:
+    - type: "assert_match"
+      message: "Lightning should have struck the ground"
+----
+
+### Anti-Patterns
+
+=== Don'ts
+
+|===
+|Anti-Pattern |Why It's a Problem
+
+|Test everything in one story
+|Creates fragile tests that are hard to debug
+
+|Skip cleanup
+|Leaves server in dirty state for next test
+
+|Use hardcoded values
+|Makes stories brittle; use variables
+
+|Ignore failures
+|Tests should fail fast and clearly
+
+|Mix concerns
+|Server commands in one story, player actions in another
+
+|Missing assertions
+|You don't know if the test actually validated anything
+
+|Long stories (greater than 20 steps)
+|Split into multiple focused stories
+|===
+
+
+=== Do's
+
+* Keep stories small and focused (3-10 steps)
+* Always include assertions
+* Clean up after tests
+* Use variables for reusable values
+* Test both positive and negative cases
+* Use event-based waiting over fixed waits
+* Provide clear error messages
+
+### Related Documentation
+
+* link:guides/writing-stories.html[Writing Stories] - YAML DSL reference
+* link:references/index.html[Command Reference] - Complete action list
+* link:pages/troubleshooting.html[Troubleshooting] - Debugging failing tests

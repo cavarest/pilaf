@@ -1,0 +1,476 @@
+---
+layout: default
+title: Troubleshooting
+nav_order: 5
+parent: Core Topics
+description: "Common issues and solutions for Pilaf testing framework"
+permalink: /pages/troubleshooting
+---
+
+== Troubleshooting Guide
+
+This guide covers common issues and their solutions when using Pilaf.
+
+== Connection Issues
+
+=== RCON Connection Refused
+
+**Symptom**:
+
+----
+[ERROR] Failed to connect to RCON server: Connection refused
+----
+
+**Cause**: The Minecraft server is not running or RCON is not enabled.
+
+**Solution**:
+
+. Verify the server is running:
++
+[source,bash]
+----
+docker ps | grep minecraft
+----
+
+. Check server logs:
++
+[source,bash]
+----
+docker-compose -f docker-compose.pilaf.yml logs
+----
+
+. Ensure RCON is enabled in server properties:
++
+[source,properties]
+----
+enable-rcon=true
+rcon.port=25575
+rcon.password=dragon123
+----
+
+=== Mineflayer Bridge Not Responding
+
+**Symptom**:
+
+----
+[ERROR] Health check failed: Connection refused to localhost:3000
+----
+
+**Cause**: The Mineflayer bridge server is not running.
+
+**Solution**:
+
+. Start the Mineflayer bridge:
++
+[source,bash]
+----
+cd mineflayer-bridge
+npm install
+node server.js
+----
+
+. Check if the service is healthy:
++
+[source,bash]
+----
+curl http://
+localhost:3000/health
+----
+
+. Verify port configuration in `pilaf.yaml`:
++
+[source,yaml]
+----
+client:
+  port: 3000
+----
+
+=== Docker Container Won't Start
+
+**Symptom**:
+
+----
+[ERROR] Container failed to start: Exit code 1
+----
+
+**Cause**: Various issues including port conflicts or insufficient resources.
+
+**Solution**:
+
+. Check container logs:
++
+[source,bash]
+----
+docker logs pilaf-minecraft-1
+----
+
+. Check if ports are already in use:
++
+[source,bash]
+----
+lsof -i :255
+65
+lsof -i :25575
+----
+
+. Stop conflicting services:
++
+[source,bash]
+----
+docker-compose -f docker-compose.pilaf.yml down
+----
+
+== YAML Parsing Errors
+
+=== Invalid YAML Syntax
+
+**Symptom**:
+
+----
+[ERROR] Failed to parse story: mapping values are not allowed
+----
+
+**Cause**: YAML syntax error in the story file.
+
+**Solution**:
+
+. Validate YAML syntax using a YAML linter
+. Check for:
+** Inconsistent indentation (use spaces, not tabs)
+** Missing colons after keys
+** Unclosed quotes
+
+[source,yaml]
+----
+# Correct
+steps:
+- action: "send_chat"
+player: "test_player"
+message: "hello"
+
+# Incorrect (missing colon)
+steps:
+- action "send_chat"   # Missing colon after action
+player: "test_player"
+----
+
+=== Unknown Action Type
+
+**Symptom**:
+
+----
+[ERROR] Unknown action type: "invalid_action"
+----
+
+**Cause**: The action type is misspelled or not supported.
+
+**Solution**:
+
+. Check the action type against link:references/index.html[Command Reference]
+. Common mistakes:
+** `send_message` instead of `send_chat`
+** `check_inventory` instead of `check_player_inventory`
+. Ensure the backend supports the action
+
+=== Missing Required Field
+
+**Symptom**:
+
+----
+[ERROR] Missing required field: 'player' for action 'send_chat'
+----
+
+**Cause**: The action requires a field that is not provided.
+
+**Solution**:
+
+. Review the action documentation for required fields
+
+. Add the missing field to your story:
++
+[source,yaml]
+----
+steps:
+  - action: "send_chat"
+    player: "test_player"  # This field is required
+    message: "hello"
+----
+
+== Backend Issues
+
+=== Docker Backend Timeout
+
+**Symptom**:
+
+----
+[ERROR] Backend initialization timed out after 120 seconds
+----
+
+**Cause**: Server took too long to start.
+
+**Solution**:
+
+. Increase timeout in configuration:
++
+[source,yaml]
+----
+backend:
+  initialization_timeout: 300  # 5 minutes
+----
+
+. Check server resources:
++
+[source,bash]
+----
+docker stats
+----
+
+. Reduce server view distance for faster startup:
++
+[source,yaml]
+----
+docker:
+  environment:
+    VIEW_DISTANCE: 4
+    DIFFICULTY: peaceful
+----
+
+=== Mineflayer Player Connection Failed
+
+**Symptom**:
+
+----
+[ERROR] Failed to connect player: Authentication failed
+----
+
+**Cause**: Invalid credentials or offline mode not enabled.
+
+**Solution**:
+
+. Configure offline mode:
++
+[source,yaml]
+----
+server:
+  online_mode: false
+----
+
+. Verify server is in offline mode:
++
+[source,bash]
+----
+docker exec pilaf-minecraft-1 cat server.properties | grep online-mode
+----
+
+
+=== Backend Type Not Supported
+
+**Symptom**:
+
+----
+[ERROR] Unsupported backend type: 'mybackend'
+----
+
+**Cause**: Invalid backend type specified.
+
+**Solution**:
+
+. Use one of the supported backend types:
+** `docker`
+** `mineflayer`
+** `headlessmc`
+
+. Check your configuration:
++
+[source,yaml]
+----
+backend:
+  type: docker  # Correct
+----
+
+== Test Execution Issues
+
+=== Assertion Failed
+
+**Symptom**:
+
+----
+[ERROR] Assertion failed: Expected pattern 'diamond_sword' not found
+----
+
+**Cause**: The assertion condition was not met.
+
+
+**Solution**:
+
+. Review the test story logic
+
+. Check if the expected event actually occurred
+
+. Increase wait time before assertion:
++
+[source,yaml]
+----
+steps:
+  - action: "give_item"
+    player: "test_player"
+    item: "diamond_sword"
+  - action: "wait"
+    seconds: 5  # Increase wait time
+  - action: "check_inventory"
+    player: "test_player"
+    item: "diamond_sword"
+----
+
+=== Story Variable Not Found
+
+**Symptom**:
+
+----
+[ERROR] Variable 'previous_state' not found in state store
+----
+
+
+**Cause**: The variable was not stored before being referenced.
+
+**Solution**:
+
+. Ensure `capture_state` is called before `assert_state`:
++
+[source,yaml]
+----
+steps:
+  - action: "capture_state"
+    variable: "before_give"
+    target: "inventory"
+  - action: "give_item"
+    player: "test_player"
+    item: "bow"
+  - action: "capture_state"
+    variable: "after_give"
+    target: "inventory"
+  - action: "assert_state"
+    expected: "before_give"
+    actual: "after_give"
+    assertion:
+      type: "assert_not_equal"
+----
+
+
+=== Cleanup Action Failed
+
+**Symptom**:
+
+----
+[WARN] Cleanup action failed: deop test_player
+----
+
+**Cause**: The player was never opped or doesn't exist.
+
+**Solution**:
+
+. Make cleanup actions optional:
++
+[source,yaml]
+----
+cleanup:
+  - action: "execute_rcon_command"
+    command: "deop test_player"
+    optional: true  # Ignore failures
+----
+
+. Verify the player exists before cleanup
+
+== Performance Issues
+
+=== Slow Test Execution
+
+
+**Symptom**: Tests take longer than expected to complete.
+
+**Cause**: Long wait times or inefficient test design.
+
+**Solution**:
+
+. Reduce wait times to minimum necessary:
++
+[source,yaml]
+----
+- action: "wait"
+  seconds: 1  # Use minimum necessary
+----
+
+. Use event-based waiting instead of time-based:
++
+[source,yaml]
+----
+# Instead of
+- action: "wait"
+  seconds: 5
+
+# Use
+- action: "wait_for_log"
+  pattern: "Player spawned"
+  timeout: 5
+----
+
+. Run tests in parallel (future feature)
+
+=== High Memory Usage
+
+**Symptom**:
+ Out of memory errors or slow system performance.
+
+**Cause**: Too many concurrent tests or large server instances.
+
+**Solution**:
+
+. Limit server resources:
++
+[source,yaml]
+----
+docker:
+  memory: "2g"
+  cpu_shares: 1024
+----
+
+. Clean up after each test:
++
+[source,yaml]
+----
+cleanup:
+  - action: "execute_rcon_command"
+    command: "kill @e[type=item]"
+----
+
+== Getting More Help
+
+=== Enable Debug Mode
+
+Run with verbose logging:
+
+[source,bash]
+----
+./gradlew run --args="--verbose --backend docker demo-story.yaml"
+----
+
+=== Check Logs
+
+View detailed logs:
+
+[source,bash]
+----
+tail -f target/pilaf-reports/*.log
+----
+
+=== Report Issues
+
+If you can't resolve an issue:
+
+. Check existing https://github.com/cavarest/pilaf/issues[GitHub Issues]
+. Create a new issue with:
+** Steps to reproduce
+** Expected behavior
+** Actual behavior
+** Full error output
+** Configuration files (remove sensitive data)

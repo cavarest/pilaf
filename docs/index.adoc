@@ -1,0 +1,200 @@
+---
+layout: default
+title: Home
+nav_order: 1
+description: "Pilaf: Paper Integration Layer for Automation Functions - Minecraft plugin testing framework"
+permalink: /
+---
+
+== Pilaf Documentation
+
+[.badges]
+image:https://img.shields.io/github/license/cavarest/pilaf.svg[License: MIT] image:https://github.com/cavarest/pilaf/actions/workflows/rake.yml/badge.svg["Build", link="https://github.com/cavarest/pilaf/actions/workflows/rake.yml"]
+
+Welcome to Pilaf (Paper Integration Layer for Automation Functions), a
+comprehensive YAML story-driven testing framework specifically designed for
+PaperMC Minecraft plugin developers. Pilaf transforms complex Java integration
+tests into simple, readable YAML scenarios that enable automated testing of
+Minecraft plugin functionality.
+
+== Why Pilaf?
+
+=== Problem: Complex Integration Testing
+
+Traditional PaperMC plugin testing requires extensive Java code to simulate
+player actions, execute server commands, and validate results.
+
+A single integration test can require 150+ lines of complex Java code that:
+
+* Simulate player connections and actions
+* Execute server commands via RCON
+* Handle asynchronous responses
+* Clean up test data
+* Manage server lifecycle
+
+=== Solution: YAML Story Format
+
+Pilaf eliminates this complexity by providing a YAML-based story format:
+
+[source,yaml]
+----
+name: "Test Lightning Ability"
+steps:
+  - action: "execute_rcon_command"
+    command: "op test_player"
+  - action: "send_chat"
+    player: "test_player"
+    message: "/lightning"
+  - action: "wait"
+    seconds: 2
+  - action: "check_log"
+    pattern: "Lightning struck"
+    assertions:
+      - type: "assert_match"
+        pattern: "Lightning struck"
+----
+
+=== Key Benefits
+
+* *Human-Readable*: YAML stories that non-developers can understand and maintain
+* *Declarative*: Describe *what* to test rather than *how* to test it
+* *Multi-Backend*: Support for Docker, Mineflayer, and HeadlessMc backends
+* *Comprehensive*: Rich assertions, state capture, and comparison capabilities
+* *CI/CD Ready*: Seamless integration with GitHub Actions and other CI systems
+
+== Supported Backends
+
+[cols="1,3"]
+|===
+|Backend |Description
+
+|link:pages/architecture.html#docker-backend[Docker Backend]
+|Launches PaperMC server using Docker Compose with RCON support
+
+|link:pages/architecture.html#mineflayer-backend[Mineflayer Backend]
+|Headless JavaScript client for realistic player simulation
+
+|link:pages/architecture.html#headlessmc-backend[HeadlessMc Backend]
+|Self-contained Java backend for CI/CD environments
+|===
+
+== Quick Start
+
+[source,bash]
+----
+# Clone the repository
+git clone https://github.com/cavarest/pilaf.git
+cd pilaf
+
+# Build the project
+./gradlew build
+
+# Run a test story
+./gradlew run --args="--backend docker demo-story.yaml"
+----
+
+See the link:pages/quick-start.html[5-Minute Quick Start Guide] for a step-by-step tutorial.
+
+== Documentation Structure
+
+=== link:pages/index.html[Core Topics]
+Essential concepts and architecture for understanding Pilaf.
+
+=== link:tutorials/index.html[Tutorials]
+Step-by-step guides to help you get started and accomplish specific tasks.
+
+=== link:guides/index.html[Guides]
+In-depth guides for writing stories, best practices, and advanced usage.
+
+=== link:references/index.html[References]
+Complete command reference for all server actions, player actions, and assertions.
+
+== Pilaf Actions
+
+=== Server Actions
+Execute RCON commands on the Minecraft server:
+
+* `execute_rcon_command` - Run any RCON command
+* `check_server_property` - Verify server configuration
+* `wait_for_log` - Wait for specific log patterns
+* `get_server_info` - Retrieve server status and information
+
+=== Player Actions
+Simulate player interactions through connected clients:
+
+* `send_chat` - Send chat messages as a player
+* `move_player` - Move player to specific coordinates
+* `give_item` - Give items to players
+* `attack_entity` - Simulate player attacks
+* And more...
+
+=== Story Actions
+Control story flow and validation:
+
+* `wait` - Pause execution for specified duration
+* `capture_state` - Store server or player state
+* `assert_state` - Compare captured states
+* `assert_log` - Verify log patterns
+* `assert_chat` - Check chat message content
+
+== Key Features
+
+* *YAML Story DSL*: Human-readable test scenarios
+* *Multi-Player Support*: Test interactions between multiple players
+* *State Management*: Capture and compare server/player states
+* *Rich Assertions*: Log, chat, entity, and inventory validation
+* *Backend Abstraction*: Switch between Docker, Mineflayer, and HeadlessMc
+* *Comprehensive Reporting*: HTML and JUnit XML report generation
+* *GitHub Actions Integration*: Ready-made CI/CD workflows
+
+== System Architecture
+
+[source]
+----
+                        Pilaf Test Framework
+                              │
+              ┌───────────────┼───────────────┐
+              │               │               │
+              ▼               ▼               ▼
+      ┌───────────┐   ┌───────────┐   ┌───────────┐
+      │   Docker  │   │ Mineflayer│   │HeadlessMc │
+      │  Backend  │   │  Backend  │   │  Backend  │
+      └─────┬─────┘   └─────┬─────┘   └─────┬─────┘
+            │               │               │
+            └───────────────┼───────────────┘
+                            │
+                            ▼
+              ┌─────────────────────────────┐
+              │    Minecraft Server         │
+              │    (PaperMC 1.20.4+)        │
+              └─────────────────────────────┘
+                            │
+                            ▼
+              ┌─────────────────────────────┐
+              │      RCON Interface         │
+              │      Port: 25575            │
+              └─────────────────────────────┘
+----
+
+See link:pages/architecture.html[Architecture Overview] for detailed system design.
+
+== Requirements
+
+* Java 21 (LTS) or later
+* Docker and Docker Compose (for Docker backend)
+* Node.js 16+ (for Mineflayer backend)
+* Gradle 8.x
+
+== Installation
+
+See the link:pages/installation.html[Installation Guide] for detailed setup instructions.
+
+== Getting Help
+
+* *GitHub Issues*: https://github.com/cavarest/pilaf/issues[Report bugs or request features]
+* *GitHub Repository*: https://github.com/cavarest/pilaf[View source code]
+* *Documentation*: https://cavarest.github.io/pilaf/[Live documentation]
+
+== License
+
+Pilaf is open source under the link:https://opensource.org/licenses/MIT[MIT License].

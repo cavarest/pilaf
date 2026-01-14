@@ -1,0 +1,59 @@
+---
+layout: default
+title: Guides
+nav_order: 3
+has_children: true
+description: "In-depth guides for Pilaf testing framework"
+permalink: /guides/
+---
+
+== Guides
+
+In-depth guides covering advanced topics, best practices, and real-world use cases for Pilaf.
+
+== What's in This Section
+
+Comprehensive guides for:
+
+* **Writing Stories** - Mastering the YAML DSL for test stories
+* **Example Stories** - Complete working examples for all skill levels
+* **Best Practices** - Patterns and anti-patterns for effective testing
+* **Backend Configuration** - Optimizing backend settings
+* **CI/CD Integration** - Running Pilaf in automated environments
+
+== Guide Format
+
+Each guide provides:
+
+* **Overview** - What the guide covers
+* **Background** - Context and concepts
+* **Detailed explanations** - In-depth technical information
+* **Examples** - Real-world scenarios
+* **Best practices** - Recommended approaches
+* **Common pitfalls** - What to avoid
+
+== Featured Guides
+
+=== Getting Started with Stories
+
+* link:guides/writing-stories.html[Writing Stories] - Complete guide to the YAML DSL
+* link:guides/examples.html[Example Stories] - Complete working examples
+* link:guides/best-practices.html[Best Practices] - Patterns and anti-patterns
+
+=== Advanced Topics
+
+* Backend Configuration - Optimizing performance for different backends
+* State Management - Using captured states for complex assertions
+* Custom Actions - Creating your own action types
+
+=== Operations
+
+* CI/CD Integration - Running tests in GitHub Actions
+* Debugging Techniques - Troubleshooting failing tests
+* Performance Optimization - Making tests run faster
+
+== Related Documentation
+
+* link:pages/index.html[Core Topics] - Foundational concepts
+* link:tutorials/index.html[Tutorials] - Step-by-step learning
+* link:references/index.html[References] - Command reference
