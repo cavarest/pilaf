@@ -10,3 +10,4 @@ target/
 build/
 target/
 bin/
+Gemfile.lock
