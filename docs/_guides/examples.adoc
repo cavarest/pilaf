@@ -1,0 +1,420 @@
+---
+layout: default
+title: Example Stories
+nav_order: 3
+parent: Guides
+description: "Complete example stories demonstrating Pilaf capabilities"
+permalink: /guides/examples
+---
+
+== Example Stories Guide
+
+This guide provides complete, working example stories that demonstrate Pilaf's capabilities. Each example is designed to teach specific concepts and patterns.
+
+[NOTE]
+All examples are located in the `examples/` directory and can be run with:
+[source,bash]
+----
+./run-pilaf-test.sh
+----
+
+== Example 1: Simple Player Inventory Test
+
+**File**: `examples/01-simple-player-inventory.yaml` +
+**Duration**: ~500ms +
+**Concepts**: Player connection, RCON commands, inventory management, state storage
+
+This example demonstrates the fundamentals of Pilaf:
+
+.Connecting a test player via Mineflayer
+[source,yaml]
+----
+- action: "connect_player"
+  player: "pilaf_tester"
+  name: "Connect test player"
+  # Creates a Mineflayer bot instance for the player
+----
+
+.Giving items via RCON
+[source,yaml]
+----
+- action: "execute_rcon_command"
+  command: "give pilaf_tester diamond_sword 1"
+  name: "Give diamond sword"
+  # Uses RCON to give the player a diamond sword
+  # The player must be online for this to work
+----
+
+.Validating inventory with assertions
+[source,yaml]
+----
+- action: "assert_player_has_item"
+  player: "pilaf_tester"
+  item: "diamond_sword"
+  count: 1
+  name: "Verify diamond sword"
+  # Basic assertion: verify the player has exactly 1 diamond sword
+  # This fails if the item is missing or count doesn't match
+----
+
+.Storing state for later comparison
+[source,yaml]
+----
+- action: "get_player_position"
+  player: "pilaf_tester"
+  store_as: "initial_position"
+  name: "Store initial position"
+  # Retrieves and stores the player's current XYZ coordinates
+  # Use ${initial_position} to reference this value later
+----
+
+**Key Features Demonstrated:**
+
+* Player connection/disconnection
+* RCON command execution
+* Player inventory retrieval and assertion
+* Position tracking with state storage
+* State comparison using `compare_states`
+* Proper cleanup with `disconnect_player`
+
+=== Running This Example
+
+[source,bash]
+----
+./run-pilaf-test.sh --skip-build
+# Or run just this story:
+./gradlew run --args="--config config-demo.yaml examples/01-simple-player-inventory.yaml"
+----
+
+---
+
+== Example 2: Intermediate Item Transaction Test
+
+**File**: `examples/02-intermediate-item-transaction.yaml` +
+**Duration**: ~34 seconds +
+**Concepts**: Multi-player coordination, state capture before/after, JSONPath extraction
+
+This example demonstrates advanced state management patterns:
+
+.Multi-player test coordination
+[source,yaml]
+----
+setup:
+  # Wait to avoid connection throttling
+  - action: "wait"
+    duration: 20000
+    name: "Wait to avoid throttling"
+
+  - action: "connect_player"
+    player: "buyer_test_a1b2"
+    name: "Connect buyer"
+
+  # Wait between connections to avoid throttling
+  - action: "wait"
+    duration: 5000
+    name: "Wait between connections"
+
+  - action: "connect_player"
+    player: "seller_test_c3d4"
+    name: "Connect seller"
+----
+
+.Pre/post state capture pattern
+[source,yaml]
+----
+# Capture initial state (before transaction)
+- action: "get_player_inventory"
+  player: "buyer_test_a1b2"
+  store_as: "buyer_before"
+  name: "Store buyer inventory before"
+
+# ... perform the transaction ...
+
+# Capture final state (after transaction)
+- action: "get_player_inventory"
+  player: "buyer_test_a1b2"
+  store_as: "buyer_after"
+  name: "Store buyer inventory after"
+----
+
+.Comparing states to verify changes
+[source,yaml]
+----
+- action: "compare_states"
+  state1: "buyer_before"
+  state2: "buyer_after"
+  store_as: "buyer_diff"
+  name: "Compare buyer inventory"
+  # Results stored in buyer_diff for later analysis
+----
+
+.JSONPath extraction from RCON responses
+[source,yaml]
+----
+- action: "execute_rcon_with_capture"
+  command: "data get entity buyer"
+  store_as: "buyer_data_raw"
+  name: "Get buyer data"
+
+- action: "extract_with_jsonpath"
+  source_variable: "buyer_data_raw"
+  json_path: "$.Health"
+  store_as: "buyer_health"
+  name: "Extract health value"
+----
+
+.Conditional assertions
+[source,yaml]
+----
+- action: "assert_condition"
+  condition: "${buyer_health} == ${expected_health}"
+  name: "Verify player health"
+  # Uses stored variables with ${variableName} syntax
+----
+
+**Key Features Demonstrated:**
+
+* Multi-player test coordination
+* State capture before/after actions
+* Inventory comparison between players
+* JSONPath data extraction
+* Conditional assertions with variable interpolation
+* Complex cleanup with multiple players
+
+=== Running This Example
+
+[source,bash]
+----
+./gradlew run --args="--config config-demo.yaml examples/02-intermediate-item-transaction.yaml"
+----
+
+---
+
+== Example 3: Comprehensive Plugin Test Suite
+
+**File**: `examples/03-comprehensive-plugin-test.yaml` +
+**Duration**: ~26 seconds +
+**Concepts**: Entity operations, chat features, block operations, health management
+
+This example demonstrates the complete Pilaf feature set:
+
+.Entity spawning and health tracking
+[source,yaml]
+----
+# Spawn test entities via RCON
+- action: "execute_rcon_command"
+  command: "summon zombie 5 64 5 {CustomName:'{\"text\":\"test_zombie\"}'}"
+  name: "Spawn test zombie"
+
+# Store entity health before
+- action: "get_entity_health"
+  entity: "test_zombie"
+  store_as: "zombie_health_initial"
+  name: "Store zombie health before"
+----
+
+.Entity assertions
+[source,yaml]
+----
+# Assert entities exist
+- action: "assert_entity_exists"
+  entity: "test_zombie"
+  name: "Verify zombie exists"
+
+- action: "assert_entity_missing"
+  entity: "test_skeleton"
+  name: "Verify skeleton removed"
+  # After killing the skeleton
+----
+
+.Chat message testing
+[source,yaml]
+----
+# Send chat message
+- action: "send_chat_message"
+  player: "admin_test_alpha"
+  message: "[TEST] Admin test message"
+  name: "Send admin chat message"
+
+# Get chat history and verify
+- action: "get_chat_history"
+  store_as: "chat_log"
+  name: "Get chat history"
+
+- action: "assert_response_contains"
+  source: "chat_log"
+  contains: "TEST"
+  name: "Verify test message in chat"
+----
+
+.Block/world operations
+[source,yaml]
+----
+# Place test block
+- action: "execute_rcon_command"
+  command: "setblock 100 64 100 stone"
+  name: "Place test stone block"
+
+# Verify block type via RCON
+- action: "execute_rcon_with_capture"
+  command: "getblock 100 64 100"
+  store_as: "block_type"
+  name: "Get block type"
+
+- action: "assert_response_contains"
+  source: "block_type"
+  contains: "Stone"
+  name: "Verify block type"
+----
+
+.State comparison with conditions
+[source,yaml]
+----
+- action: "compare_states"
+  state1: "zombie_health_initial"
+  state2: "zombie_health_after"
+  store_as: "damage_result"
+  name: "Compare health change"
+
+- action: "assert_condition"
+  condition: "${zombie_health_after.value} < ${zombie_health_initial.value}"
+  name: "Verify health reduced"
+  # Verifies damage was dealt by comparing health values
+----
+
+**Key Features Demonstrated:**
+
+* Entity spawning with custom names
+* Entity health retrieval and comparison
+* Entity existence assertions
+* Chat message sending and verification
+* Block placement and verification
+* State management with variable interpolation
+* Proper cleanup of test entities
+
+=== Running This Example
+
+[source,bash]
+----
+./gradlew run --args="--config config-demo.yaml examples/03-comprehensive-plugin-test.yaml"
+----
+
+---
+
+== Running All Examples Together
+
+Run all examples in sequence:
+
+[source,bash]
+----
+# Using the test script (runs all examples in examples/)
+./run-pilaf-test.sh
+
+# Or manually with Gradle
+./gradlew run --args="--config config-demo.yaml examples/"
+----
+
+=== Expected Output
+
+All three examples should PASS:
+
+[source]
+----
+Pilaf TEST SUMMARY
+==================
+
+Suite: Pilaf CLI Test Run
+Status: PASSED
+Duration: 61172ms
+
+Test Results:
+  01-simple-player-inventory.yaml: PASSED
+  02-intermediate-item-transaction.yaml: PASSED
+  03-comprehensive-plugin-test.yaml: PASSED
+==================
+----
+
+---
+
+== Common Patterns Across Examples
+
+=== 1. Always Clean Up
+
+[source,yaml]
+----
+cleanup:
+  - action: "execute_rcon_command"
+    command: "clear player_name"
+    name: "Clear inventory"
+
+  - action: "disconnect_player"
+    player: "player_name"
+    name: "Disconnect player"
+----
+
+=== 2. Use Descriptive Names
+
+[source,yaml]
+----
+# Good
+- action: "connect_player"
+  player: "test_player"
+  name: "Connect test player for inventory checks"
+
+# Avoid
+- action: "connect_player"
+  player: "test_player"
+  name: "connect"
+----
+
+=== 3. Wait Appropriately
+
+[source,yaml]
+----
+# Wait after player connection for server sync
+- action: "wait"
+  duration: 2000
+  name: "Wait for player sync"
+
+# Wait after sending commands for processing
+- action: "wait"
+  duration: 1000
+  name: "Wait for command processing"
+----
+
+=== 4. Store State for Verification
+
+[source,yaml]
+----
+# Store before action
+- action: "get_player_inventory"
+  player: "test_player"
+  store_as: "inventory_before"
+  name: "Store initial inventory"
+
+# Perform action that changes state
+- action: "execute_rcon_command"
+  command: "give test_player diamond 1"
+  name: "Give diamond"
+
+# Store after action
+- action: "get_player_inventory"
+  player: "test_player"
+  store_as: "inventory_after"
+  name: "Store final inventory"
+
+# Compare
+- action: "compare_states"
+  state1: "inventory_before"
+  state2: "inventory_after"
+  name: "Verify inventory changed"
+----
+
+---
+
+== Next Steps
+
+* link:guides/writing-stories.html[Writing Stories Guide] - Deep dive into YAML DSL
+* link:guides/best-practices.html[Best Practices] - Tips for effective tests
+* link:references/index.html[Command Reference] - All available actions
+
