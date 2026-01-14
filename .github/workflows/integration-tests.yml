@@ -127,31 +127,50 @@ jobs:
 
     - name: Upload integration test results
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: integration-test-results
         path: |
           build/test-results/integrationTest/
           build/reports/tests/integrationTest/
-          target/pilaf-reports/
         retention-days: 30
+
+    - name: Upload PILAF HTML reports
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: pilaf-html-reports
+        path: target/pilaf-reports/
+        retention-days: 30
+        if-no-files-found: ignore
 
     - name: Display integration test summary
       if: always()
       run: |
-        echo "## Integration Test Summary" >> $GITHUB_STEP_SUMMARY
+        echo "## 🎯 Integration Test Artifacts" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Test results and reports have been uploaded as artifacts:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Artifact | Description |" >> $GITHUB_STEP_SUMMARY
+        echo "|----------|-------------|" >> $GITHUB_STEP_SUMMARY
+        echo "| \`integration-test-results\` | JUnit test results and Gradle reports |" >> $GITHUB_STEP_SUMMARY
+        echo "| \`pilaf-html-reports\` | Interactive HTML test reports with Vue.js UI |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
         if [ -d build/reports/tests/integrationTest ]; then
-          echo "✅ Integration tests completed. Check the test report for details." >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Integration Tests" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Report Location**: build/reports/tests/integrationTest/" >> $GITHUB_STEP_SUMMARY
-        elif [ -d target/pilaf-reports ]; then
-          echo "✅ PILAF story tests completed. Check the report for details." >> $GITHUB_STEP_SUMMARY
+          echo "Gradle integration tests completed successfully." >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [ -d target/pilaf-reports ]; then
+          echo "### 📜 PILAF Story Tests" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Report Location**: target/pilaf-reports/" >> $GITHUB_STEP_SUMMARY
-          ls -la target/pilaf-reports/ >> $GITHUB_STEP_SUMMARY
-        else
-          echo "⚠️ No test reports found." >> $GITHUB_STEP_SUMMARY
+          echo "**HTML Reports**: Download the \`pilaf-html-reports\` artifact to view interactive reports." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ls -la target/pilaf-reports/ 2>/dev/null || echo "No reports found" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         fi
 
     - name: Stop Mineflayer Bridge

@@ -89,6 +89,74 @@ rcon_port: 25575
 rcon_password: dragon123
 ```
 
+## RCON Client Configuration
+
+PILAF uses the **Cavarest RCON library** for reliable multi-packet RCON communication with Minecraft servers.
+
+### Dependencies
+
+The RCON client is automatically resolved via **JitPack** from GitHub:
+
+```gradle
+// build.gradle
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    implementation 'com.github.cavarest:rcon:0.2.0'
+}
+```
+
+### Multi-Packet Support
+
+The Cavarest library handles multi-packet RCON responses automatically:
+
+- **Automatic Detection**: Detects when responses span multiple packets
+- **Seamless Assembly**: Combines packets into complete responses
+- **No Configuration**: Works out of the box with standard RCON setup
+
+This means you don't need to worry about response truncation - even large entity lists or inventory data are handled transparently.
+
+### RCON Connection Settings
+
+All backends use the same RCON configuration parameters:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `rcon_host` | string | `localhost` | RCON server hostname |
+| `rcon_port` | number | `25575` | RCON server port |
+| `rcon_password` | string | *required* | RCON authentication password |
+
+### Connection Troubleshooting
+
+If RCON connection fails:
+
+1. **Verify Server Properties**:
+   ```properties
+   enable-rcon=true
+   rcon.port=25575
+   rcon.password=your_password
+   ```
+
+2. **Test RCON Manually**:
+   ```bash
+   # Using netcat
+   printf 'list\0' | nc localhost 25575
+
+   # Using telnet
+   telnet localhost 25575
+   ```
+
+3. **Check Firewall Rules**:
+   ```bash
+   # Linux
+   sudo ufw allow 25575/tcp
+
+   # macOS
+   # System Preferences → Security → Firewall → Firewall Options
+   ```
+
 ## Backend Comparison
 
 | Feature | Docker | Mineflayer | HeadlessMc |
