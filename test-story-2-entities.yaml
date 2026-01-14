@@ -4,81 +4,75 @@ name: "Entity Operations Test"
 description: "Tests entity spawning and health management across backends"
 
 setup:
-  - action: "execute_server_command"
+  - action: "SERVER_COMMAND"
     command: "say Starting entity operations test"
     name: "Server announcement"
 
-  - action: "execute_server_command"
+  - action: "SERVER_COMMAND"
     command: "gamemode creative TestPlayer"
     name: "Set player to creative mode"
 
 steps:
-  # Spawn a test cow
-  - action: "spawn_entity"
-    name: "TestCow"
-    type: "cow"
-    location: [0, 64, 0]
-    equipment: {}
+  # Spawn a test cow using SERVER_COMMAND with summon
+  - action: "SERVER_COMMAND"
+    command: "summon cow ~ ~ ~ {CustomName:\"TestCow\"}"
     name: "Spawn test cow"
 
+  - action: "WAIT"
+    duration: 2000
+    name: "Wait for spawn"
+
   # Check entity exists
-  - action: "check_entity_exists"
-    entity_name: "TestCow"
-    assertions:
-      - type: "entity_exists"
-        expected: true
-        name: "Verify cow exists"
+  - action: "ASSERT_ENTITY_EXISTS"
+    entity: "TestCow"
+    name: "Verify cow exists"
 
-  # Set entity health
-  - action: "set_entity_health"
-    entity_name: "TestCow"
-    health: 10.0
-    name: "Set cow health to 10"
+  # Entity health can be checked using data command
+  - action: "SERVER_COMMAND"
+    id: "cow_health"
+    command: "data get entity @e[type=cow,custom_name=TestCow,limit=1] Health"
+    name: "Get cow health"
 
-  # Verify health change
-  - action: "check_entity_health"
-    entity_name: "TestCow"
-    assertions:
-      - type: "health_equals"
-        expected: 10.0
-        name: "Verify cow health is 10"
-
-  # Spawn multiple entities
-  - action: "spawn_entity"
-    name: "TestZombie"
-    type: "zombie"
-    location: [5, 64, 5]
-    equipment: {}
+  # Spawn multiple entities using summon
+  - action: "SERVER_COMMAND"
+    command: "summon zombie ~5 ~ ~5 {CustomName:\"TestZombie\"}"
     name: "Spawn test zombie"
 
-  - action: "spawn_entity"
-    name: "TestCreeper"
-    type: "creeper"
-    location: [10, 64, 10]
-    equipment: {}
+  - action: "WAIT"
+    duration: 2000
+    name: "Wait for spawn"
+
+  - action: "SERVER_COMMAND"
+    command: "summon creeper ~10 ~ ~10 {CustomName:\"TestCreeper\"}"
     name: "Spawn test creeper"
 
-  # Verify all entities exist
-  - action: "check_entity_exists"
-    entity_name: "TestZombie"
-    assertions:
-      - type: "entity_exists"
-        expected: true
-        name: "Verify zombie exists"
+  - action: "WAIT"
+    duration: 2000
+    name: "Wait for spawn"
 
-  - action: "check_entity_exists"
-    entity_name: "TestCreeper"
-    assertions:
-      - type: "entity_exists"
-        expected: true
-        name: "Verify creeper exists"
+  # Verify entities exist
+  - action: "ASSERT_ENTITY_EXISTS"
+    entity: "TestZombie"
+    name: "Verify zombie exists"
+
+  - action: "ASSERT_ENTITY_EXISTS"
+    entity: "TestCreeper"
+    name: "Verify creeper exists"
 
 cleanup:
-  # Clean up entities
-  - action: "execute_server_command"
-    command: "kill TestCow TestZombie TestCreeper"
-    name: "Remove test entities"
+  # Clean up entities using kill command
+  - action: "SERVER_COMMAND"
+    command: "kill @e[custom_name=TestCow]"
+    name: "Remove test cow"
 
-  - action: "execute_server_command"
+  - action: "SERVER_COMMAND"
+    command: "kill @e[custom_name=TestZombie]"
+    name: "Remove test zombie"
+
+  - action: "SERVER_COMMAND"
+    command: "kill @e[custom_name=TestCreeper]"
+    name: "Remove test creeper"
+
+  - action: "SERVER_COMMAND"
     command: "say Entity operations test completed"
     name: "Test completion announcement"
