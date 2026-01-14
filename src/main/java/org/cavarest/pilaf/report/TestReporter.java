@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
- * PILAF Test Reporter - Generates comprehensive test reports with evidence logs.
+ * Pilaf Test Reporter - Generates comprehensive test reports with evidence logs.
  */
 public class TestReporter {
     private final String suiteName;
@@ -50,7 +50,7 @@ public class TestReporter {
     }
 
     public TestReporter() {
-        this("PILAF Test Suite");
+        this("Pilaf Test Suite");
     }
 
     public TestReporter(String suiteName) {
@@ -123,35 +123,9 @@ public class TestReporter {
     }
 
     public void addResult(TestResult result) {
+        // Just store the result - stories are already populated via reporter.step() calls
+        // No need to create duplicate summary stories
         results.add(result);
-
-        // Automatically create a TestStory from TestResult
-        if (result.getStoryName() != null) {
-            TestStory story = new TestStory(result.getStoryName());
-            story.description = "Executed from " + result.getStoryName();
-
-            // Only add a summary step if no steps were already recorded
-            // Steps are already added via reporter.step() calls in TestOrchestrator
-            if (story.getSteps().isEmpty()) {
-                TestStep step = new TestStep("Test Execution");
-                step.action = result.getStoryName();
-                step.passed = result.isSuccess();
-                // Add error info if test failed
-                if (result.getError() != null) {
-                    step.evidence.add("✗ Error: " + result.getError().getMessage());
-                    step.actual = result.getError().getMessage();
-                } else {
-                    step.evidence.add(result.isSuccess() ? "✓ Test passed" : "✗ Test failed");
-                    step.actual = result.isSuccess() ? "passed" : "failed";
-                }
-                if (result.getExecutionTimeMs() > 0) {
-                    step.evidence.add("Duration: " + result.getExecutionTimeMs() + "ms");
-                }
-                story.addStep(step);
-            }
-
-            stories.add(story);
-        }
     }
 
     public void complete() throws IOException {
@@ -161,7 +135,7 @@ public class TestReporter {
 
     private void generateDetailedTextReport() throws IOException {
         StringBuilder report = new StringBuilder();
-        report.append("PILAF TEST REPORT\n");
+        report.append("Pilaf TEST REPORT\n");
         report.append("==================\n\n");
 
         report.append("Test: ").append(suiteName).append("\n");
@@ -194,6 +168,11 @@ public class TestReporter {
                 }
                 if (step.actual != null) {
                     report.append("  Actual: ").append(step.actual).append("\n");
+                }
+                report.append("  State Before: ").append(step.stateBefore != null ? step.stateBefore : "null").append("\n");
+                report.append("  State After: ").append(step.stateAfter != null ? step.stateAfter : "null").append("\n");
+                if (step.stateDiff != null) {
+                    report.append("  State Diff: ").append(step.stateDiff).append("\n");
                 }
                 if (!step.evidence.isEmpty()) {
                     report.append("  Evidence:\n");
@@ -250,7 +229,7 @@ public class TestReporter {
 
     private void printSummary() {
         System.out.println();
-        System.out.println("PILAF TEST SUMMARY");
+        System.out.println("Pilaf TEST SUMMARY");
         System.out.println("==================");
         System.out.println();
         System.out.println("Suite: " + suiteName);
@@ -347,10 +326,14 @@ public class TestReporter {
         public final List<String> evidence = new ArrayList<>();
         public String stateBefore;
         public String stateAfter;
+        public String stateDiff;  // Deprecated: use stateBefore/stateAfter for diff generation
         public LocalDateTime startTime;
         public LocalDateTime endTime;
         public String player;
         public String assertionType;
+        public String executor;
+        public String executorPlayer;
+        public Boolean isOperator;
 
         public TestStep(String name) {
             this.name = name;
@@ -388,6 +371,41 @@ public class TestReporter {
 
         public TestStep evidence(String evidence) {
             this.evidence.add(evidence);
+            return this;
+        }
+
+        public TestStep stateBefore(String stateBefore) {
+            this.stateBefore = stateBefore;
+            return this;
+        }
+
+        public TestStep stateAfter(String stateAfter) {
+            this.stateAfter = stateAfter;
+            return this;
+        }
+
+        public TestStep stateDiff(String diff) {
+            // Deprecated: use stateBefore/stateAfter for diff generation
+            this.stateDiff = diff;
+            return this;
+        }
+
+        public TestStep extractedJson(String json) {
+            return this;
+        }
+
+        public TestStep executor(String executor) {
+            this.executor = executor;
+            return this;
+        }
+
+        public TestStep executorPlayer(String player) {
+            this.executorPlayer = player;
+            return this;
+        }
+
+        public TestStep isOperator(boolean isOperator) {
+            this.isOperator = isOperator;
             return this;
         }
 

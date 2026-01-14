@@ -1,0 +1,119 @@
+# Test: Compare States
+# Category: State Management
+# Purpose: Tests state comparison functionality
+
+name: "Compare States Test"
+description: |
+  Tests the state comparison functionality.
+  Demonstrates comparing states before and after operations.
+
+backend: mineflayer
+
+setup:
+  - action: "connect"
+    player: "pilaf_compare"
+    name: "Connect comparison test player"
+
+  - action: "wait"
+    duration: 5
+    name: "Wait for connection"
+
+  - action: "servercommand"
+    command: "say [Pilaf] Starting compare states test..."
+    name: "Announce test start"
+
+  - action: "servercommand"
+    command: "gamemode creative pilaf_compare"
+    name: "Set creative mode"
+
+steps:
+  # Test 1: Capture initial position
+  - action: "get_player_position"
+    player: "pilaf_compare"
+    name: "Get initial position"
+    storeAs: "pos_before"
+
+  - action: "print_stored_state"
+    variableName: "pos_before"
+    name: "Print initial position"
+
+  # Test 2: Teleport player
+  - action: "servercommand"
+    command: "tp pilaf_compare 150 64 150"
+    name: "Teleport player"
+
+  - action: "wait"
+    duration: 3
+    name: "Wait for teleport"
+
+  # Test 3: Capture new position
+  - action: "get_player_position"
+    player: "pilaf_compare"
+    name: "Get position after teleport"
+    storeAs: "pos_after"
+
+  - action: "print_stored_state"
+    variableName: "pos_after"
+    name: "Print new position"
+
+  # Test 4: Compare positions
+  - action: "compare_states"
+    state1: "pos_before"
+    state2: "pos_after"
+    name: "Compare positions"
+    storeAs: "pos_comparison"
+
+  - action: "print_state_comparison"
+    variableName: "pos_comparison"
+    name: "Print position comparison"
+
+  # Test 5: Capture initial inventory
+  - action: "getinventory"
+    player: "pilaf_compare"
+    name: "Get initial inventory"
+    storeAs: "inv_before"
+
+  # Test 6: Give item
+  - action: "giveitem"
+    player: "pilaf_compare"
+    item: "diamond_sword"
+    count: 1
+    name: "Give diamond sword"
+
+  - action: "wait"
+    duration: 2
+    name: "Wait for item"
+
+  # Test 7: Capture new inventory
+  - action: "getinventory"
+    player: "pilaf_compare"
+    name: "Get inventory after item"
+    storeAs: "inv_after"
+
+  # Test 8: Compare inventories
+  - action: "compare_states"
+    state1: "inv_before"
+    state2: "inv_after"
+    name: "Compare inventories"
+    storeAs: "inv_comparison"
+
+  - action: "print_state_comparison"
+    variableName: "inv_comparison"
+    name: "Print inventory comparison"
+
+cleanup:
+  - action: "servercommand"
+    command: "clear pilaf_compare"
+    name: "Clear inventory"
+
+  - action: "servercommand"
+    command: "tp pilaf_compare 0 64 0"
+    name: "Return player to spawn"
+
+  - action: "servercommand"
+    command: "say [Pilaf] Compare states test completed"
+    name: "Announce completion"
+
+  - action: "disconnect"
+    player: "pilaf_compare"
+    name: "Disconnect test player"

@@ -19,7 +19,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 /**
- * REAL BackendConsistencyTester that tests actual PILAF behavior across different backend combinations.
+ * REAL BackendConsistencyTester that tests actual Pilaf behavior across different backend combinations.
  * This uses REAL docker-compose to start actual Minecraft servers and connect to them.
  */
 public class BackendConsistencyTester {
@@ -52,7 +52,7 @@ public class BackendConsistencyTester {
      * Runs REAL consistency tests across all backend combinations using actual docker-compose
      */
     public ConsistencyTestResult runConsistencyTests() {
-        System.out.println("Starting REAL PILAF Backend Consistency Testing...");
+        System.out.println("Starting REAL Pilaf Backend Consistency Testing...");
         System.out.println("Testing " + TEST_STORIES.length + " stories across " + CONFIG_FILES.length + " backend combinations");
 
         ConsistencyTestResult overallResult = new ConsistencyTestResult();
@@ -164,7 +164,7 @@ public class BackendConsistencyTester {
 "      - RCON_PORT=25575\n" +
 "\n" +
 "      # Server Configuration\n" +
-"      - SERVER_NAME=PILAF-Test-Server\n" +
+"      - SERVER_NAME=Pilaf-Test-Server\n" +
 "      - MAX_PLAYERS=10\n" +
 "      - ONLINE_MODE=false\n" +
 "      - GAMEMODE=survival\n" +
@@ -179,7 +179,7 @@ public class BackendConsistencyTester {
 "    image: node:18-alpine\n" +
 "    container_name: pilaf-mineflayer\n" +
 "    ports:\n" +
-"      - \"3000:3000\"  # PILAF API port\n" +
+"      - \"3000:3000\"  # Pilaf API port\n" +
 "    volumes:\n" +
 "      - ./mineflayer-bridge:/app\n" +
 "    working_dir: /app\n" +
@@ -224,7 +224,7 @@ public class BackendConsistencyTester {
     }
 
     /**
-     * Tests a specific backend combination using REAL PILAF backend infrastructure
+     * Tests a specific backend combination using REAL Pilaf backend infrastructure
      */
     private BackendTestResult testBackendCombination(String configFile) {
         BackendTestResult result = new BackendTestResult(configFile);

@@ -1,6 +1,7 @@
 package org.cavarest.pilaf.cli;
 
 import org.cavarest.pilaf.config.TestConfiguration;
+import org.cavarest.pilaf.config.TestPorts;
 import org.cavarest.pilaf.orchestrator.TestOrchestrator;
 import org.cavarest.pilaf.backend.PilafBackend;
 import org.cavarest.pilaf.backend.PilafBackendFactory;
@@ -20,7 +21,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
- * PILAF Command Line Interface
+ * Pilaf Command Line Interface
  *
  * A standalone JAR that allows running YAML stories without Java code.
  *
@@ -32,15 +33,15 @@ import java.util.concurrent.Callable;
  */
 @Command(
     name = "pilaf",
-    description = "PILAF - Paper Integration Layer for Automation Functions",
+    description = "Pilaf - Paper Integration Layer for Automation Functions",
     mixinStandardHelpOptions = true,
-    version = "PILAF 1.0.0"
+    version = "Pilaf 1.0.0"
 )
 public class PilafCli implements Callable<Integer> {
 
     @Option(
         names = {"-c", "--config"},
-        description = "Path to PILAF configuration file (YAML format)"
+        description = "Path to Pilaf configuration file (YAML format)"
     )
     private File configFile;
 
@@ -53,9 +54,9 @@ public class PilafCli implements Callable<Integer> {
 
     @Option(
         names = {"--mineflayer-url"},
-        description = "Mineflayer bridge URL (default: http://localhost:3000)"
+        description = "Mineflayer bridge URL (default: http://localhost:8888)"
     )
-    private String mineflayerUrl = "http://localhost:3000";
+    private String mineflayerUrl = TestPorts.DEFAULT_MINEFLAYER_URL;
 
     @Option(
         names = {"--rcon-host"},
@@ -65,9 +66,9 @@ public class PilafCli implements Callable<Integer> {
 
     @Option(
         names = {"--rcon-port"},
-        description = "RCON port (default: 25575)"
+        description = "RCON port (default: 35125)"
     )
-    private int rconPort = 25575;
+    private int rconPort = TestPorts.RCON_PORT;
 
     @Option(
         names = {"--rcon-password"},
@@ -95,7 +96,7 @@ public class PilafCli implements Callable<Integer> {
 
     @Option(
         names = {"--health-check"},
-        description = "Check if PILAF services are available and exit"
+        description = "Check if Pilaf services are available and exit"
     )
     private boolean healthCheck = false;
 
@@ -131,7 +132,7 @@ public class PilafCli implements Callable<Integer> {
             TestConfiguration config = loadConfiguration();
 
             // Setup reporter
-            TestReporter reporter = new TestReporter("PILAF CLI Test Run");
+            TestReporter reporter = new TestReporter("Pilaf CLI Test Run");
             reporter.setOutputDir(reportDir);
             if (verbose) {
                 reporter.setVerbose(true);
@@ -159,7 +160,7 @@ public class PilafCli implements Callable<Integer> {
             }
 
             // Execute stories using REAL orchestrator
-            System.out.println("\n🚀 Starting PILAF test execution...");
+            System.out.println("\n🚀 Starting Pilaf test execution...");
             for (Path storyPath : storyPaths) {
                 try {
                     String storyContent = new String(java.nio.file.Files.readAllBytes(storyPath));
@@ -182,13 +183,13 @@ public class PilafCli implements Callable<Integer> {
             System.out.println("\n📊 Generating test report...");
             reporter.complete();
 
-            System.out.println("\n✅ PILAF test execution complete!");
+            System.out.println("\n✅ Pilaf test execution complete!");
             System.out.println("📋 Report available at: " + reportDir + "/index.html");
 
             return 0;
 
         } catch (Exception e) {
-            System.err.println("❌ PILAF execution failed: " + e.getMessage());
+            System.err.println("❌ Pilaf execution failed: " + e.getMessage());
             if (verbose) {
                 e.printStackTrace();
             }
@@ -197,9 +198,9 @@ public class PilafCli implements Callable<Integer> {
     }
 
     private int runConsistencyTests() {
-        System.out.println("🧪 PILAF Backend Consistency Testing");
+        System.out.println("🧪 Pilaf Backend Consistency Testing");
         System.out.println("=====================================");
-        System.out.println("Testing PILAF behavior across all backend combinations...");
+        System.out.println("Testing Pilaf behavior across all backend combinations...");
         System.out.println();
 
         try {
@@ -284,7 +285,7 @@ public class PilafCli implements Callable<Integer> {
     }
 
     private int performHealthCheck() {
-        System.out.println("🏥 PILAF Health Check");
+        System.out.println("🏥 Pilaf Health Check");
         System.out.println("=====================");
 
         boolean allHealthy = true;
@@ -323,10 +324,10 @@ public class PilafCli implements Callable<Integer> {
 
         System.out.println();
         if (allHealthy) {
-            System.out.println("✅ All PILAF services are healthy!");
+            System.out.println("✅ All Pilaf services are healthy!");
             return 0;
         } else {
-            System.out.println("❌ Some PILAF services are not available.");
+            System.out.println("❌ Some Pilaf services are not available.");
             System.out.println("💡 Make sure Docker services are running:");
             System.out.println("   docker-compose -f docker-compose.pilaf.yml up -d");
             return 1;

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# PILAF Demo Runner Script
+# Pilaf Demo Runner Script
 # =========================
-# This script provides a convenient way to run the PILAF demonstrator.
+# This script provides a convenient way to run the Pilaf demonstrator.
 # It manages Docker services and runs the test against a real Minecraft server.
 
 set -e  # Exit on error
@@ -14,7 +14,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}PILAF Demo Runner${NC}"
+echo -e "${BLUE}Pilaf Demo Runner${NC}"
 echo "======================"
 echo ""
 
@@ -88,7 +88,7 @@ check_mineflayer() {
 # Function to run the demo
 run_demo() {
     echo ""
-    echo -e "${YELLOW}Running PILAF demonstrator...${NC}"
+    echo -e "${YELLOW}Running Pilaf demonstrator...${NC}"
 
     # Start services separately to avoid health check issues
     cd docker
@@ -123,7 +123,7 @@ run_demo() {
     done
 
     echo ""
-    echo -e "${YELLOW}Running PILAF test...${NC}"
+    echo -e "${YELLOW}Running Pilaf test...${NC}"
     gradle run --args="--config config-demo.yaml demo-story.yaml"
     echo -e "${GREEN}Demo completed!${NC}"
 }
@@ -207,7 +207,7 @@ case "${1:-run}" in
         docker logs pilaf-mineflayer-bridge 2>&1 | tail -20
         ;;
     stop)
-        echo -e "${YELLOW}Stopping PILAF services...${NC}"
+        echo -e "${YELLOW}Stopping Pilaf services...${NC}"
         cd docker
         docker-compose -f docker-compose.pilaf.yml down
         cd ..

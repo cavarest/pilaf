@@ -126,10 +126,11 @@ public class YamlStoryParser {
         action.setDestination((String) data.get("destination"));
 
         // Set new action properties for extended functionality
-        action.setCustomName((String) data.get("customName"));
-        action.setVariableName((String) data.get("variableName"));
-        action.setSourceVariable((String) data.get("sourceVariable"));
-        action.setJsonPath((String) data.get("jsonPath"));
+        // Support both camelCase and snake_case naming conventions
+        action.setCustomName(getString(data, "customName"));
+        action.setVariableName(getString(data, "variableName", "variable_name"));
+        action.setSourceVariable(getString(data, "sourceVariable", "source_variable"));
+        action.setJsonPath(getString(data, "jsonPath", "json_path"));
         action.setFilterType((String) data.get("filterType"));
         action.setFilterValue((String) data.get("filterValue"));
         action.setSource((String) data.get("source"));
@@ -137,13 +138,13 @@ public class YamlStoryParser {
         action.setNegated((String) data.get("negated"));
         action.setState1((String) data.get("state1"));
         action.setState2((String) data.get("state2"));
-        action.setFromCommandResult((String) data.get("fromCommandResult"));
-        action.setFromComparison((String) data.get("fromComparison"));
+        action.setFromCommandResult(getString(data, "fromCommandResult", "from_command_result"));
+        action.setFromComparison(getString(data, "fromComparison", "from_comparison"));
         action.setPlugin((String) data.get("plugin"));
         action.setDamage((String) data.get("damage"));
         action.setPosition((String) data.get("position"));
         action.setFormat((String) data.get("format"));
-        action.setStoreAs((String) data.get("storeAs"));
+        action.setStoreAs((String) data.getOrDefault("storeAs", data.get("store_as")));
         action.setTimeout((String) data.get("timeout"));
         action.setMessage((String) data.get("message"));
 
@@ -153,16 +154,12 @@ public class YamlStoryParser {
             action.setCount(count != null ? count.intValue() : 1);
         }
 
-        // Handle duration (in milliseconds) - FIXED: Safe null handling
+        // Handle duration (in milliseconds) - YAML values are already in milliseconds
         if (data.containsKey("wait") || data.containsKey("duration")) {
             Number duration = (Number) data.getOrDefault("wait", data.get("duration"));
             if (duration != null) {
-                // Convert seconds to milliseconds if needed - FIXED: Safe longValue() call
-                long durationMs = duration != null ? duration.longValue() : 0L;
-                if (durationMs < 1000) {
-                    durationMs *= 1000; // Assume seconds if less than 1000
-                }
-                action.setDuration(durationMs);
+                // All duration values in YAML are in milliseconds
+                action.setDuration(duration.longValue());
             }
         }
 
@@ -217,10 +214,10 @@ public class YamlStoryParser {
             return Action.ActionType.GIVE_ITEM;
         }
         if (type.equals("get_entity_health")) {
-            return Action.ActionType.EXECUTE_RCON_COMMAND;
+            return Action.ActionType.GET_ENTITY_HEALTH;
         }
 
-        // Handle new PILAF command types
+        // Handle new Pilaf command types
         if (type.equals("make_operator")) return Action.ActionType.MAKE_OPERATOR;
         if (type.equals("get_player_inventory")) return Action.ActionType.GET_PLAYER_INVENTORY;
         if (type.equals("get_player_position")) return Action.ActionType.GET_PLAYER_POSITION;
@@ -349,7 +346,7 @@ public class YamlStoryParser {
         a.setContains((String) data.get("contains"));
         a.setExpectedJson((String) data.get("expected"));
         a.setCondition((String) data.get("condition"));
-        a.setVariableName((String) data.get("variableName"));
+        a.setVariableName(getString(data, "variableName", "variable_name"));
         if (data.containsKey("condition")) a.setConditionType(parseCondition((String) data.get("condition")));
         if (data.containsKey("value")) a.setValue(((Number) data.get("value")).doubleValue());
         if (data.containsKey("expected")) {
@@ -396,5 +393,23 @@ public class YamlStoryParser {
             case "greater_than": return Assertion.Condition.GREATER_THAN;
             default: return Assertion.Condition.EQUALS;
         }
+    }
+
+    /**
+     * Helper method to get string value from map, supporting both camelCase and snake_case keys.
+     * Tries each key in order and returns the first non-null value.
+     *
+     * @param data the map to search
+     * @param keys the keys to try, in order of preference
+     * @return the first non-null value found, or null if all keys are absent
+     */
+    private String getString(Map<String, Object> data, String... keys) {
+        for (String key : keys) {
+            Object value = data.get(key);
+            if (value != null) {
+                return value.toString();
+            }
+        }
+        return null;
     }
 }

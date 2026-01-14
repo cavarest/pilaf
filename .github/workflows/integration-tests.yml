@@ -29,8 +29,8 @@ jobs:
       minecraft:
         image: itzg/minecraft-server
         ports:
-          - 25565:25565
-          - 25575:25575
+          - 35115:25565
+          - 35125:25575
         env:
           EULA: 'TRUE'
           ONLINE_MODE: 'false'
@@ -67,8 +67,8 @@ jobs:
 
     - name: Verify RCON is accessible
       run: |
-        echo "🔌 Testing RCON connection..."
-        RESPONSE=$(printf 'version\0' | nc -w 3 localhost 25575 2>/dev/null)
+        echo "🔌 Testing RCON connection on port 35125..."
+        RESPONSE=$(printf 'version\0' | nc -w 3 localhost 35125 2>/dev/null)
         if echo "$RESPONSE" | grep -q "version\|Paper\|Minecraft"; then
           echo "✅ RCON is accessible and responding"
         else

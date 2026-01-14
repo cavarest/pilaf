@@ -1,19 +1,19 @@
 package org.cavarest.pilaf.config;
 
 /**
- * Configuration for PILAF test execution.
+ * Configuration for Pilaf test execution.
  * Manages connection settings and test parameters.
  */
 public class TestConfiguration {
 
     // Mineflayer bridge settings
-    private String mineflayerUrl = System.getProperty("mineflayer.url", "http://localhost:3000");
+    private String mineflayerUrl = System.getProperty("mineflayer.url", TestPorts.DEFAULT_MINEFLAYER_URL);
     private int mineflayerTimeout = 10_000; // 10 seconds
 
-    // RCON settings
-    private String rconHost = System.getProperty("rcon.host", "localhost");
-    private int rconPort = Integer.parseInt(System.getProperty("rcon.port", "25575"));
-    private String rconPassword = System.getProperty("rcon.password", "dragon123");
+    // RCON settings - using TestPorts as single source of truth
+    private String rconHost = System.getProperty("rcon.host", TestPorts.DEFAULT_RCON_HOST);
+    private int rconPort = Integer.parseInt(System.getProperty("rcon.port", String.valueOf(TestPorts.RCON_PORT)));
+    private String rconPassword = System.getProperty("rcon.password", TestPorts.DEFAULT_RCON_PASSWORD);
     private int rconTimeout = 5_000; // 5 seconds
 
     // Test player settings

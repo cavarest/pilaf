@@ -4,23 +4,36 @@ import org.cavarest.pilaf.backend.PilafBackend;
 import java.util.Map;
 import java.util.HashMap;
 
+/**
+ * Represents an assertion in a Pilaf test story.
+ * Assertions validate expected conditions in the test.
+ */
 public class Assertion {
+    /** The type of assertion to perform. */
     public enum AssertionType {
-        // Original 4 types (kept for backward compatibility)
+        /** Assert entity health meets a condition. */
         ENTITY_HEALTH,
+        /** Assert an entity exists or doesn't exist. */
         ENTITY_EXISTS,
+        /** Assert player inventory contains an item. */
         PLAYER_INVENTORY,
+        /** Assert a plugin received a command. */
         PLUGIN_COMMAND,
-
-        // New assertion types for comprehensive testing
+        /** Assert an entity is missing. */
         ASSERT_ENTITY_MISSING,
+        /** Assert a player has a specific item. */
         ASSERT_PLAYER_HAS_ITEM,
+        /** Assert a response contains specific text. */
         ASSERT_RESPONSE_CONTAINS,
+        /** Assert JSON responses are equal. */
         ASSERT_JSON_EQUALS,
+        /** Assert server log contains specific text. */
         ASSERT_LOG_CONTAINS,
+        /** Assert a custom condition expression. */
         ASSERT_CONDITION
     }
 
+    /** Comparison condition operators. */
     public enum Condition { EQUALS, NOT_EQUALS, LESS_THAN, GREATER_THAN, LESS_THAN_OR_EQUALS, GREATER_THAN_OR_EQUALS }
 
     private AssertionType type;
@@ -31,38 +44,84 @@ public class Assertion {
     private Boolean expected;
     private String variableName;  // For ASSERT_CONDITION
 
+    /** Creates an empty assertion. */
     public Assertion() {}
+    /** Creates an assertion with the specified type. */
     public Assertion(AssertionType type) { this.type = type; }
 
+    /** @return the assertion type */
     public AssertionType getType() { return type; }
+    /** @param type the assertion type */
     public void setType(AssertionType type) { this.type = type; }
+
+    /** @return the entity name to assert on */
     public String getEntity() { return entity; }
+    /** @param entity the entity name */
     public void setEntity(String entity) { this.entity = entity; }
+
+    /** @return the player name to assert on */
     public String getPlayer() { return player; }
+    /** @param player the player name */
     public void setPlayer(String player) { this.player = player; }
+
+    /** @return the item name */
     public String getItem() { return item; }
+    /** @param item the item name */
     public void setItem(String item) { this.item = item; }
+
+    /** @return the inventory slot */
     public String getSlot() { return slot; }
+    /** @param slot the inventory slot */
     public void setSlot(String slot) { this.slot = slot; }
+
+    /** @return the plugin name */
     public String getPlugin() { return plugin; }
+    /** @param plugin the plugin name */
     public void setPlugin(String plugin) { this.plugin = plugin; }
+
+    /** @return the command string */
     public String getCommand() { return command; }
+    /** @param command the command string */
     public void setCommand(String command) { this.command = command; }
+
+    /** @return the comparison condition type */
     public Condition getConditionType() { return conditionType; }
+    /** @param conditionType the comparison condition */
     public void setConditionType(Condition conditionType) { this.conditionType = conditionType; }
+
+    /** @return the expected value for comparison */
     public Double getValue() { return value; }
+    /** @param value the expected value */
     public void setValue(Double value) { this.value = value; }
+
+    /** @return the expected result (true/false) */
     public Boolean getExpected() { return expected; }
+    /** @param expected the expected result */
     public void setExpected(Boolean expected) { this.expected = expected; }
+
+    /** @return the source variable for assertion */
     public String getSource() { return source; }
+    /** @param source the source variable */
     public void setSource(String source) { this.source = source; }
+
+    /** @return the text to search for */
     public String getContains() { return contains; }
+    /** @param contains the text to search for */
     public void setContains(String contains) { this.contains = contains; }
+
+    /** @return the expected JSON string */
     public String getExpectedJson() { return expectedJson; }
+    /** @param expectedJson the expected JSON */
     public void setExpectedJson(String expectedJson) { this.expectedJson = expectedJson; }
+
+    /** @return the condition expression */
     public String getCondition() { return condition; }
+    /** @param condition the condition expression */
     public void setCondition(String condition) { this.condition = condition; }
+
+    /** @return the variable name for condition evaluation */
     public String getVariableName() { return variableName; }
+    /** @param variableName the variable name */
     public void setVariableName(String variableName) { this.variableName = variableName; }
 
     /**

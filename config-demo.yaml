@@ -9,13 +9,13 @@ backend: mineflayer
 # Server Configuration (RCON to Docker container)
 server:
   host: "localhost"
-  port: 25575
+  port: 35125
   password: "dragon123"
   version: "1.21.8"
 
 # Mineflayer Client Configuration
 mineflayer:
-  url: "http://localhost:3000"
+  url: "http://localhost:8888"
   player_name: "pilaf_tester"
   auto_reconnect: true
   connection_timeout: 30000

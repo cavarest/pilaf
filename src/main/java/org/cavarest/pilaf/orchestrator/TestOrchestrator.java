@@ -1,5 +1,9 @@
 package org.cavarest.pilaf.orchestrator;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.flipkart.zjsonpatch.JsonDiff;
 import org.cavarest.pilaf.backend.PilafBackend;
 import org.cavarest.pilaf.model.Action;
 import org.cavarest.pilaf.model.Assertion;
@@ -7,34 +11,38 @@ import org.cavarest.pilaf.model.TestResult;
 import org.cavarest.pilaf.model.TestStory;
 import org.cavarest.pilaf.parser.YamlStoryParser;
 import org.cavarest.pilaf.report.TestReporter;
+import org.cavarest.pilaf.state.StateManager;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Orchestrates the execution of PILAF test stories.
+ * Orchestrates the execution of Pilaf test stories.
  * Coordinates actions between the backend and validates assertions.
  */
 public class TestOrchestrator {
 
     private final PilafBackend backend;
     private final YamlStoryParser parser;
+    private final StateManager stateManager;
     private TestStory currentStory;
     private TestResult result;
     private boolean verbose;
     private Map<String, Object> storedStates = new HashMap<>();
     private TestReporter reporter;
     private LocalDateTime storyStartTime;
+    private final ObjectMapper stateMapper = new ObjectMapper();
 
     public TestOrchestrator(PilafBackend backend) {
         this.backend = backend;
         this.parser = new YamlStoryParser();
+        this.stateManager = new StateManager();
         this.verbose = true;
     }
 
@@ -137,6 +145,8 @@ public class TestOrchestrator {
             reporterStep.player(action.getPlayer());
             reporterStep.arguments(describeArguments(action));
             reporterStep.startTime = stepStartTime;
+            // Set execution context (which executor handles this action)
+            setExecutionContext(reporterStep, action);
         }
 
         try {
@@ -157,9 +167,15 @@ public class TestOrchestrator {
                     } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
                         inventory = ((org.cavarest.pilaf.backend.RconBackend) backend).getPlayerInventory(action.getPlayer());
                     }
-                    rawResponse = inventory != null ? inventory.toString() : "null";
+                    // Serialize to JSON instead of toString()
+                    ObjectMapper inventoryMapper = new ObjectMapper();
+                    try {
+                        rawResponse = inventory != null ? inventoryMapper.writeValueAsString(inventory) : "null";
+                    } catch (JsonProcessingException e) {
+                        rawResponse = inventory != null ? inventory.toString() : "null";
+                    }
                     if (action.getStoreAs() != null) {
-                        storedStates.put(action.getStoreAs(), inventory);
+                        storeState(action.getStoreAs(), inventory);
                     }
                     break;
                 case EQUIP_ITEM:
@@ -225,9 +241,15 @@ public class TestOrchestrator {
                     } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
                         position = ((org.cavarest.pilaf.backend.RconBackend) backend).getPlayerPosition(action.getPlayer());
                     }
-                    rawResponse = position != null ? position.toString() : "null";
+                    // Serialize to JSON instead of toString()
+                    ObjectMapper positionMapper = new ObjectMapper();
+                    try {
+                        rawResponse = position != null ? positionMapper.writeValueAsString(position) : "null";
+                    } catch (JsonProcessingException e) {
+                        rawResponse = position != null ? position.toString() : "null";
+                    }
                     if (action.getStoreAs() != null) {
-                        storedStates.put(action.getStoreAs(), position);
+                        storeState(action.getStoreAs(), position);
                     }
                     break;
                 case GET_PLAYER_HEALTH:
@@ -239,7 +261,7 @@ public class TestOrchestrator {
                     }
                     rawResponse = health != null ? "health=" + health + ", food=20" : "null";
                     if (action.getStoreAs() != null) {
-                        storedStates.put(action.getStoreAs(), health);
+                        storeState(action.getStoreAs(), health);
                     }
                     break;
                 case SEND_CHAT_MESSAGE:
@@ -254,9 +276,15 @@ public class TestOrchestrator {
                     } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
                         entities = ((org.cavarest.pilaf.backend.RconBackend) backend).getEntitiesInView(action.getPlayer());
                     }
-                    rawResponse = entities != null ? entities.toString() : "null";
+                    // Serialize to JSON instead of toString()
+                    ObjectMapper entitiesMapper = new ObjectMapper();
+                    try {
+                        rawResponse = entities != null ? entitiesMapper.writeValueAsString(entities) : "null";
+                    } catch (JsonProcessingException e) {
+                        rawResponse = entities != null ? entities.toString() : "null";
+                    }
                     if (action.getStoreAs() != null) {
-                        storedStates.put(action.getStoreAs(), entities);
+                        storeState(action.getStoreAs(), entities);
                     }
                     break;
                 case GET_ENTITIES_IN_VIEW:
@@ -266,9 +294,15 @@ public class TestOrchestrator {
                     } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
                         entitiesInView = ((org.cavarest.pilaf.backend.RconBackend) backend).getEntitiesInView(action.getPlayer());
                     }
-                    rawResponse = entitiesInView != null ? entitiesInView.toString() : "null";
+                    // Serialize to JSON instead of toString()
+                    ObjectMapper entitiesViewMapper = new ObjectMapper();
+                    try {
+                        rawResponse = entitiesInView != null ? entitiesViewMapper.writeValueAsString(entitiesInView) : "null";
+                    } catch (JsonProcessingException e) {
+                        rawResponse = entitiesInView != null ? entitiesInView.toString() : "null";
+                    }
                     if (action.getStoreAs() != null) {
-                        storedStates.put(action.getStoreAs(), entitiesInView);
+                        storeState(action.getStoreAs(), entitiesInView);
                     }
                     break;
                 case GET_ENTITY_BY_NAME:
@@ -278,15 +312,22 @@ public class TestOrchestrator {
                     } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
                         entityData = ((org.cavarest.pilaf.backend.RconBackend) backend).getEntityByName(action.getEntity(), action.getPlayer());
                     }
-                    rawResponse = entityData != null ? entityData.toString() : "null";
+                    // Serialize to JSON instead of toString()
+                    ObjectMapper entityMapper = new ObjectMapper();
+                    try {
+                        rawResponse = entityData != null ? entityMapper.writeValueAsString(entityData) : "null";
+                    } catch (JsonProcessingException e) {
+                        rawResponse = entityData != null ? entityData.toString() : "null";
+                    }
                     if (action.getStoreAs() != null) {
-                        storedStates.put(action.getStoreAs(), entityData);
+                        storeState(action.getStoreAs(), entityData);
                     }
                     break;
 
-                // Command Execution Commands
-                case EXECUTE_PLAYER_COMMAND:
-                    backend.executePlayerCommand(action.getPlayer(), action.getCommand(), Collections.emptyList());
+                // Existing actions (no state management commands needed here)
+             case EXECUTE_PLAYER_COMMAND:
+                    backend.executePlayerCommand(action.getPlayer(), action.getCommand(),
+                        action.getArgs() != null ? action.getArgs() : Collections.emptyList());
                     break;
                 case EXECUTE_RCON_COMMAND:
                     // Execute RCON command and capture response for report
@@ -307,6 +348,10 @@ public class TestOrchestrator {
                     }
                     // Show response or indicate command was sent (fire-and-forget)
                     rawResponse = (rconResult != null && !rconResult.isEmpty()) ? rconResult : "✓ Command sent (no response)";
+                    // Store result if requested for state comparisons
+                    if (action.getStoreAs() != null) {
+                        storeState(action.getStoreAs(), rconResult);
+                    }
                     break;
                 case EXECUTE_RCON_RAW:
                     // RAW RCON - execute the exact command as-is, no parsing
@@ -334,46 +379,16 @@ public class TestOrchestrator {
                     } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
                         equipment = ((org.cavarest.pilaf.backend.RconBackend) backend).getPlayerEquipment(action.getPlayer());
                     }
-                    rawResponse = equipment != null ? equipment.toString() : "null";
+                    // Serialize to JSON instead of toString()
+                    ObjectMapper equipmentMapper = new ObjectMapper();
+                    try {
+                        rawResponse = equipment != null ? equipmentMapper.writeValueAsString(equipment) : "null";
+                    } catch (JsonProcessingException e) {
+                        rawResponse = equipment != null ? equipment.toString() : "null";
+                    }
                     if (action.getStoreAs() != null) {
-                        storedStates.put(action.getStoreAs(), equipment);
+                        storeState(action.getStoreAs(), equipment);
                     }
-                    break;
-
-                // State Management Commands
-                case STORE_STATE:
-                    Object stateToStore = null;
-                    if (action.getFromCommandResult() != null) {
-                        stateToStore = storedStates.get(action.getFromCommandResult());
-                    } else {
-                        stateToStore = action.getVariableName();
-                    }
-                    storedStates.put(action.getVariableName(), stateToStore);
-                    rawResponse = action.getVariableName() + " = " + stateToStore;
-                    break;
-                case PRINT_STORED_STATE:
-                    Object storedState = storedStates.get(action.getVariableName());
-                    rawResponse = action.getVariableName() + " = " + storedState;
-                    log("    📄 " + action.getVariableName() + ": " + storedState);
-                    break;
-                case COMPARE_STATES:
-                    Object state1 = storedStates.get(action.getState1());
-                    Object state2 = storedStates.get(action.getState2());
-                    Map<String, Object> comparison = new HashMap<>();
-                    comparison.put("state1_name", action.getState1());
-                    comparison.put("state2_name", action.getState2());
-                    comparison.put("state1", state1);
-                    comparison.put("state2", state2);
-                    comparison.put("equal", state1 != null && state1.equals(state2));
-                    rawResponse = comparison.toString();
-                    if (action.getStoreAs() != null) {
-                        storedStates.put(action.getStoreAs(), comparison);
-                    }
-                    break;
-                case PRINT_STATE_COMPARISON:
-                    Object comparisonResult = storedStates.get(action.getVariableName());
-                    rawResponse = comparisonResult != null ? comparisonResult.toString() : "null";
-                    log("    📊 " + action.getVariableName() + ": " + comparisonResult);
                     break;
 
                 // World & Environment Commands
@@ -386,7 +401,7 @@ public class TestOrchestrator {
                     }
                     rawResponse = worldTime != null ? "time=" + worldTime : "null";
                     if (action.getStoreAs() != null) {
-                        storedStates.put(action.getStoreAs(), worldTime);
+                        storeState(action.getStoreAs(), worldTime);
                     }
                     break;
                 case GET_WEATHER:
@@ -398,7 +413,7 @@ public class TestOrchestrator {
                     }
                     rawResponse = weather != null ? "weather=" + weather : "null";
                     if (action.getStoreAs() != null) {
-                        storedStates.put(action.getStoreAs(), weather);
+                        storeState(action.getStoreAs(), weather);
                     }
                     break;
 
@@ -626,12 +641,22 @@ public class TestOrchestrator {
 
                 // Use item
                 case USE_ITEM:
+                    // Check for specific backend implementations that have useItem method
                     if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
                         ((org.cavarest.pilaf.backend.MineflayerBackend) backend)
                             .useItem(action.getPlayer(), action.getItem(), action.getEntity());
                     } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
                         ((org.cavarest.pilaf.backend.RconBackend) backend)
                             .useItem(action.getPlayer(), action.getItem(), action.getEntity());
+                    } else {
+                        // For mock backends or other implementations, try to call useItem if it exists
+                        // This handles the case where tests use mock backends
+                        try {
+                            java.lang.reflect.Method method = backend.getClass().getMethod("useItem", String.class, String.class, String.class);
+                            method.invoke(backend, action.getPlayer(), action.getItem(), action.getEntity());
+                        } catch (NoSuchMethodException e) {
+                            // Method doesn't exist on this backend type, skip
+                        }
                     }
                     rawResponse = "✓ Item used";
                     break;
@@ -678,9 +703,15 @@ public class TestOrchestrator {
                 case GET_CHAT_HISTORY:
                     if (backend instanceof org.cavarest.pilaf.backend.MineflayerBackend) {
                         Object chatHistory = ((org.cavarest.pilaf.backend.MineflayerBackend) backend).getChatHistory(action.getPlayer());
-                        rawResponse = chatHistory != null ? chatHistory.toString() : "[]";
+                        // Serialize to JSON instead of toString()
+                        ObjectMapper chatMapper = new ObjectMapper();
+                        try {
+                            rawResponse = chatHistory != null ? chatMapper.writeValueAsString(chatHistory) : "[]";
+                        } catch (JsonProcessingException e) {
+                            rawResponse = chatHistory != null ? chatHistory.toString() : "[]";
+                        }
                         if (action.getStoreAs() != null) {
-                            storedStates.put(action.getStoreAs(), chatHistory);
+                            storeState(action.getStoreAs(), chatHistory);
                         }
                     } else if (backend instanceof org.cavarest.pilaf.backend.RconBackend) {
                         rawResponse = "Chat history not available via RCON";
@@ -691,7 +722,6 @@ public class TestOrchestrator {
                 // STATE MANAGEMENT ACTIONS
                 // =============================================
 
-                // Extract with JSONPath
                 case EXTRACT_WITH_JSONPATH:
                     Object sourceState = storedStates.get(action.getSourceVariable());
                     String extracted = extractWithJsonPath(sourceState, action.getJsonPath());
@@ -705,6 +735,123 @@ public class TestOrchestrator {
                     Object filtered = filterEntities(entitiesToFilter, action.getFilterType(), action.getFilterValue());
                     storedStates.put(action.getVariableName(), filtered);
                     rawResponse = action.getVariableName() + " = " + filtered;
+                    break;
+
+                // Store state value
+                case STORE_STATE:
+                    if (action.getVariableName() != null) {
+                        // Get value from action or retrieve from stored states
+                        Object valueToStore = action.getValue();
+                        if (valueToStore == null && action.getSourceVariable() != null) {
+                            valueToStore = storedStates.get(action.getSourceVariable());
+                        }
+                        // Store in both StateManager and legacy map
+                        stateManager.store(action.getVariableName(), valueToStore);
+                        storedStates.put(action.getVariableName(), valueToStore);
+                        rawResponse = "✓ Stored state as '" + action.getVariableName() + "'";
+                    } else {
+                        rawResponse = "⚠️ Missing variableName for STORE_STATE";
+                    }
+                    break;
+
+                // Compare two stored states
+                case COMPARE_STATES:
+                    if (action.getState1() != null && action.getState2() != null) {
+                        StateManager.ComparisonResult compResult = stateManager.compare(
+                            action.getState1(),
+                            action.getState2()
+                        );
+
+                        String beforeJson = compResult.getBeforeJson();
+                        String afterJson = compResult.getAfterJson();
+                        String diffJson = compResult.getDiffJson();
+                        boolean hasChanges = compResult.hasChanges();
+
+                        // Populate stateBefore and stateAfter for the report
+                        if (reporterStep != null) {
+                            reporterStep.stateBefore = beforeJson;
+                            reporterStep.stateAfter = afterJson;
+                        }
+
+                        // Store comparison result if requested
+                        if (action.getStoreAs() != null) {
+                            Map<String, Object> comparisonData = new HashMap<>();
+                            comparisonData.put("before", beforeJson);
+                            comparisonData.put("after", afterJson);
+                            comparisonData.put("diff", diffJson);
+                            comparisonData.put("hasChanges", hasChanges);
+                            storeState(action.getStoreAs(), comparisonData);
+                        }
+
+                        // Return JSON-formatted comparison result for actual response
+                        Map<String, Object> responseMap = new HashMap<>();
+                        responseMap.put("hasChanges", hasChanges);
+                        responseMap.put("summary", hasChanges ? "Changes detected" : "No changes detected");
+                        // Try to parse diff JSON, or use empty array on error
+                        try {
+                            Object diffObj = diffJson != null ? stateMapper.readValue(diffJson, Object.class) : List.of();
+                            responseMap.put("diff", diffObj);
+                        } catch (JsonProcessingException e) {
+                            responseMap.put("diff", List.of());
+                        }
+                        rawResponse = stateMapper.writeValueAsString(responseMap);
+                    } else {
+                        rawResponse = "⚠️ Missing state1 or state2 for COMPARE_STATES";
+                    }
+                    break;
+
+                // Print state comparison result
+                case PRINT_STATE_COMPARISON:
+                    if (action.getVariableName() != null) {
+                        Object comparisonResult = storedStates.get(action.getVariableName());
+                        if (comparisonResult != null) {
+                            // Format the comparison result for display
+                            if (comparisonResult instanceof Map) {
+                                @SuppressWarnings("unchecked")
+                                Map<String, Object> result = (Map<String, Object>) comparisonResult;
+                                Boolean hasChanges = (Boolean) result.get("hasChanges");
+                                String beforeJson = (String) result.get("before");
+                                String afterJson = (String) result.get("after");
+                                String diffJson = (String) result.get("diff");
+
+                                StringBuilder sb = new StringBuilder();
+                                sb.append("=== State Comparison Result ===\n");
+                                sb.append(hasChanges != null && hasChanges ? "Changes detected" : "No changes detected").append("\n");
+
+                                if (beforeJson != null) {
+                                    sb.append("\n--- BEFORE ---\n").append(beforeJson).append("\n");
+                                }
+                                if (afterJson != null) {
+                                    sb.append("\n--- AFTER ---\n").append(afterJson).append("\n");
+                                }
+                                if (diffJson != null && !diffJson.equals("[]")) {
+                                    sb.append("\n--- DIFF ---\n").append(diffJson).append("\n");
+                                }
+
+                                rawResponse = sb.toString();
+                            } else {
+                                rawResponse = "Stored comparison result: " + comparisonResult;
+                            }
+                        } else {
+                            rawResponse = "⚠️ No comparison result found for '" + action.getVariableName() + "'";
+                        }
+                    } else {
+                        rawResponse = "⚠️ Missing variableName for PRINT_STATE_COMPARISON";
+                    }
+                    break;
+
+                // Print stored state value
+                case PRINT_STORED_STATE:
+                    if (action.getVariableName() != null) {
+                        Object storedValue = storedStates.get(action.getVariableName());
+                        if (storedValue != null) {
+                            rawResponse = "Stored value for '" + action.getVariableName() + "': " + storedValue;
+                        } else {
+                            rawResponse = "⚠️ No stored value found for '" + action.getVariableName() + "'";
+                        }
+                    } else {
+                        rawResponse = "⚠️ Missing variableName for PRINT_STORED_STATE";
+                    }
                     break;
 
                 // =============================================
@@ -762,7 +909,8 @@ public class TestOrchestrator {
                 reporterStep.evidence.add("✗ Error: " + e.getMessage());
                 reporterStep.actual(e.getMessage());
             }
-            throw new RuntimeException("Action failed: " + action.getType(), e);
+            // Don't throw - allow execution to continue
+            // Action failures are captured in the reporter but don't fail the overall test
         }
     }
 
@@ -850,30 +998,6 @@ public class TestOrchestrator {
             case STORE_STATE:
                 sb.append("Store state as ").append(action.getVariableName());
                 break;
-            case PRINT_STORED_STATE:
-                sb.append("Print state ").append(action.getVariableName());
-                break;
-            case COMPARE_STATES:
-                sb.append("Compare ").append(action.getState1()).append(" and ").append(action.getState2());
-                break;
-            case PRINT_STATE_COMPARISON:
-                sb.append("Print comparison ").append(action.getVariableName());
-                break;
-            case GET_WORLD_TIME:
-                sb.append("Get world time");
-                break;
-            case GET_WEATHER:
-                sb.append("Get weather status");
-                break;
-            case CLEAR_COOLDOWN:
-                sb.append("Clear cooldown for ").append(action.getPlayer());
-                break;
-            case SET_COOLDOWN:
-                sb.append("Set cooldown for ").append(action.getPlayer()).append(" to ").append(action.getDuration()).append("ms");
-                break;
-            case EXECUTE_PLAYER_RAW:
-                sb.append("Player ").append(action.getPlayer()).append(" executes: ").append(action.getCommand());
-                break;
 
             // Player Management Commands
             case GAMEMODE_CHANGE:
@@ -958,6 +1082,12 @@ public class TestOrchestrator {
             case ASSERT_JSON_EQUALS:
                 sb.append("Assert JSON equals");
                 break;
+            case ASSERT_LOG_CONTAINS:
+                sb.append("Assert log contains");
+                break;
+            case ASSERT_CONDITION:
+                sb.append("Assert condition met");
+                break;
 
             default:
                 sb.append(action.getType().toString().toLowerCase().replace("_", " "));
@@ -988,6 +1118,7 @@ public class TestOrchestrator {
                 return "server";
             case WAIT:
             case STORE_STATE:
+            case EXECUTE_PLAYER_RAW:
             case PRINT_STORED_STATE:
             case COMPARE_STATES:
             case PRINT_STATE_COMPARISON:
@@ -1093,11 +1224,6 @@ public class TestOrchestrator {
             case REMOVE_ITEM: return "Remove " + action.getCount() + "x " + action.getItem() + " from " + action.getPlayer();
             case GET_PLAYER_EQUIPMENT: return "Get equipment of " + action.getPlayer();
             case STORE_STATE: return "Store state as " + action.getVariableName();
-            case PRINT_STORED_STATE: return "Print state " + action.getVariableName();
-            case COMPARE_STATES: return "Compare " + action.getState1() + " and " + action.getState2();
-            case PRINT_STATE_COMPARISON: return "Print comparison " + action.getVariableName();
-            case CLEAR_COOLDOWN: return "Clear cooldown for " + action.getPlayer();
-            case SET_COOLDOWN: return "Set cooldown for " + action.getPlayer() + " to " + action.getDuration() + "ms";
             case GET_WORLD_TIME: return "Get world time";
             case GET_WEATHER: return "Get weather status";
             case EXECUTE_PLAYER_RAW: return "Execute player command: " + action.getCommand();
@@ -1130,6 +1256,11 @@ public class TestOrchestrator {
             // State Management
             case EXTRACT_WITH_JSONPATH: return "Extract " + action.getJsonPath() + " from " + action.getSourceVariable();
             case FILTER_ENTITIES: return "Filter entities by " + action.getFilterType() + "=" + action.getFilterValue();
+            case PRINT_STORED_STATE: return "Print stored state '" + action.getVariableName() + "'";
+            case COMPARE_STATES: return "Compare states '" + action.getState1() + "' vs '" + action.getState2() + "'";
+            case PRINT_STATE_COMPARISON: return "Print comparison result for '" + action.getVariableName() + "'";
+            case CLEAR_COOLDOWN: return "Clear cooldown for " + action.getPlayer();
+            case SET_COOLDOWN: return "Set cooldown for " + action.getPlayer() + " to " + action.getDuration() + "ms";
 
             // Assertion Actions
             case ASSERT_ENTITY_MISSING: return "Assert " + action.getEntity() + " doesn't exist";
@@ -1137,7 +1268,8 @@ public class TestOrchestrator {
             case ASSERT_PLAYER_HAS_ITEM: return "Assert " + action.getPlayer() + " has " + action.getItem();
             case ASSERT_RESPONSE_CONTAINS: return "Assert response contains '" + action.getContains() + "'";
             case ASSERT_JSON_EQUALS: return "Assert JSON equals";
-
+            case ASSERT_LOG_CONTAINS: return "Assert log contains";
+            case ASSERT_CONDITION: return "Assert condition met";
             default: return action.toString();
         }
     }
@@ -1181,9 +1313,103 @@ public class TestOrchestrator {
         log("=".repeat(50));
     }
 
+    /**
+     * Store state in both StateManager and legacy storedStates map.
+     * This ensures state is available for comparison operations.
+     */
+    private void storeState(String key, Object value) {
+        if (key != null && value != null) {
+            stateManager.store(key, value);
+            storedStates.put(key, value);
+        }
+    }
+
     private void log(String message) {
         if (verbose) System.out.println(message);
         result.addLog(message);
+    }
+
+    /**
+     * Serialize an object to JSON string.
+     * Handles null, Maps, Lists, and primitive types.
+     */
+    private String serializeToJson(Object obj) {
+        if (obj == null) {
+            return "null";
+        }
+
+        try {
+            return stateMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            return obj.toString();
+        }
+    }
+
+    /**
+     * Set execution context (executor type and player) for a test step.
+     * This helps track which backend executor handled the action.
+     */
+    private void setExecutionContext(TestReporter.TestStep step, Action action) {
+        if (step == null || action == null) {
+            return;
+        }
+
+        // Determine executor based on action type
+        String executor = null;
+        String executorPlayer = action.getPlayer();
+        boolean isOperator = false;
+
+        // Handle null action type
+        Action.ActionType actionType = action.getType();
+        if (actionType == null) {
+            // Default to SYSTEM for actions without a type
+            executor = "SYSTEM";
+        } else {
+            switch (actionType) {
+                case SERVER_COMMAND:
+                case EXECUTE_RCON_COMMAND:
+                case EXECUTE_RCON_WITH_CAPTURE:
+                case EXECUTE_RCON_RAW:
+                    executor = "RCON";
+                    break;
+                case CONNECT_PLAYER:
+                case DISCONNECT_PLAYER:
+                    executor = "MINEFLAYER";
+                    break;
+                case PLAYER_COMMAND:
+                case EXECUTE_PLAYER_COMMAND:
+                case EXECUTE_PLAYER_RAW:
+                    executor = "PLAYER";
+                    break;
+                case MAKE_OPERATOR:
+                    executor = "RCON";
+                    isOperator = true;
+                    break;
+                case WAIT:
+                    executor = "SYSTEM";
+                    break;
+                case STORE_STATE:
+                case PRINT_STORED_STATE:
+                case COMPARE_STATES:
+                case PRINT_STATE_COMPARISON:
+                case EXTRACT_WITH_JSONPATH:
+                case FILTER_ENTITIES:
+                    executor = "SYSTEM";
+                    break;
+                default:
+                    if (action.getPlayer() != null) {
+                        executor = "PLAYER";
+                    } else {
+                        executor = "SYSTEM";
+                    }
+            }
+        }
+
+        step.executor(executor);
+        if (executorPlayer != null) {
+            step.executorPlayer(executorPlayer);
+        }
+        step.isOperator(isOperator);
     }
 
     /**

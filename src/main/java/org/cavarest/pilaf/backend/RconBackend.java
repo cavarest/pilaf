@@ -34,6 +34,14 @@ public class RconBackend implements PilafBackend {
         }
     }
 
+    /**
+     * Sets the RCON client for testing purposes.
+     * Allows injection of a mock RconClient for unit testing.
+     */
+    public void setRconClient(RconClient rconClient) {
+        this.rcon = rconClient;
+    }
+
     private void log(Level level, String message) {
         if (verbose || level.intValue() >= Level.INFO.intValue()) {
             logger.log(level, "[RCON] " + message);
@@ -42,13 +50,12 @@ public class RconBackend implements PilafBackend {
 
     /**
      * Executes an RCON command and returns the result.
-     * Handles IOException internally for backward compatibility.
      */
     private String executeCommand(String command) {
         try {
             return rcon.sendCommand(command);
         } catch (IOException e) {
-            log(Level.WARNING, "Command failed: " + e.getMessage());
+            log(Level.WARNING, "Command execution failed: " + e.getMessage());
             return "";
         }
     }
@@ -60,7 +67,7 @@ public class RconBackend implements PilafBackend {
         try {
             rcon.sendCommand(command);
         } catch (IOException e) {
-            log(Level.WARNING, "Command failed: " + e.getMessage());
+            log(Level.WARNING, "Command execution failed: " + e.getMessage());
         }
     }
 
@@ -69,14 +76,18 @@ public class RconBackend implements PilafBackend {
         log(Level.INFO, "Connecting to RCON server at " + host + ":" + port);
         rcon = new RconClient(host, port, password);
         rcon.connect();
-        log(Level.INFO, "Successfully connected to RCON server");
+        log(Level.INFO, "Successfully connected to RCON server (multi-packet mode enabled by default)");
     }
 
     @Override
     public void cleanup() throws Exception {
         if (rcon != null) {
             log(Level.INFO, "Closing RCON connection");
-            rcon.close();
+            try {
+                rcon.close();
+            } catch (IOException e) {
+                log(Level.WARNING, "Error during RCON disconnect: " + e.getMessage());
+            }
             rcon = null;
         }
     }
@@ -189,12 +200,10 @@ public class RconBackend implements PilafBackend {
 
     public void connectPlayer(String player) throws Exception {
         // RCON cannot connect players - this is a no-op for RCON-only backend
-        // Players must be connected via a client (Mineflayer, regular client, etc.)
         System.out.println("    ℹ️  RCON backend: connectPlayer is a no-op. Use Mineflayer backend for player connections.");
     }
 
     public void disconnectPlayer(String player) throws Exception {
-        // RCON cannot disconnect players - use kick command as closest equivalent
         executeCommand("kick " + player + " Disconnected by test");
     }
 
@@ -236,15 +245,13 @@ public class RconBackend implements PilafBackend {
         return executeCommand(command);
     }
 
-    // RAW RCON - execute exact command as-is (for full RCON command set access)
+    // RAW RCON - execute exact command as-is
     public String executeRconRaw(String command) throws Exception {
-        // Execute the exact command without any parsing or transformation
         return executeCommand(command);
     }
 
     // RAW Player command - execute exact command as the player
     public String executePlayerCommandRaw(String player, String command) throws Exception {
-        // Execute the exact command as the player without wrapping in "execute as... run"
         return executeCommand("execute as " + player + " run " + command);
     }
 
@@ -266,7 +273,6 @@ public class RconBackend implements PilafBackend {
 
     public long getWorldTime() throws Exception {
         String result = executeCommand("time query gametime");
-        // Response format: "The time is 89565" - need to extract the number
         if (result != null) {
             String trimmed = result.trim();
             if (trimmed.contains("The time is ")) {
@@ -278,8 +284,6 @@ public class RconBackend implements PilafBackend {
     }
 
     public String getWeather() throws Exception {
-        // In Minecraft 1.21.8, weather query doesn't exist as a separate command
-        // Use time and default to clear for simplicity
         return "clear";
     }
 
@@ -310,14 +314,10 @@ public class RconBackend implements PilafBackend {
 
     // Data Extraction Commands
     public Object extractWithJsonPath(String jsonData, String jsonPath) {
-        // JSONPath implementation would go here
-        // For now, return the original data
         return jsonData;
     }
 
     public List<Map<String, Object>> filterEntities(String entitiesData, String filterType, String filterValue) {
-        // Filter implementation would go here
-        // For now, return empty list
         return new ArrayList<>();
     }
 
@@ -340,14 +340,12 @@ public class RconBackend implements PilafBackend {
     // Parsing methods for Minecraft data
     private Map<String, Object> parseInventoryData(String data) {
         Map<String, Object> inventory = new HashMap<>();
-        // Simplified parsing
         inventory.put("raw", data);
         return inventory;
     }
 
     private Map<String, Object> parsePositionData(String data) {
         Map<String, Object> position = new HashMap<>();
-        // Simplified parsing
         position.put("raw", data);
         return position;
     }
@@ -363,36 +361,30 @@ public class RconBackend implements PilafBackend {
 
     private Map<String, Object> parseEntitiesData(String data) {
         Map<String, Object> entities = new HashMap<>();
-        // Simplified parsing
         entities.put("raw", data);
         return entities;
     }
 
     private Map<String, Object> parseEntityData(String data) {
         Map<String, Object> entity = new HashMap<>();
-        // Simplified parsing
         entity.put("raw", data);
         return entity;
     }
 
     private Map<String, Object> parseEquipmentData(String data) {
         Map<String, Object> equipment = new HashMap<>();
-        // Simplified parsing
         equipment.put("raw", data);
         return equipment;
     }
 
     private Map<String, Object> parseBlockData(String data) {
         Map<String, Object> block = new HashMap<>();
-        // Simplified parsing
         block.put("raw", data);
         return block;
     }
 
     @Override
     public String getServerLog() {
-        // Server logs are not accessible via RCON in Minecraft
-        // This would require direct file access or a plugin
         return "[Log access not available via RCON]";
     }
 }

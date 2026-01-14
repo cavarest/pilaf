@@ -9,7 +9,7 @@ import java.io.FileNotFoundException;
 import java.util.Map;
 
 /**
- * Loads PILAF configuration from YAML files
+ * Loads Pilaf configuration from YAML files
  */
 public class ConfigLoader {
 

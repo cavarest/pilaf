@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.logging.Logger;
 
 /**
- * Executes YAML test stories using the PILAF framework.
+ * Executes YAML test stories using the Pilaf framework.
  * Orchestrates the execution of actions and assertions from YAML stories.
  */
 public class StoryExecutor {

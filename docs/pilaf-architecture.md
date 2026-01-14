@@ -1,10 +1,10 @@
-# PILAF Architecture
+# Pilaf Architecture
 
 **Paper Integration Layer for Automation Functions Framework**
 
 ## Overview
 
-PILAF is an integration testing framework for PaperMC/Bukkit plugins that enables
+Pilaf is an integration testing framework for PaperMC/Bukkit plugins that enables
 automated testing of real plugin behavior in actual Minecraft server environments.
 
 ## Architecture Diagram
@@ -374,7 +374,7 @@ mineflayer-bridge/                         # NEW: Node.js bridge server
    - [x] RealServerBackend
    - [x] MockBukkitBackend
    - [x] PilafBackend interface
-   - [x] RconBackend (in PILAF library)
+   - [x] RconBackend (in Pilaf library)
    - [x] PilafBackendFactory
 
 2. **Phase 2: Orchestration** ✅

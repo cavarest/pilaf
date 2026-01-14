@@ -1,0 +1,111 @@
+# Example: Simple Player Inventory Test
+# Purpose: Introduction to Pilaf basics - player connection, RCON commands,
+#          inventory management, and basic assertions
+#
+# This test demonstrates:
+# - Connecting a test player via Mineflayer
+# - Using RCON to give items and modify player permissions
+# - Retrieving and validating player inventory
+# - Storing state for later verification
+# - Proper cleanup of test resources
+#
+# Tags: beginner, player, inventory, rcon, state
+
+name: "Simple Player Inventory Test"
+description: "Demonstrates basic Pilaf features including player connection, RCON commands, inventory assertions, and state management"
+
+# Setup phase: Prepare the test environment before running steps
+setup:
+  - action: "connect_player"
+    player: "pilaf_tester"
+    name: "Connect test player"
+    # Connect the test player to the server
+    # This creates a Mineflayer bot instance for the player
+
+  - action: "execute_rcon_command"
+    command: "give pilaf_tester diamond_sword 1"
+    name: "Give diamond sword"
+    # Uses RCON to give the player a diamond sword
+    # The player must be online for this to work
+
+  - action: "execute_rcon_command"
+    command: "give pilaf_tester golden_apple 5"
+    name: "Give golden apples"
+    # Gives the player 5 golden apples
+
+# Main test steps
+steps:
+  # Step 1: Store the player's initial position for later comparison
+  - action: "execute_rcon_with_capture"
+    command: "data get entity @p[name=pilaf_tester,limit=1] Pos"
+    store_as: "initial_position"
+    name: "Store initial position"
+    # Retrieves and stores the player's current XYZ coordinates
+    # This will be used to verify the player doesn't move unexpectedly
+
+  # Step 2: Retrieve and validate the player's inventory
+  - action: "execute_rcon_with_capture"
+    command: "data get entity @p[name=pilaf_tester,limit=1] Inventory"
+    store_as: "player_inventory"
+    name: "Get player inventory"
+    # Fetches the player's current inventory contents
+    # Stored as JSON for detailed assertions
+
+  # Step 3: Verify diamond sword in inventory via item check
+  - action: "execute_rcon_command"
+    command: "execute as @p[name=pilaf_tester,limit=1] if data entity @s Inventory[{id:\"minecraft:diamond_sword\"}] run say HAS_DIAMOND_SWORD"
+    name: "Verify diamond sword"
+    # Basic check: verify the player has a diamond sword
+    # Uses execute if data to check for item presence
+
+  # Step 4: Verify golden apples count
+  - action: "execute_rcon_command"
+    command: "execute as @p[name=pilaf_tester,limit=1] if data entity @s Inventory[{id:\"minecraft:golden_apple\",Count:5b}] run say HAS_5_GOLDEN_APPLES"
+    name: "Verify golden apples"
+    # Verify the player has 5 golden apples with exact count
+
+  # Step 5: Retrieve position again and compare with stored value
+  - action: "execute_rcon_with_capture"
+    command: "data get entity @p[name=pilaf_tester,limit=1] Pos"
+    store_as: "final_position"
+    name: "Store final position"
+
+  - action: "compare_states"
+    state1: "initial_position"
+    state2: "final_position"
+    store_as: "position_diff"
+    name: "Compare positions"
+    # Use stored variables to verify player position unchanged
+
+  # Step 6: Print the comparison result
+  - action: "print_state_comparison"
+    variable_name: "position_diff"
+    name: "Show position change"
+
+  # Step 7: Grant operator status temporarily (demonstrates permission changes)
+  - action: "execute_rcon_command"
+    command: "op pilaf_tester"
+    name: "Grant operator"
+    # Promotes the player to operator using RCON
+    # This requires the command sender to already be an operator
+
+  # Step 8: Remove operator status (cleanup within steps)
+  - action: "execute_rcon_command"
+    command: "deop pilaf_tester"
+    name: "Remove operator"
+    # Removes operator status from the player
+    # Demonstrates proper permission management in tests
+
+# Cleanup phase: Ensure test resources are properly cleaned up
+cleanup:
+  - action: "execute_rcon_command"
+    command: "clear pilaf_tester"
+    name: "Clear inventory"
+    # Remove all items from the test player's inventory
+    # Ensures clean state for future tests
+
+  - action: "disconnect_player"
+    player: "pilaf_tester"
+    name: "Disconnect player"
+    # Disconnect the Mineflayer bot
+    # Important for resource management and preventing ghost players

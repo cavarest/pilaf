@@ -1,7 +1,8 @@
 package org.cavarest.pilaf.backend;
 
 import org.cavarest.pilaf.client.MineflayerClient;
-import org.cavarest.pilaf.rcon.RconClient;
+import org.cavarest.rcon.RconClient;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -30,8 +31,10 @@ public class MineflayerBackend implements PilafBackend {
     @Override
     public void initialize() throws Exception {
         if (verbose) System.out.println("   [BACKEND] Initializing Mineflayer backend...");
-        if (!rcon.connect()) {
-            throw new Exception("Failed to connect to RCON");
+        try {
+            rcon.connect();
+        } catch (IOException e) {
+            throw new Exception("Failed to connect to RCON", e);
         }
         if (!mineflayer.isHealthy()) {
             throw new Exception("Mineflayer bridge not responding");
@@ -45,7 +48,20 @@ public class MineflayerBackend implements PilafBackend {
             try { mineflayer.disconnect(player); } catch (Exception e) {}
         }
         connectedPlayers.clear();
-        rcon.disconnect();
+        try {
+            rcon.close();
+        } catch (IOException e) {
+            // Log and continue
+        }
+    }
+
+    // Helper method to execute RCON commands with IOException handling
+    private String executeRconCommand(String command) {
+        try {
+            return rcon.sendCommand(command);
+        } catch (IOException e) {
+            throw new RuntimeException("RCON command failed: " + command, e);
+        }
     }
 
     @Override
@@ -86,7 +102,7 @@ public class MineflayerBackend implements PilafBackend {
 
     @Override
     public void giveItem(String player, String item, Integer count) {
-        rcon.executeCommand("give " + player + " " + item + " " + count);
+        executeRconCommand("give " + player + " " + item + " " + count);
     }
 
     @Override
@@ -121,20 +137,20 @@ public class MineflayerBackend implements PilafBackend {
     public void spawnEntity(String name, String type, List<Double> location, Map<String, String> equipment) {
         String cmd = String.format("summon %s %.1f %.1f %.1f {CustomName:'\"test_%s\"'}",
             type.toLowerCase(), location.get(0), location.get(1), location.get(2), name);
-        rcon.executeCommand(cmd);
+        executeRconCommand(cmd);
         spawnedEntities.add(name);
         entityHealths.put(name, 20.0);
     }
 
     @Override
     public boolean entityExists(String name) {
-        String result = rcon.executeCommand("execute if entity @e[name=test_" + name + "]");
+        String result = executeRconCommand("execute if entity @e[name=test_" + name + "]");
         return result != null && result.contains("1");
     }
 
     @Override
     public double getEntityHealth(String name) {
-        String result = rcon.executeCommand("data get entity @e[name=test_" + name + ",limit=1] Health");
+        String result = executeRconCommand("data get entity @e[name=test_" + name + ",limit=1] Health");
         try {
             if (result != null && result.contains("has the following entity data:")) {
                 String num = result.replaceAll("[^0-9.]", "");
@@ -146,7 +162,7 @@ public class MineflayerBackend implements PilafBackend {
 
     @Override
     public void setEntityHealth(String name, Double health) {
-        rcon.executeCommand("data modify entity @e[name=test_" + name + ",limit=1] Health set value " + health + "f");
+        executeRconCommand("data modify entity @e[name=test_" + name + ",limit=1] Health set value " + health + "f");
         entityHealths.put(name, health);
     }
 
@@ -156,7 +172,7 @@ public class MineflayerBackend implements PilafBackend {
         if (args != null && !args.isEmpty()) {
             fullCommand = command + " " + String.join(" ", args);
         }
-        rcon.executeCommand(fullCommand);
+        executeRconCommand(fullCommand);
     }
 
     @Override
@@ -171,13 +187,13 @@ public class MineflayerBackend implements PilafBackend {
 
     @Override
     public boolean pluginReceivedCommand(String plugin, String command, String player) {
-        String result = rcon.executeCommand("plugins");
+        String result = executeRconCommand("plugins");
         return result != null && result.contains(plugin);
     }
 
     @Override
     public void removeAllTestEntities() {
-        rcon.executeCommand("kill @e[name=test_]");
+        executeRconCommand("kill @e[name=test_]");
         spawnedEntities.clear();
         entityHealths.clear();
     }
@@ -192,7 +208,7 @@ public class MineflayerBackend implements PilafBackend {
 
     // Extended Player Management Commands
     public void makeOperator(String player) throws Exception {
-        rcon.executeCommand("op " + player);
+        executeRconCommand("op " + player);
     }
 
     public Map<String, Object> getPlayerInventory(String player) throws Exception {
@@ -234,13 +250,13 @@ public class MineflayerBackend implements PilafBackend {
 
     // Extended Command Execution Commands
     public String executeRconWithCapture(String command) throws Exception {
-        return rcon.executeCommand(command);
+        return executeRconCommand(command);
     }
 
     // RAW RCON - execute exact command as-is (for full RCON command set access)
     public String executeRconRaw(String command) throws Exception {
         // Execute the exact command without any parsing or transformation
-        return rcon.executeCommand(command);
+        return executeRconCommand(command);
     }
 
     // RAW Player command - execute exact command as the player
@@ -253,7 +269,7 @@ public class MineflayerBackend implements PilafBackend {
 
     // Extended Inventory Management Commands
     public void removeItem(String player, String item, int count) throws Exception {
-        rcon.executeCommand("clear " + player + " " + item + " " + count);
+        executeRconCommand("clear " + player + " " + item + " " + count);
     }
 
     public Map<String, Object> getPlayerEquipment(String player) throws Exception {
@@ -267,7 +283,7 @@ public class MineflayerBackend implements PilafBackend {
     }
 
     public long getWorldTime() throws Exception {
-        String result = rcon.executeCommand("time query gametime");
+        String result = executeRconCommand("time query gametime");
         // Response format: "The time is 89565" - need to extract the number
         if (result != null) {
             String trimmed = result.trim();

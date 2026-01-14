@@ -9,8 +9,8 @@ import java.io.File;
 import java.util.*;
 
 /**
- * CLI runner for PILAF integration tests.
- * Usage: java -jar pilaf.jar [options] <story-files...>
+ * CLI runner for Pilaf integration tests.
+ * Usage: java -jar pilaf.jar [options] &lt;story-files...&gt;
  */
 public class PilafRunner {
 
@@ -39,7 +39,7 @@ public class PilafRunner {
         TestReporter reporter = new TestReporter();
         reporter.setOutputDir(config.reportDir);
 
-        System.out.println("🚀 PILAF Integration Test Runner");
+        System.out.println("🚀 Pilaf Integration Test Runner");
         System.out.println("   Backend: " + config.backendType);
         System.out.println("   Stories: " + config.storyFiles.size());
         System.out.println();
@@ -109,7 +109,7 @@ public class PilafRunner {
     }
 
     private static void printHelp() {
-        System.out.println("PILAF - Paper Integration Layer for Automation Functions");
+        System.out.println("Pilaf - Paper Integration Layer for Automation Functions");
         System.out.println();
         System.out.println("Usage: pilaf [options] <story-files...>");
         System.out.println();

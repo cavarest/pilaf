@@ -53,7 +53,7 @@ public class ConsistencyReportGenerator {
             writer.println("<head>");
             writer.println("    <meta charset=\"UTF-8\">");
             writer.println("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
-            writer.println("    <title>PILAF Backend Consistency Report</title>");
+            writer.println("    <title>Pilaf Backend Consistency Report</title>");
             writer.println("    <style>");
             writer.println("        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }");
             writer.println("        .container { max-width: 1200px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }");
@@ -82,8 +82,8 @@ public class ConsistencyReportGenerator {
 
             // Header
             writer.println("        <div class=\"header\">");
-            writer.println("            <h1>PILAF Backend Consistency Report</h1>");
-            writer.println("            <p>Comprehensive analysis of PILAF behavior across different backend combinations</p>");
+            writer.println("            <h1>Pilaf Backend Consistency Report</h1>");
+            writer.println("            <p>Comprehensive analysis of Pilaf behavior across different backend combinations</p>");
             writer.println("        </div>");
 
             // Summary
@@ -121,7 +121,7 @@ public class ConsistencyReportGenerator {
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(reportPath))) {
             writer.println("=================================================================");
-            writer.println("           PILAF BACKEND CONSISTENCY REPORT");
+            writer.println("           Pilaf BACKEND CONSISTENCY REPORT");
             writer.println("=================================================================");
             writer.println();
             writer.println("Generated: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));

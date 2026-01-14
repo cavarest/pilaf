@@ -1,0 +1,75 @@
+# Test: Server Information Commands
+# Category: Server Commands
+# Purpose: Tests server status and information commands
+
+name: "Server Information Test"
+description: |
+  Tests server information commands including player list,
+  server version, and world statistics.
+
+backend: mineflayer
+
+setup:
+  - action: "connect"
+    player: "pilaf_tester"
+    name: "Connect test player"
+
+  - action: "wait"
+    duration: 5
+    name: "Wait for connection"
+
+  - action: "servercommand"
+    command: "say [Pilaf] Starting server information test..."
+    name: "Announce test start"
+
+steps:
+  # Test 1: Get player count
+  - action: "servercommand"
+    command: "list"
+    name: "List online players"
+
+  # Test 2: Get server version
+  - action: "servercommand"
+    command: "version"
+    name: "Get server version"
+
+  # Test 3: Get seed
+  - action: "servercommand"
+    command: "seed"
+    name: "Get world seed"
+
+  # Test 4: Get player position
+  - action: "get_player_position"
+    player: "pilaf_tester"
+    name: "Get player position"
+    storeAs: "player_position"
+
+  # Test 5: Get world time
+  - action: "get_world_time"
+    name: "Get world time"
+    storeAs: "world_time"
+
+  # Test 6: Get weather status
+  - action: "get_weather"
+    name: "Get weather status"
+    storeAs: "weather_status"
+
+  # Test 7: Server performance check
+  - action: "servercommand"
+    command: "tps"
+    name: "Get server TPS"
+
+  # Test 8: Entity count
+  - action: "getentities"
+    player: "pilaf_tester"
+    name: "Get nearby entity count"
+    storeAs: "nearby_entities"
+
+cleanup:
+  - action: "servercommand"
+    command: "say [Pilaf] Server information test completed"
+    name: "Announce completion"
+
+  - action: "disconnect"
+    player: "pilaf_tester"
+    name: "Disconnect test player"

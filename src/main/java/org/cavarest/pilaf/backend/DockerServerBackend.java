@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * Docker Server Backend for PILAF test execution.
+ * Docker Server Backend for Pilaf test execution.
  * Uses Docker + PaperMC to provide Minecraft server infrastructure.
  *
  * This backend:

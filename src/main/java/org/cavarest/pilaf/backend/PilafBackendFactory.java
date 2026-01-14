@@ -1,12 +1,14 @@
 package org.cavarest.pilaf.backend;
 
+import org.cavarest.pilaf.config.TestPorts;
+
 /**
  * Factory for creating PilafBackend instances.
  */
 public class PilafBackendFactory {
 
     public static PilafBackend create(String type) {
-        return create(type, "localhost", 25575, "dragon123");
+        return create(type, TestPorts.DEFAULT_RCON_HOST, TestPorts.RCON_PORT, TestPorts.DEFAULT_RCON_PASSWORD);
     }
 
     public static PilafBackend create(String type, String host, int port, String password) {
@@ -21,7 +23,7 @@ public class PilafBackendFactory {
                 return new HeadlessMcBackend("1.21.5", host, port, password, true, true);
             case "mineflayer":
             case "real-client":
-                return new MineflayerBackend("localhost", 3000, host, port, password);
+                return new MineflayerBackend(TestPorts.DEFAULT_RCON_HOST, TestPorts.MINEFLAYER_API_PORT, host, port, password);
             default:
                 throw new IllegalArgumentException("Unknown backend type: " + type);
         }
