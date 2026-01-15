@@ -2,7 +2,7 @@
 # Uses Just the Docs theme - https://just-the-docs.com/
 
 # Site settings
-title: Pilaf Documentation
+title: Pilaf documentation
 description: Paper Integration Layer for Automation Functions - Minecraft plugin testing framework
 url: https://cavarest.github.io
 baseurl: /pilaf
@@ -88,7 +88,7 @@ footer_content: 'Copyright &copy; 2025 Pilaf Contributors. Open source under the
 color_scheme: light
 
 # Logo
-logo: false
+logo: "/assets/logo.svg"
 
 # Aux links for the upper right navigation
 aux_links:
