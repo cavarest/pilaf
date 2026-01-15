@@ -77,6 +77,39 @@ tasks.withType(Test) {
     useJUnitPlatform()
 }
 
+// Unit tests - exclude integration tests
+tasks.register('unitTest', Test) {
+    description = 'Runs unit tests (excludes integration tests)'
+    group = 'verification'
+    useJUnitPlatform {
+        excludeTags 'integration'
+    }
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    shouldRunAfter test
+}
+
+// Integration tests - only run tests tagged with 'integration'
+tasks.register('integrationTest', Test) {
+    description = 'Runs integration tests (requires server)'
+    group = 'verification'
+    useJUnitPlatform {
+        includeTags 'integration'
+    }
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    shouldRunAfter unitTest
+    timeout = Duration.ofMinutes(10)
+    systemProperty 'integrationTest.timeout', '600'
+}
+
+// Make test run unit tests only
+test {
+    useJUnitPlatform {
+        excludeTags 'integration'
+    }
+}
+
 publishing {
     publications {
         gpr(MavenPublication) {

@@ -207,7 +207,7 @@ Add to your GitHub Actions workflow:
     ./run-consistency-tests.sh
 
 - name: Upload Reports
-  uses: actions/upload-artifact@v3
+  uses: actions/upload-artifact@v6
   with:
     name: consistency-reports
     path: consistency-report-*.html

@@ -3,17 +3,7 @@ name: Integration Tests
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'test/**'
-      - 'build.gradle'
-      - '.github/workflows/integration-tests.yml'
   pull_request:
-    paths:
-      - 'src/**'
-      - 'test/**'
-      - 'build.gradle'
-      - '.github/workflows/integration-tests.yml'
   workflow_dispatch:
 
 jobs:
@@ -29,18 +19,22 @@ jobs:
       minecraft:
         image: itzg/minecraft-server
         ports:
-          - 35115:25565
-          - 35125:25575
+          - 25565:25565
+          - 25575:25575
         env:
           EULA: 'TRUE'
           ONLINE_MODE: 'false'
           TYPE: 'PAPER'
           VERSION: '1.21.8'
-          RCON_PASSWORD: 'cavarest'
+          RCON_PASSWORD: 'dragon123'
           ENABLE_RCON: 'true'
+          RCON_PORT: '25575'
           MAX_PLAYERS: '5'
           MEMORY: '1G'
+          SPAWN_PROTECTION: '0'
+          DEBUG: 'false'
         options: >-
+          --name pilaf-minecraft
           --health-cmd "mc-health"
           --health-interval 30s
           --health-timeout 10s
@@ -49,16 +43,19 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
+    - name: Set up JDK 21
+      uses: actions/setup-java@v5
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'temurin'
 
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v5
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
     - name: Wait for Minecraft server to be ready
       run: |
@@ -67,55 +64,104 @@ jobs:
 
     - name: Verify RCON is accessible
       run: |
-        echo "🔌 Testing RCON connection on port 35125..."
-        RESPONSE=$(printf 'version\0' | nc -w 3 localhost 35125 2>/dev/null)
-        if echo "$RESPONSE" | grep -q "version\|Paper\|Minecraft"; then
+        echo "🔌 Testing RCON connection..."
+        RESPONSE=$(printf 'version\\0' | nc -w 3 localhost 25575 2>/dev/null)
+        if echo "$RESPONSE" | grep -q "version\\|Paper\\|Minecraft"; then
           echo "✅ RCON is accessible and responding"
         else
           echo "⚠️ RCON may not be ready yet"
         fi
+
+    - name: Build Mineflayer Bridge image
+      uses: docker/build-push-action@v6
+      with:
+        context: mineflayer-bridge
+        tags: pilaf-mineflayer-bridge
+        load: true
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
     - name: Build with Gradle
       run: |
         echo "🔨 Compiling Java source code..."
         ./gradlew clean compileJava compileTestJava
 
-    - name: Run unit tests first
+    - name: Create CI config file
       run: |
-        echo "🧪 Running unit tests..."
-        ./gradlew test
+        echo "📝 Creating CI configuration..."
+        cat > config-ci.yaml << EOF
+        # Configuration for GitHub Actions CI
+        server_backend: rcon
+        client_backend: none
 
-    - name: Build PILAF application
-      run: |
-        echo "🏗️ Building PILAF..."
-        ./gradlew clean build -x test
+        # Server settings
+        rcon_host: localhost
+        rcon_port: 25575
+        rcon_password: dragon123
+        EOF
+        cat config-ci.yaml
 
     - name: Start Mineflayer Bridge
       run: |
-        echo "🌉 Starting Mineflayer Bridge..."
-        cd mineflayer-bridge
-        docker build -t pilaf-mineflayer-bridge .
-        docker run -d -p 3000:3000 --network host --name pilaf-bridge pilaf-mineflayer-bridge || true
-        sleep 5
-        curl -s http://localhost:3000/health || echo "Bridge starting..."
+        echo "🚀 Starting Mineflayer Bridge..."
+        docker run -d \
+          --name pilaf-bridge \
+          -p 8888:3000 \
+          --add-host=minecraft:127.0.0.1 \
+          -e MC_HOST=minecraft \
+          -e MC_PORT=25565 \
+          pilaf-mineflayer-bridge
 
-    - name: Run PILAF story tests
+    - name: Verify Mineflayer Bridge is ready
       run: |
-        echo "📜 Running PILAF story tests..."
-        ./gradlew run --args="--config config-docker-mineflayer.yaml test-story-1-basic-items.yaml" || true
-        ./gradlew run --args="--config config-docker-mineflayer.yaml test-story-2-entities.yaml" || true
-        ./gradlew run --args="--config config-docker-mineflayer.yaml test-story-3-movement.yaml" || true
-        ./gradlew run --args="--config config-docker-mineflayer.yaml test-story-4-commands.yaml" || true
-        ./gradlew run --args="--config config-docker-mineflayer.yaml demo-story.yaml" || true
+        echo "⏳ Waiting for Mineflayer Bridge to be ready..."
+        for i in {1..30}; do
+          if curl -f http://localhost:8888/health 2>/dev/null; then
+            echo "✅ Mineflayer Bridge is ready!"
+            break
+          fi
+          if [ $i -eq 30 ]; then
+            echo "❌ Mineflayer Bridge failed to start"
+            docker logs pilaf-bridge
+            exit 1
+          fi
+          echo "Waiting... ($i/30)"
+          sleep 2
+        done
 
-    - name: Collect test results
+    - name: Wait for Minecraft server to fully initialize
       run: |
-        echo "📊 Collecting test results..."
-        cp -r target/pilaf-reports/* build/reports/pilaf/ 2>/dev/null || true
-        ls -la target/pilaf-reports/ 2>/dev/null || echo "No reports yet"
+        echo "⏳ Waiting additional time for Minecraft server to fully initialize..."
+        echo "This ensures entity spawning and RCON commands work properly..."
+        sleep 30
+        echo "✅ Wait complete, server should be fully ready"
+
+    - name: Run integration tests (JUnit)
+      run: |
+        echo "🚀 Running JUnit integration tests..."
+        ./gradlew integrationTest
+
+    - name: Run Pilaf story tests
+      run: |
+        echo "📜 Running Pilaf story tests..."
+        ./gradlew run --args="--config config-ci.yaml bin/test/simple-test.yaml" || true
+        ./gradlew run --args="--config config-ci.yaml test-story-1-basic-items.yaml" || true
+        ./gradlew run --args="--config config-ci.yaml test-story-2-entities.yaml" || true
+        ./gradlew run --args="--config config-ci.yaml test-story-3-movement.yaml" || true
+        ./gradlew run --args="--config config-ci.yaml test-story-4-commands.yaml" || true
+        ./gradlew run --args="--config config-ci.yaml demo-story.yaml" || true
+
+    - name: Collect Pilaf HTML reports
+      run: |
+        echo "📊 Collecting Pilaf HTML reports..."
+        mkdir -p build/reports/pilaf
+        if [ -d "target/pilaf-reports" ]; then
+          cp -r target/pilaf-reports/* build/reports/pilaf/ 2>/dev/null || true
+        fi
+        ls -la target/pilaf-reports/ 2>/dev/null || echo "No Pilaf reports yet"
         ls -la build/reports/pilaf/ 2>/dev/null || echo "No reports copied"
 
-    - name: Publish Integration Test Results
+    - name: Publish JUnit Integration Test Results
       uses: EnricoMi/publish-unit-test-result-action@v2
       if: always() && !cancelled()
       with:
@@ -135,12 +181,14 @@ jobs:
           build/reports/tests/integrationTest/
         retention-days: 30
 
-    - name: Upload PILAF HTML reports
+    - name: Upload Pilaf HTML reports
       if: always()
       uses: actions/upload-artifact@v6
       with:
         name: pilaf-html-reports
-        path: target/pilaf-reports/
+        path: |
+          target/pilaf-reports/
+          build/reports/pilaf/
         retention-days: 30
         if-no-files-found: ignore
 
@@ -158,20 +206,28 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
 
         if [ -d build/reports/tests/integrationTest ]; then
-          echo "### ✅ Integration Tests" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ JUnit Integration Tests" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Gradle integration tests completed successfully." >> $GITHUB_STEP_SUMMARY
         fi
 
-        if [ -d target/pilaf-reports ]; then
-          echo "### 📜 PILAF Story Tests" >> $GITHUB_STEP_SUMMARY
+        if [ -d target/pilaf-reports ] || [ -d build/reports/pilaf ]; then
+          echo "### 📜 Pilaf Story Tests" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**HTML Reports**: Download the \`pilaf-html-reports\` artifact to view interactive reports." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          ls -la target/pilaf-reports/ 2>/dev/null || echo "No reports found" >> $GITHUB_STEP_SUMMARY
+          ls -la target/pilaf-reports/ 2>/dev/null || ls -la build/reports/pilaf/ 2>/dev/null || echo "No reports found" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         fi
+
+    - name: Show Docker logs on failure
+      if: failure()
+      run: |
+        echo "=== Minecraft Server Logs ===" >> $GITHUB_STEP_SUMMARY
+        docker logs pilaf-minecraft 2>&1 | tail -50 >> $GITHUB_STEP_SUMMARY || true
+        echo "=== Mineflayer Bridge Logs ===" >> $GITHUB_STEP_SUMMARY
+        docker logs pilaf-bridge 2>&1 | tail -50 >> $GITHUB_STEP_SUMMARY || true
 
     - name: Stop Mineflayer Bridge
       if: always()
@@ -179,10 +235,3 @@ jobs:
         echo "🛑 Stopping Mineflayer Bridge..."
         docker stop pilaf-bridge 2>/dev/null || true
         docker rm pilaf-bridge 2>/dev/null || true
-
-    - name: Stop Minecraft server
-      if: always()
-      run: |
-        echo "🛑 Stopping Minecraft server container..."
-        docker stop $(docker ps -q --filter ancestor=itzg/minecraft-server) 2>/dev/null || true
-        docker rm $(docker ps -aq --filter ancestor=itzg/minecraft-server) 2>/dev/null || true
