@@ -308,7 +308,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - name: Set up JDK 21
         uses: actions/setup-java@v2
         with:
