@@ -1,10 +1,12 @@
 = PILAF: Minecraft Plugin Integration Testing Framework
 
 image:https://img.shields.io/badge/Java-17%2B-blue[Java Version]
-image:https://img.shields.io/badge/Gradle-7.6-green[Gradle Version]
+image:https://img.shields.io/badge/Gradle-8.5-green[Gradle Version]
 image:https://img.shields.io/badge/License-MIT-yellow[License]
 image:https://github.com/cavarest/pilaf/actions/workflows/unit-tests.yml/badge.svg["Unit Tests", link="https://github.com/cavarest/pilaf/actions/workflows/unit-tests.yml"]
 image:https://github.com/cavarest/pilaf/actions/workflows/integration-tests.yml/badge.svg["Integration Tests", link="https://github.com/cavarest/pilaf/actions/workflows/integration-tests.yml"]
+
+image:https://img.shields.io/badge/Website-Pilaf_documentation-blue.svg["Documentation site", link="https://cavarest.github.io/pilaf"]
 
 PILAF (Paper Integration Layer for Automation Functions) is a comprehensive YAML
 story-driven testing framework specifically designed for PaperMC Minecraft
@@ -14,7 +16,10 @@ functionality.
 
 == Purpose
 
-Traditional Minecraft plugin testing requires extensive Java code to simulate player actions, execute server commands, and validate results. PILAF eliminates this complexity by providing a YAML-based story format that non-developers can understand and maintain.
+Traditional Minecraft plugin testing requires extensive Java code to simulate
+player actions, execute server commands, and validate results. PILAF eliminates
+this complexity by providing a YAML-based story format that non-developers can
+understand and maintain.
 
 == Architecture
 
