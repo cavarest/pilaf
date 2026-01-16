@@ -2,32 +2,26 @@ name: Dependency Submission
 
 on:
   push:
-    branches: [ main ]
-    paths:
-      - 'build.gradle'
-      - 'gradle.properties'
+    branches: [ 'main' ]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   dependency-submission:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout sources
       uses: actions/checkout@v6
 
-    - name: Set up JDK 17
+    - name: Setup Java
       uses: actions/setup-java@v5
       with:
-        java-version: '17'
         distribution: 'temurin'
+        java-version: 17
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v5
-
-    - name: Generate dependency graph
+    - name: Generate and submit dependency graph
       uses: gradle/actions/dependency-submission@v5
 
     - name: Upload dependency graph
