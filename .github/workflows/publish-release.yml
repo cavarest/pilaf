@@ -82,5 +82,5 @@ jobs:
         if: github.event_name == 'release' || github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
-          files: build/libs/cavarest-rcon-${{ steps.version.outputs.version }}.jar
+          files: build/libs/pilaf-${{ steps.version.outputs.version }}.jar
           generate_release_notes: true
