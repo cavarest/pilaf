@@ -1,0 +1,17 @@
+{
+  "name": "@pilaf/framework",
+  "version": "1.0.0",
+  "main": "lib/index.js",
+  "dependencies": {
+    "@pilaf/backends": "workspace:*",
+    "@pilaf/reporting": "workspace:*",
+    "jest": "^29.7.0",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@jest/globals": "^29.7.0"
+  },
+  "peerDependencies": {
+    "jest": ">=29.0.0"
+  }
+}

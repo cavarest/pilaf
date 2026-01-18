@@ -1,13 +1,50 @@
-target/
-*.class
-*.jar
-!.gradle/wrapper/gradle-wrapper.jar
-.log
-.idea/
-*.iml
-.DS_Store
+# Gradle
 .gradle/
 build/
 target/
-bin/
+
+# Java
+*.class
+*.jar
+!.gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Ruby
 Gemfile.lock
+
+# Node.js
+node_modules/
+dist/
+coverage/
+.pnpm-store/
+bin/
+
+# Lock files (keep only pnpm-lock.yaml)
+package-lock.json
+yarn.lock
+
+# Test results
+test-results/
+target/pilaf-reports/
+
+CLAUDE.md
+.claude
+.kilocode
+*.md
+
+*.lock
+pnpm-lock.yaml
+
