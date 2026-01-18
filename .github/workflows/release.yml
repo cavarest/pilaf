@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.1, 2.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: Get pnpm store directory
+      id: pnpm-cache
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+    - name: Setup pnpm cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Configure Git
+      run: |
+        git config --global user.email "11865+ronaldtse@users.noreply.github.com"
+        git config --global user.name "GitHub Action"
+
+    - name: Update version in package.json
+      run: |
+        VERSION="${{ inputs.version }}"
+        echo "Setting version to $VERSION"
+        npm version $VERSION --no-git-tag-version --allow-same-version
+
+    - name: Run tests before publishing
+      run: |
+        echo "Running tests..."
+        pnpm test:examples
+        # pnpm test:ci  # Uncomment to run full test suite
+
+    - name: Publish to npm using Trusted Publishing
+      run: |
+        VERSION="${{ inputs.version }}"
+        echo "Publishing @cavarest/pilaf@$VERSION to npm..."
+        pnpm publish --access public --no-git-checks
+
+    - name: Create Git tag
+      run: |
+        VERSION="${{ inputs.version }}"
+        git tag -a "v$VERSION" -m "Release v$VERSION"
+        git push origin "v$VERSION"
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ inputs.version }}
+        name: v${{ inputs.version }}
+        body: |
+          ## Pilaf v${{ inputs.version }}
+
+          ### What's Changed
+
+          See the commit history since the last release for details.
+
+          ### Installation
+
+          ```bash
+          pnpm add -D @cavarest/pilaf
+          ```
+
+          ### Documentation
+
+          [Documentation](https://cavarest.github.io/pilaf/)
+          GitHub Actions: [Integration Guide](https://github.com/cavarest/pilaf/blob/main/docs/guides/github-actions.adoc)
+
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Verify release on npm
+      run: |
+        VERSION="${{ inputs.version }}"
+        echo "Verifying @cavarest/pilaf@$VERSION is available on npm..."
+        sleep 30  # Wait for npm registry to propagate
+        npm view @cavarest/pilaf@$VERSION
