@@ -13,107 +13,58 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        java-version: [11, 17, 21]
-
     steps:
     - name: Checkout code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v4
 
-    - name: Set up JDK ${{ matrix.java-version }}
-      uses: actions/setup-java@v5
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
       with:
-        java-version: ${{ matrix.java-version }}
-        distribution: 'temurin'
+        version: 10
 
-    - name: Checkout rcon dependency
-      uses: actions/checkout@v6
+    - name: Get pnpm store directory
+      id: pnpm-cache
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+    - name: Setup pnpm cache
+      uses: actions/cache@v4
       with:
-        repository: cavarest/rcon
-        path: rcon
-        token: ${{ secrets.GITHUB_TOKEN }}
+        path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
 
-    - name: Build and cache rcon library
-      run: |
-        cd rcon
-        # Update Gradle wrapper to 8.5 for Java 21 support
-        sed -i 's/gradle-7.6.3-bin.zip/gradle-8.5-bin.zip/g' gradle/wrapper/gradle-wrapper.properties
-        ./gradlew clean publishToMavenLocal -x test
-
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v5
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        cache-read-only: false
+        node-version: '18'
 
-    - name: Clear Gradle cache to force fresh dependency resolution
-      run: |
-        echo "🧹 Clearing Gradle caches to ensure fresh dependencies..."
-        rm -rf ~/.gradle/caches/modules-2/files-2.1/org.cavarest/
-        rm -rf /home/runner/.gradle/caches/jars-*/*/
-        rm -rf /home/runner/.gradle/caches/modules-*/files-*/*/org.cavarest/
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
 
-    - name: Build with Gradle
-      run: |
-        echo "🔨 Compiling Java source code..."
-        ./gradlew clean compileJava --refresh-dependencies
+    - name: Build packages
+      run: pnpm -r build
 
     - name: Run unit tests
       run: |
-        echo "🧪 Running unit tests..."
-        ./gradlew test
+        echo "🧪 Running Pilaf unit tests..."
+        pnpm -r --filter "@pilaf/*" test
+        echo "✅ Unit tests completed."
 
-    - name: Publish JUnit Test Results
+    - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action@v2
       if: always() && !cancelled()
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        files: "build/test-results/test/**/*.xml"
-        check_name: Unit Test Report (Java ${{ matrix.java-version }})
+        files: "test-results/**/*.xml"
+        check_name: Unit Test Report
         comment_mode: "off"
         fail_on: "test failures"
-
-    - name: Upload unit test results
-      if: always()
-      uses: actions/upload-artifact@v6
-      with:
-        name: unit-test-results-java-${{ matrix.java-version }}
-        path: |
-          build/test-results/test/
-          build/reports/tests/test/
-        retention-days: 30
-
-    - name: Build JAR
-      run: |
-        echo "🏗️ Building JAR..."
-        ./gradlew jar
-
-    - name: Generate JavaDoc
-      run: |
-        echo "📚 Generating JavaDoc..."
-        ./gradlew javadoc || true
-
-    - name: Upload JAR artifact
-      uses: actions/upload-artifact@v6
-      with:
-        name: pilaf-Java${{ matrix.java-version }}
-        path: build/libs/pilaf-*.jar
-        retention-days: 30
-
-    - name: Upload JavaDoc artifact
-      uses: actions/upload-artifact@v6
-      with:
-        name: javadoc-java${{ matrix.java-version }}
-        path: build/docs/javadoc/
-        retention-days: 30
 
     - name: Display test summary
       if: always()
       run: |
-        echo "## Unit Test Summary (Java ${{ matrix.java-version }})" >> $GITHUB_STEP_SUMMARY
+        echo "## Unit Test Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        if [ -f build/reports/tests/test/index.html ]; then
-          echo "✅ Unit tests completed. Check the test report for details." >> $GITHUB_STEP_SUMMARY
-        else
-          echo "⚠️ No test report found." >> $GITHUB_STEP_SUMMARY
-        fi
+        echo "✅ Unit tests completed." >> $GITHUB_STEP_SUMMARY
