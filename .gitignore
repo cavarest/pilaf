@@ -39,12 +39,3 @@ yarn.lock
 # Test results
 test-results/
 target/pilaf-reports/
-
-CLAUDE.md
-.claude
-.kilocode
-*.md
-
-*.lock
-pnpm-lock.yaml
-
