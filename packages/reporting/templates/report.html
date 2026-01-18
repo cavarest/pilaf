@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pilaf Test Report - __SUITENAME__</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>__CSSCONTENT__</style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+  <div id="app">
+    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 p-4">
+      <h1 class="text-xl font-bold">Pilaf Test Report</h1>
+      <p class="text-sm text-gray-400">{{ report.suiteName }}</p>
+      <span class="px-3 py-1 rounded-full text-sm font-semibold"
+            :class="report.passed ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'">
+        {{ report.passed ? 'PASSED' : 'FAILED' }}
+      </span>
+    </header>
+    <main class="max-w-7xl mx-auto px-4 py-6">
+      <div v-for="story in stories" :key="story.name" class="bg-gray-800 rounded-lg p-4 mb-4 border border-gray-700">
+        <h2 class="text-lg font-semibold text-white">{{ story.name }}</h2>
+        <p class="text-sm text-gray-400">{{ story.passedCount }} passed, {{ story.failedCount }} failed</p>
+        <div v-for="step in story.steps" :key="step.name" class="ml-4 mt-2 p-2 rounded"
+             :class="step.passed ? 'bg-green-900/30' : 'bg-red-900/30'">
+          <span class="font-mono text-sm">{{ step.name }}</span>
+          <span v-if="step.executionContext" class="ml-2 px-2 py-0.5 rounded text-xs bg-gray-700">
+            {{ step.executionContext.executor }}
+          </span>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script>
+    const reportData = __STORIESJSON__;
+    const { createApp } = Vue;
+    createApp({
+      data() {
+        return {
+          report: reportData,
+          stories: reportData.stories || []
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

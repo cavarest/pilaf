@@ -1,0 +1,62 @@
+{
+  "name": "pilaf",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Pure JS testing framework for Minecraft PaperMC plugins",
+  "keywords": [
+    "minecraft",
+    "testing",
+    "papermc",
+    "mineflayer",
+    "rcon",
+    "yaml",
+    "integration-testing",
+    "game-testing"
+  ],
+  "author": "Pilaf Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cavarest/pilaf.git"
+  },
+  "scripts": {
+    "test": "jest --testMatch='**/*.pilaf.test.js' --verbose --runInBand",
+    "test:ci": "jest --testMatch='**/*.pilaf.test.js' --ci --testResultsProcessor='jest-junit' --runInBand",
+    "build": "pnpm -r --filter './packages/**' build",
+    "lint": "eslint packages/**/*.js",
+    "pilaf": "node packages/cli/bin/pilaf.js"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 60000,
+    "maxWorkers": 1,
+    "maxConcurrency": 1,
+    "testMatch": [
+      "**/*.pilaf.test.js"
+    ],
+    "moduleNameMapper": {
+      "^@pilaf/backends$": "<rootDir>/packages/backends/lib/index.js",
+      "^@pilaf/framework$": "<rootDir>/packages/framework/lib/index.js",
+      "^@pilaf/reporting$": "<rootDir>/packages/reporting/lib/index.js"
+    },
+    "reporters": [
+      "default",
+      [
+        "jest-junit",
+        {
+          "outputDirectory": "test-results",
+          "outputName": "junit.xml"
+        }
+      ]
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

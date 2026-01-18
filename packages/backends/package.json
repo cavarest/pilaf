@@ -1,0 +1,9 @@
+{
+  "name": "@pilaf/backends",
+  "version": "1.0.0",
+  "main": "lib/index.js",
+  "dependencies": {
+    "mineflayer": "^4.20.1",
+    "rcon-client": "^4.2.5"
+  }
+}
