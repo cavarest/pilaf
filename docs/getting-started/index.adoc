@@ -1,0 +1,30 @@
+---
+title: Getting Started
+nav_order: 1
+has_children: true
+---
+
+== Getting Started
+
+New to Pilaf? Start here to get up and running quickly.
+
+=== Prerequisites
+
+Before you begin, ensure you have:
+
+* **Node.js 18+** - JavaScript runtime
+* **pnpm 10+** - Package manager
+* **PaperMC Server** - Running server with RCON enabled
+* **Docker** (optional) - For containerized testing
+
+=== Quick Path
+
+. link:installation.html[Install Pilaf] - Add Pilaf to your project
+. link:quick-start.html[Quick Start] - Run your first test in 5 minutes
+. link:architecture.html[Architecture] - Understand how Pilaf works
+
+=== Need Help?
+
+* Check the link:../guides.html[Guides] for in-depth tutorials
+* See link:../reference.html[Reference] for complete API documentation
+* Report issues at https://github.com/cavarest/pilaf/issues[GitHub Issues]

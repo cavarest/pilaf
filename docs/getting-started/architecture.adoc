@@ -1,0 +1,194 @@
+---
+title: Architecture
+nav_order: 3
+parent: Getting Started
+---
+
+== Architecture Overview
+
+Understanding Pilaf's system architecture and design principles.
+
+=== System Overview
+
+Pilaf is a testing framework for PaperMC plugins. It orchestrates tests across multiple backends (RCON and Mineflayer) and generates interactive HTML reports.
+
+[source]
+----
+                    Jest Test Runner
+                          │
+                          ▼
+                    ┌───────────────┐
+                    │  Pilaf Test   │
+                    │   (.pilaf.    │
+                    │   test.js)    │
+                    └───────┬───────┘
+                            │
+                            ▼
+                    ┌───────────────┐
+                    │  StoryRunner  │
+                    │  (Framework)  │
+                    └───────┬───────┘
+                            │
+              ┌─────────────┼─────────────┐
+              │             │             │
+              ▼             ▼             ▼
+      ┌───────────┐ ┌───────────┐ ┌─────────────┐
+      │   RCON    │ │Mineflayer │ │   Reporter   │
+      │  Backend  │ │  Backend  │ │  (Vue.js)    │
+      └─────┬─────┘ └─────┬─────┘ └─────────────┘
+            │             │
+            └─────────────┼──────────────────┐
+                          │                  │
+                          ▼                  ▼
+                ┌─────────────────┐  ┌─────────────┐
+                │ PaperMC Server  │  │   HTML      │
+                │  (1.21.8+)      │  │   Reports   │
+                │  RCON: 25575    │  └─────────────┘
+                └─────────────────┘
+----
+
+=== Package Structure
+
+Pilaf uses a **pnpm workspace monorepo** structure:
+
+[source]
+----
+pilaf/
+├── packages/
+│   ├── backends/      # RCON and Mineflayer implementations
+│   ├── cli/           # Command-line interface (@pilaf/cli)
+│   ├── framework/     # Jest integration + StoryRunner
+│   └── reporting/     # Vue.js HTML report generation
+├── tests/             # Integration tests
+├── bin/               # CLI entry point
+└── package.json       # Root workspace configuration
+----
+
+=== Core Components
+
+==== StoryRunner
+
+The `StoryRunner` executes test stories defined as JavaScript objects:
+
+* **Setup Phase** - Connects backends and creates players
+* **Steps Execution** - Runs each step with variable resolution
+* **Teardown Phase** - Disconnects all resources and cleans up
+
+Located in: `packages/framework/lib/StoryRunner.js`
+
+==== Backends
+
+Pilaf provides two backend implementations:
+
+.RCON Backend
+Backend for server commands via RCON protocol:
+* Execute console commands
+* Query server state
+* Manage server settings
+
+.Mineflayer Backend
+Backend for player simulation using Mineflayer:
+* Connect multiple bot players
+* Simulate player actions (chat, movement, inventory)
+* Query entities and player state
+
+Located in: `packages/backends/lib/`
+
+==== Reporter
+
+Generates interactive Vue.js-based HTML reports:
+* Test execution results
+* Step-by-step breakdown
+* Visual test history
+
+Located in: `packages/reporting/`
+
+=== Data Flow
+
+. Test Initialization
+** Jest discovers `*.pilaf.test.js` files
+** StoryRunner creates a new test instance
+
+. Setup Phase
+** RCON backend connects to server
+** Mineflayer backends connect bot players
+** Server readiness is verified
+
+. Steps Execution
+** Each step's action is executed
+** Variables are resolved (e.g., `{variableName}`)
+** Results can be stored using `store_as`
+
+. Teardown Phase
+** All bot players are disconnected
+** All backends are disconnected
+** Resources are cleaned up
+
+. Reporting
+** Test results are collected
+** HTML reports are generated (optional)
+** JUnit XML is output for CI
+
+=== Variable Storage System
+
+Pilaf supports variable storage and reference:
+
+[source,javascript]
+----
+{
+  name: 'Store location',
+  action: 'get_player_location',
+  player: 'testplayer',
+  store_as: 'initial_position'  // Store result
+}
+
+{
+  name: 'Use stored value',
+  action: 'calculate_distance',
+  from: '{initial_position}',  // Reference stored value
+  to: '{new_position}'
+}
+----
+
+=== Backend Communication
+
+.RCON Backend
+Uses the `rcon-client` library:
+* TCP connection on port 25575
+* Password authentication
+* Command/response pattern
+
+.Mineflayer Backend
+Uses the `mineflayer` library:
+* Minecraft protocol implementation
+* Full player simulation
+* Entity tracking and interaction
+
+=== Test Execution Model
+
+Tests run **sequentially** with `runInBand`:
+
+* Single Jest worker (`maxWorkers: 1`)
+* Tests execute one at a time
+* Prevents RCON port conflicts
+* Ensures clean server state
+
+=== Error Handling
+
+* Connection timeouts prevent hanging (30s connect, 10s send)
+* Failed steps stop story execution immediately
+* Teardown always runs, even on failure
+* Detailed error messages for debugging
+
+=== Performance Considerings
+
+* **Sequential execution** - Prevents resource conflicts
+* **Connection pooling** - Reuses backend connections
+* **Timeout protection** - All operations have configurable timeouts
+* **Resource cleanup** - Proper teardown prevents memory leaks
+
+=== Next Steps
+
+* link:../guides/writing-tests.html[Writing Tests Guide] - Advanced test patterns
+* link:../core/story-runner.html[StoryRunner Deep Dive] - Internal details
+* link:../core/backends.html[Backend Architecture] - Backend implementation details

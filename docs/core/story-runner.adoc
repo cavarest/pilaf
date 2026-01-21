@@ -1,0 +1,373 @@
+---
+title: StoryRunner
+nav_order: 1
+parent: Core Topics
+---
+
+== StoryRunner Deep Dive
+
+Internal details of the StoryRunner class that executes test stories.
+
+=== Overview
+
+The `StoryRunner` class is responsible for:
+* Loading and validating story definitions
+* Managing backend connections (RCON, Mineflayer)
+* Executing story steps sequentially
+* Handling variable storage and resolution
+* Proper teardown and resource cleanup
+
+Located at: `packages/framework/lib/StoryRunner.js`
+
+=== Constructor
+
+[source,javascript]
+----
+const runner = new StoryRunner({
+  logger: console,      // Optional: custom logger
+  reporter: myReporter  // Optional: custom reporter
+});
+----
+
+=== Story Lifecycle
+
+==== 1. Load Story
+
+[source,javascript]
+----
+// From JavaScript object
+runner.currentStory = {
+  name: 'Test',
+  setup: { /* ... */ },
+  steps: [ /* ... */ ],
+  teardown: { /* ... */ }
+};
+
+// Or from YAML file (requires js-yaml)
+runner.loadStory('./test-story.yaml');
+----
+
+==== 2. Execute Setup
+
+The `executeSetup()` method:
+
+. Connects RCON backend to server
+. Waits for server to be ready (via RCON list command)
+. Creates Mineflayer backends for each player
+. Connects bot players to the server
+
+[source,javascript]
+----
+async executeSetup(setup) {
+  // Connect RCON
+  this.backends.rcon = await PilafBackendFactory.create('rcon', rconConfig);
+
+  // Wait for server ready
+  await this.waitForServerReady();
+
+  // Create players
+  for (const playerConfig of setup.players) {
+    await this.createPlayer(playerConfig);
+  }
+}
+----
+
+==== 3. Execute Steps
+
+Each step is processed by `executeStep()`:
+
+. Resolves variable references (`{variableName}`)
+. Executes the action
+. Stores result if `store_as` is specified
+. Returns success/failure
+
+[source,javascript]
+----
+async executeStep(step) {
+  // Resolve variables
+  const resolvedParams = this.resolveVariables(step);
+
+  // Execute action
+  const result = await this.executeAction(step.action, resolvedParams);
+
+  // Store result
+  if (step.store_as) {
+    this.variables.set(step.store_as, result);
+  }
+
+  return { success: true };
+}
+----
+
+==== 4. Execute Teardown
+
+The `executeTeardown()` method ALWAYS runs:
+
+. Disconnects all bot players
+. Disconnects all player backends
+. Disconnects RCON backend (prevents Jest hanging)
+
+[source,javascript]
+----
+async executeTeardown(teardown) {
+  // Disconnect bots
+  for (const [username, bot] of this.bots) {
+    await this.backends.players.get(username)?.quitBot(bot);
+  }
+
+  // Disconnect backends
+  for (const [username, backend] of this.backends.players) {
+    await backend.disconnect();
+  }
+
+  // ALWAYS disconnect RCON
+  await this.backends.rcon?.disconnect();
+}
+----
+
+=== Variable Resolution
+
+Variables are resolved recursively:
+
+[source,javascript]
+----
+// Story stores a value
+{ action: 'get_player_location', player: 'p', store_as: 'pos' }
+
+// Later step references it
+{ action: 'calculate_distance', from: '{pos}', to: '{new_pos}' }
+
+// Resolution process:
+// 1. Check if value matches {variableName} pattern
+// 2. Look up variable in storage
+// 3. Replace with stored value
+// 4. Recursively resolve nested references
+----
+
+=== Action Handlers
+
+Actions are implemented as methods on the `actionHandlers` object.
+Each action logs its execution using the `ACTION:` and `RESPONSE:` prefixes:
+
+[source,javascript]
+----
+actionHandlers = {
+  async execute_command(params) {
+    const { command } = params;
+    // Log the action being performed
+    this.logger.log(`[StoryRunner] ACTION: RCON ${command}`);
+    // Execute the action
+    const result = await this.backends.rcon.send(command);
+    // Log the response received
+    this.logger.log(`[StoryRunner] RESPONSE: ${result.raw}`);
+    return result;
+  },
+
+  async get_entities(params) {
+    const { player } = params;
+    this.logger.log(`[StoryRunner] ACTION: getEntities() for ${player}`);
+    const backend = this.backends.players.get(player);
+    const entities = await backend.getEntities();
+    const summary = entities.length > 0
+      ? entities.slice(0, 5).map(e => e.name || e.customName || e.id).join(', ')
+      : 'none';
+    this.logger.log(`[StoryRunner] RESPONSE: Found ${entities.length} entities: ${summary}${entities.length > 5 ? '...' : ''}`);
+    return entities;
+  },
+
+  // ... more actions
+}
+----
+
+==== Logged Action Types
+
+All actions log information for the HTML report:
+
+* **Server Actions** - RCON commands sent and responses received
+* **Player Actions** - Player commands, chat messages, movement
+* **Query Actions** - Entity queries, inventory checks, position data
+* **Calculation Actions** - Distance calculations and results
+* **Lifecycle Actions** - Login/logout events, respawn handling
+* **Control Actions** - Wait durations
+* **Assertion Actions** - Condition checks and results
+
+Each action in the report shows:
+* `→ action` (yellow) - The action performed
+* `← response` (green) - The response received
+
+Adding a new action:
+
+[source,javascript]
+----
+// Add to actionHandlers object
+actionHandlers = {
+  // ... existing actions
+
+  async my_custom_action(params) {
+    // Log the action
+    this.logger.log(`[StoryRunner] ACTION: my_custom_action with ${JSON.stringify(params)}`);
+    // Implementation
+    const result = await doSomething(params);
+    // Log the response
+    this.logger.log(`[StoryRunner] RESPONSE: ${JSON.stringify(result)}`);
+    return result;
+  }
+}
+----
+
+=== Server Readiness Check
+
+The `waitForServerReady()` method polls the server:
+
+[source,javascript]
+----
+async waitForServerReady() {
+  const timeout = 120000;  // 2 minutes
+  const interval = 3000;   // Check every 3 seconds
+
+  while (Date.now() - startTime < timeout) {
+    try {
+      await this.backends.rcon.send('list');
+      return;  // Server ready
+    } catch (error) {
+      await new Promise(resolve => setTimeout(resolve, interval));
+    }
+  }
+
+  throw new Error('Server did not become ready');
+}
+----
+
+=== Error Handling
+
+* **Setup failures** - Story aborts, teardown runs
+* **Step failures** - Story stops, teardown runs
+* **Teardown failures** - Logged but don't prevent cleanup
+
+=== Resource Management
+
+Critical for preventing Jest hangs:
+
+* **Always disconnect RCON** - Even if `stop_server: false`
+* **Quit all bots** - Before disconnecting backends
+* **Clear all references** - Prevent memory leaks
+
+[source,javascript]
+----
+// GOOD - Always disconnect
+await this.backends.rcon.disconnect();
+
+// BAD - Only disconnect when stopping
+if (teardown.stop_server) {
+  await this.backends.rcon.disconnect();
+}
+----
+
+=== Performance Considerations
+
+* **Sequential execution** - Steps run one at a time
+* **Connection reuse** - Backends persist across steps
+* **Timeout protection** - All async operations have timeouts
+* **Variable caching** - Stored values kept in memory Map
+
+=== Testing StoryRunner
+
+[source,javascript]
+----
+const { describe, it, expect } = require('@jest/globals');
+
+describe('StoryRunner', () => {
+  it('should execute a simple story', async () => {
+    const runner = new StoryRunner();
+    const story = {
+      name: 'Test',
+      setup: {
+        server: { type: 'paper', version: '1.21.8' }
+      },
+      steps: [
+        { action: 'execute_command', command: 'version' }
+      ],
+      teardown: { stop_server: false }
+    };
+
+    const result = await runner.execute(story);
+    expect(result.success).toBe(true);
+  });
+});
+----
+=== Reporting and Logging Integration
+
+The StoryRunner integrates with Jest reporters through structured logging.
+
+==== Log Format
+
+All StoryRunner logs use the `[StoryRunner]` prefix for identification:
+
+[source,javascript]
+----
+// Story lifecycle logs
+this.logger.log(`[StoryRunner] Starting story: ${story.name}`);
+this.logger.log(`[StoryRunner] Step ${currentStep}/${totalSteps}: ${step.name}`);
+
+// Action/Response logs
+this.logger.log(`[StoryRunner] ACTION: RCON ${command}`);
+this.logger.log(`[StoryRunner] RESPONSE: ${result.raw}`);
+
+// Variable storage
+this.logger.log(`[StoryRunner] Stored result as: ${store_as}`);
+----
+
+==== Reporter Capture
+
+The Pilaf Jest reporter captures these logs via `testResult.console`:
+
+[source,javascript]
+----
+// In pilaf-reporter.js
+onTestResult(test, testResult, aggregatedResult) {
+  // Capture console logs from this test result
+  if (testResult.console && testResult.console.length > 0) {
+    for (const logEntry of testResult.console) {
+      this._allConsoleLogs.push({
+        timestamp: Date.now(),
+        message: logEntry.message || logEntry
+      });
+    }
+  }
+}
+----
+
+The reporter then parses these logs to:
+1. Extract story names and their steps
+2. Parse ACTION/RESPONSE pairs for detail views
+3. Track pass/fail status per story
+
+==== Step Execution Context
+
+Each step tracks its execution context for the report:
+
+[source,javascript]
+----
+// Internal tracking (not user-visible)
+{
+  name: 'Get player inventory',
+  passed: true,
+  executionContext: {
+    executor: 'RCON' | 'player: username' | 'ASSERT'
+  },
+  details: [
+    { type: 'action', message: 'getEntities() for player1' },
+    { type: 'response', message: 'Found 3 entities: zombie, sheep...' }
+  ]
+}
+----
+
+The `executor` field is determined by:
+* **RCON** - Server commands (`execute_command`)
+* **player: {username}** - Player-specific actions
+* **ASSERT** - Assertion checks
+
+=== Next Steps
+
+* link:backends.html[Backend Architecture] - Backend implementation details
+* link:../guides/writing-tests.html[Writing Tests] - Using StoryRunner in tests

@@ -1,0 +1,428 @@
+---
+title: Assertions
+nav_order: 3
+parent: Guides
+---
+
+== Assertions Guide
+
+Learn how to validate test outcomes with Pilaf assertions.
+
+=== Assertion Syntax
+
+All assertions use the `assert` action:
+
+[source,javascript]
+----
+{
+  name: 'Assertion description',
+  action: 'assert',
+  condition: 'condition_type',
+  // condition-specific parameters
+}
+----
+
+=== Assertion Conditions
+
+==== equals
+
+Check if two values are exactly equal.
+
+[source,javascript]
+----
+{
+  name: 'Check server name',
+  action: 'assert',
+  condition: 'equals',
+  expected: 'Server name',
+  actual: 'Server name'
+}
+----
+
+*Parameters*:
+* `expected` (string, required) - Expected value
+* `actual` (string, required) - Actual value
+
+==== contains
+
+Check if a string contains another string.
+
+[source,javascript]
+----
+{
+  name: 'Check message contains text',
+  action: 'assert',
+  condition: 'contains',
+  expected: 'success',
+  actual: 'Operation completed successfully'
+}
+----
+
+*Parameters*:
+* `expected` (string, required) - Text to search for
+* `actual` (string, required) - String to search in
+
+==== not_empty
+
+Check if a value is not empty.
+
+[source,javascript]
+----
+{
+  name: 'Check entities exist',
+  action: 'assert',
+  condition: 'not_empty',
+  not_empty: '{entities}'
+}
+----
+
+*Parameters*:
+* `not_empty` (any, required) - Value to check (array or any value)
+
+==== entity_exists
+
+Check if an entity exists in an entity list.
+
+[source,javascript]
+----
+{
+  name: 'Verify zombie exists',
+  action: 'assert',
+  condition: 'entity_exists',
+  expected: 'zombie',
+  actual: '{entities}'
+}
+----
+
+*Parameters*:
+* `expected` (string, required) - Entity name to find
+* `actual` (array, required) - Entity array from `get_entities`
+
+Searches entity `name`, `customName`, and `customName.text` fields.
+
+==== entity_not_exists
+
+Check if an entity does NOT exist in an entity list.
+
+[source,javascript]
+----
+{
+  name: 'Verify zombie removed',
+  action: 'assert',
+  condition: 'entity_not_exists',
+  expected: 'zombie',
+  actual: '{entities}'
+}
+----
+
+*Parameters*:
+* `expected` (string, required) - Entity name to verify is absent
+* `actual` (array, required) - Entity array from `get_entities`
+
+==== has_item
+
+Check if a player has an item in their inventory.
+
+[source,javascript]
+----
+{
+  name: 'Verify player has diamond',
+  action: 'assert',
+  condition: 'has_item',
+  expected: 'diamond',
+  actual: '{inventory}'
+}
+----
+
+*Parameters*:
+* `expected` (string, required) - Item name to find
+* `actual` (object, required) - Inventory object from `get_player_inventory`
+
+==== does_not_have_item
+
+Check if a player does NOT have an item.
+
+[source,javascript]
+----
+{
+  name: 'Verify sword consumed',
+  action: 'assert',
+  condition: 'does_not_have_item',
+  expected: 'diamond_sword',
+  actual: '{inventory}'
+}
+----
+
+*Parameters*:
+* `expected` (string, required) - Item name to verify is absent
+* `actual` (object, required) - Inventory object from `get_player_inventory`
+
+==== greater_than
+
+Check if a numeric value is greater than another.
+
+[source,javascript]
+----
+{
+  name: 'Verify distance > 10',
+  action: 'assert',
+  condition: 'greater_than',
+  actual: '{distance}',
+  expected: 10
+}
+----
+
+*Parameters*:
+* `actual` (number, required) - Value to check
+* `expected` (number, required) - Minimum value
+
+==== less_than
+
+Check if a numeric value is less than another.
+
+[source,javascript]
+----
+{
+  name: 'Verify count < 100',
+  action: 'assert',
+  condition: 'less_than',
+  actual: '{item_count}',
+  expected: 100
+}
+----
+
+*Parameters*:
+* `actual` (number, required) - Value to check
+* `expected` (number, required) - Maximum value
+
+==== greater_than_or_equals
+
+Check if a numeric value is greater than or equal to another.
+
+[source,javascript]
+----
+{
+  name: 'Verify level >= 5',
+  action: 'assert',
+  condition: 'greater_than_or_equals',
+  actual: '{player_level}',
+  expected: 5
+}
+----
+
+*Parameters*:
+* `actual` (number, required) - Value to check
+* `expected` (number, required) - Minimum value (inclusive)
+
+==== less_than_or_equals
+
+Check if a numeric value is less than or equal to another.
+
+[source,javascript]
+----
+{
+  name: 'Verify health <= 20',
+  action: 'assert',
+  condition: 'less_than_or_equals',
+  actual: '{entity_health}',
+  expected: 20
+}
+----
+
+*Parameters*:
+* `actual` (number, required) - Value to check
+* `expected` (number, required) - Maximum value (inclusive)
+
+=== Assertion Examples
+
+==== Test Entity Lifecycle
+
+[source,javascript]
+----
+steps: [
+  // Get initial entities
+  {
+    name: 'Get entities before',
+    action: 'get_entities',
+    player: 'testplayer',
+    store_as: 'entities_before'
+  },
+  {
+    name: 'Verify no zombies',
+    action: 'assert',
+    condition: 'entity_not_exists',
+    expected: 'zombie',
+    actual: '{entities_before}'
+  },
+
+  // Spawn zombie
+  {
+    name: 'Spawn zombie',
+    action: 'execute_command',
+    command: 'summon zombie ~ ~ ~'
+  },
+  {
+    name: 'Wait for spawn',
+    action: 'wait',
+    duration: 2
+  },
+
+  // Verify zombie exists
+  {
+    name: 'Get entities after',
+    action: 'get_entities',
+    player: 'testplayer',
+    store_as: 'entities_after'
+  },
+  {
+    name: 'Verify zombie spawned',
+    action: 'assert',
+    condition: 'entity_exists',
+    expected: 'zombie',
+    actual: '{entities_after}'
+  }
+]
+----
+
+==== Test Inventory Operations
+
+[source,javascript]
+----
+steps: [
+  // Get initial inventory
+  {
+    name: 'Check empty inventory',
+    action: 'get_player_inventory',
+    player: 'testplayer',
+    store_as: 'inventory_before'
+  },
+  {
+    name: 'Verify no diamonds',
+    action: 'assert',
+    condition: 'does_not_have_item',
+    expected: 'diamond',
+    actual: '{inventory_before}'
+  },
+
+  // Give diamond
+  {
+    name: 'Give diamond',
+    action: 'execute_command',
+    command: 'give testplayer diamond 64'
+  },
+
+  // Verify diamond received
+  {
+    name: 'Check updated inventory',
+    action: 'get_player_inventory',
+    player: 'testplayer',
+    store_as: 'inventory_after'
+  },
+  {
+    name: 'Verify diamond received',
+    action: 'assert',
+    condition: 'has_item',
+    expected: 'diamond',
+    actual: '{inventory_after}'
+  }
+]
+----
+
+==== Test Position Changes
+
+[source,javascript]
+----
+steps: [
+  {
+    name: 'Get start position',
+    action: 'get_player_location',
+    player: 'testplayer',
+    store_as: 'start_pos'
+  },
+  {
+    name: 'Move forward',
+    action: 'move_forward',
+    player: 'testplayer',
+    duration: 3
+  },
+  {
+    name: 'Get end position',
+    action: 'get_player_location',
+    player: 'testplayer',
+    store_as: 'end_pos'
+  },
+  {
+    name: 'Calculate distance',
+    action: 'calculate_distance',
+    from: '{start_pos}',
+    to: '{end_pos}',
+    store_as: 'distance'
+  },
+  {
+    name: 'Verify moved forward',
+    action: 'assert',
+    condition: 'greater_than',
+    actual: '{distance}',
+    expected: 0
+  }
+]
+----
+
+=== Best Practices
+
+. **Use descriptive assertion names**
+** Clear names make test failures easier to understand
+
+. **Store intermediate results**
+** Use `store_as` to capture data for assertions
+
+. **Check both positive and negative cases**
+** Verify both what should exist and what shouldn't
+
+. **Use appropriate assertion types**
+** `entity_exists` vs `has_item` vs `contains` - choose the right one
+
+. **Combine assertions with waits**
+** Add `wait` actions for asynchronous operations
+
+=== Common Assertion Patterns
+
+.Count items in array
+----
+{
+  name: 'Get entities',
+  action: 'get_entities',
+  player: 'testplayer',
+  store_as: 'entities'
+},
+{
+  name: 'Check entity count',
+  action: 'assert',
+  condition: 'greater_than',
+  actual: '{entities.length}',  // Access array length
+  expected: 0
+}
+----
+
+.Verify numeric range
+----
+{
+  name: 'Check health in range',
+  action: 'assert',
+  condition: 'greater_than_or_equals',
+  actual: '{health}',
+  expected: 0
+},
+{
+  name: 'Check max health',
+  action: 'assert',
+  condition: 'less_than_or_equals',
+  actual: '{health}',
+  expected: 20
+}
+----
+
+=== Next Steps
+
+* link:actions-reference.html[Actions Reference] - All available actions
+* link:writing-tests.html[Writing Tests] - More test examples

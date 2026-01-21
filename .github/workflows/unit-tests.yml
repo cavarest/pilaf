@@ -44,9 +44,6 @@ jobs:
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
 
-    - name: Build packages
-      run: pnpm -r build
-
     - name: Run unit tests
       run: |
         echo "🧪 Running Pilaf unit tests..."

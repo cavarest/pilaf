@@ -1,0 +1,429 @@
+---
+title: Actions Reference
+nav_order: 2
+parent: Guides
+---
+
+== Actions Reference
+
+Complete reference of all available Pilaf actions, including what gets logged in the HTML report.
+
+=== Logged Information
+
+Every action logs:
+
+* **ACTION** - The raw action that was performed
+* **RESPONSE** - The raw response received
+
+These are displayed in the HTML report as:
+* `→ action` (yellow) - The action performed
+* `← response` (green) - The response received
+
+=== Server Actions
+
+==== execute_command
+
+Execute a console command via RCON.
+
+[source,javascript]
+----
+{
+  name: '[RCON] Set time to day',
+  action: 'execute_command',
+  command: 'time set day'
+}
+----
+
+*Logs*:
+[source]
+----
+→ RCON time set day
+← Set the time to 1000
+----
+
+*Parameters*:
+* `command` (string, required) - Console command to execute
+
+*Returns*: Command response object
+
+=== Player Actions
+
+==== chat
+
+Send a chat message as a player.
+
+[source,javascript]
+----
+{
+  name: '[player: testplayer] Send chat message',
+  action: 'chat',
+  player: 'testplayer',
+  message: 'Hello, world!'
+}
+----
+
+*Logs*:
+[source]
+----
+→ testplayer chat: Hello, world!
+← Message sent
+----
+
+*Parameters*:
+* `player` (string, required) - Player username
+* `message` (string, required) - Chat message to send
+
+==== execute_player_command
+
+Execute a command as a player.
+
+[source,javascript]
+----
+{
+  name: '[player: testplayer] Execute plugin command',
+  action: 'execute_player_command',
+  player: 'testplayer',
+  command: '/myplugin subcommand arg1'
+}
+----
+
+*Logs*:
+[source]
+----
+→ testplayer execute command: /myplugin subcommand arg1
+← Command sent
+----
+
+*Parameters*:
+* `player` (string, required) - Player username
+* `command` (string, required) - Command to execute
+
+==== move_forward
+
+Move the player forward for a specified duration.
+
+[source,javascript]
+----
+{
+  name: '[player: testplayer] Move forward',
+  action: 'move_forward',
+  player: 'testplayer',
+  duration: 2
+}
+----
+
+*Logs*:
+[source]
+----
+testplayer moved forward for 2s
+----
+
+*Parameters*:
+* `player` (string, required) - Player username
+* `duration` (number, optional) - Duration in seconds (default: 1)
+
+=== Query Actions
+
+==== get_entities
+
+Get all entities visible to a player.
+
+[source,javascript]
+----
+{
+  name: '[player: testplayer] Get nearby entities',
+  action: 'get_entities',
+  player: 'testplayer',
+  store_as: 'entities'
+}
+----
+
+*Logs*:
+[source]
+----
+→ getEntities() for testplayer
+← Found 152 entities: zombie, skeleton, sheep, sheep, sheep...
+----
+
+*Parameters*:
+* `player` (string, required) - Player username
+
+*Returns*: Array of entity objects with position, type, name
+
+==== get_player_inventory
+
+Get a player's inventory contents.
+
+[source,javascript]
+----
+{
+  name: '[player: testplayer] Get player inventory',
+  action: 'get_player_inventory',
+  player: 'testplayer',
+  store_as: 'inventory'
+}
+----
+
+*Logs*:
+[source]
+----
+→ getPlayerInventory() for testplayer
+← 3 items (895, 926, 941)
+----
+
+*Parameters*:
+* `player` (string, required) - Player username
+
+*Returns*: Inventory object with items array
+
+==== get_player_location
+
+Get a player's current position.
+
+[source,javascript]
+----
+{
+  name: '[player: testplayer] Get player position',
+  action: 'get_player_location',
+  player: 'testplayer',
+  store_as: 'position'
+}
+----
+
+*Logs*:
+[source]
+----
+→ testplayer getLocation()
+← x=8.61, y=78.00, z=2.49
+----
+
+*Parameters*:
+* `player` (string, required) - Player username
+
+*Returns*: Position object with x, y, z, yaw, pitch
+
+==== get_entity_location
+
+Get a specific entity's position.
+
+[source,javascript]
+----
+{
+  name: '[player: testplayer] Get entity position',
+  action: 'get_entity_location',
+  player: 'testplayer',
+  entity_name: 'zombie',
+  store_as: 'entity_position'
+}
+----
+
+*Logs*:
+[source]
+----
+→ getEntityLocation() for zombie
+← Entity "zombie" location: x=100.5, y=64.0, z=200.3
+----
+
+*Parameters*:
+* `player` (string, required) - Player username to query from
+* `entity_name` (string, required) - Entity name to find
+
+*Returns*: Position object with x, y, z
+
+=== Calculation Actions
+
+==== calculate_distance
+
+Calculate distance between two positions.
+
+[source,javascript]
+----
+{
+  name: 'Calculate distance',
+  action: 'calculate_distance',
+  from: '{start_position}',
+  to: '{end_position}',
+  store_as: 'distance'
+}
+----
+
+*Logs*:
+[source]
+----
+Distance calculated: 0.21 blocks
+💾 Saved: "distance"
+----
+
+*Parameters*:
+* `from` (object, required) - Starting position with x, y, z
+* `to` (object, required) - Ending position with x, y, z
+
+*Returns*: Distance in blocks (number)
+
+=== Lifecycle Actions
+
+==== login
+
+Create a new TCP connection for a player (real reconnection).
+
+[source,javascript]
+----
+{
+  name: 'Reconnect player',
+  action: 'login',
+  player: 'testplayer'
+}
+----
+
+*Parameters*:
+* `player` (string, required) - Player username to reconnect
+
+==== logout
+
+Disconnect a player's TCP connection (real disconnection).
+
+[source,javascript]
+----
+{
+  name: 'Disconnect player',
+  action: 'logout',
+  player: 'testplayer'
+}
+----
+
+*Parameters*:
+* `player` (string, required) - Player username to disconnect
+
+==== kill
+
+Kill a player via server command.
+
+[source,javascript]
+----
+{
+  name: '[RCON] Kill player',
+  action: 'kill',
+  player: 'testplayer'
+}
+----
+
+*Parameters*:
+* `player` (string, required) - Player username
+
+==== respawn
+
+Wait for player to respawn after death.
+
+[source,javascript]
+----
+{
+  name: 'Wait for respawn',
+  action: 'respawn',
+  player: 'testplayer'
+}
+----
+
+*Parameters*:
+* `player` (string, required) - Player username
+
+=== Control Actions
+
+==== wait
+
+Pause execution for a specified duration.
+
+[source,javascript]
+----
+{
+  name: 'Wait for server',
+  action: 'wait',
+  duration: 5
+}
+----
+
+*Logs*:
+[source]
+----
+⏱ Waited 5s
+----
+
+*Parameters*:
+* `duration` (number, optional) - Seconds to wait (default: 1)
+
+=== Assertion Actions
+
+See link:assertions.html[Assertions Guide] for complete assertion reference.
+
+=== Parameter Reference
+
+==== Variable References
+
+Reference stored variables using `{variableName}` syntax:
+
+[source,javascript]
+----
+{
+  action: 'calculate_distance',
+  from: '{stored_position}',  // References stored variable
+  to: '{current_position}'
+}
+----
+
+==== store_as
+
+Store action results for later use:
+
+[source,javascript]
+----
+{
+  action: 'get_player_location',
+  player: 'testplayer',
+  store_as: 'position'  // Result stored here
+}
+----
+
+When a value is stored, the report logs:
+[source]
+----
+💾 Saved: "position"
+----
+
+=== Action Parameters by Type
+
+.Actions with `player` parameter
+* chat
+* execute_player_command
+* move_forward
+* get_entities
+* get_player_inventory
+* get_player_location
+* get_entity_location
+* login
+* logout
+* kill
+* respawn
+
+.Actions with `store_as` support
+* get_entities
+* get_player_inventory
+* get_player_location
+* get_entity_location
+* calculate_distance
+
+.Actions with `duration` parameter
+* wait
+* move_forward
+
+.Actions that log ACTION/RESPONSE pairs
+* execute_command
+* chat
+* execute_player_command
+* get_entities
+* get_player_inventory
+* get_player_location
+* get_entity_location
+
+=== Next Steps
+
+* link:assertions.html[Assertions Guide] - Learn about assertion conditions
+* link:writing-tests.html[Writing Tests] - Test patterns and examples
