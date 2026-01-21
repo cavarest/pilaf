@@ -1,0 +1,380 @@
+---
+title: GitHub Actions Integration
+nav_order: 4
+parent: Guides
+---
+
+== GitHub Actions Integration
+
+Set up continuous integration for your PaperMC plugin using Pilaf and GitHub Actions.
+
+=== Overview
+
+This guide shows you how to integrate Pilaf tests into your plugin's CI/CD pipeline using GitHub Actions. The workflow will:
+
+* Start a PaperMC server in a Docker container
+* Run your Pilaf tests against the server
+* Publish test results
+* Upload HTML reports as artifacts
+
+=== Complete Workflow
+
+Create `.github/workflows/pilaf-tests.yml` in your plugin repository:
+
+[source,yaml]
+----
+name: Pilaf Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+permissions:
+  checks: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  pilaf-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    services:
+      minecraft:
+        image: itzg/minecraft-server
+        ports:
+          - 25565:25565
+          - 25575:25575
+        env:
+          EULA: 'TRUE'
+          ONLINE_MODE: 'false'
+          TYPE: 'PAPER'
+          VERSION: '1.21.8'
+          RCON_PASSWORD: 'pilaf_test'
+          ENABLE_RCON: 'true'
+          RCON_PORT: '25575'
+          MAX_PLAYERS: '5'
+          MEMORY: '1G'
+          SPAWN_PROTECTION: '0'
+          DEBUG: 'false'
+          # Reduce connection throttling for testing
+          CONNECTION_TIMEOUT_THRESHOLD: '120000'
+        options: >-
+          --name pilaf-minecraft
+          --health-cmd "mc-health"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 15
+          --health-start-period 120s
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10
+
+    - name: Get pnpm store directory
+      id: pnpm-cache
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+    - name: Setup pnpm cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Build plugin (if needed)
+      run: pnpm run build
+      # Adjust this step based on your build process
+
+    - name: Wait for Minecraft server
+      run: |
+        echo "⏳ Waiting for Minecraft server to fully initialize..."
+        sleep 90
+        echo "✅ Server should be ready"
+
+    - name: Run Pilaf tests
+      env:
+        RCON_HOST: localhost
+        RCON_PORT: 25575
+        RCON_PASSWORD: pilaf_test
+        MC_HOST: localhost
+        MC_PORT: 25565
+        CI: true
+      run: |
+        echo "🧪 Running Pilaf tests..."
+        pilaf test
+
+    - name: Publish test results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always() && !cancelled()
+      with:
+        files: "test-results/**/*.xml"
+        check_name: Pilaf Test Report
+        comment_mode: "off"
+        fail_on: "test failures"
+
+    - name: Upload Pilaf HTML reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: pilaf-html-reports
+        path: target/pilaf-reports/
+        retention-days: 30
+        if-no-files-found: ignore
+
+    - name: Display test summary
+      if: always()
+      run: |
+        echo "## Pilaf Test Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Pilaf tests completed." >> $GITHUB_STEP_SUMMARY
+        if [ -d target/pilaf-reports ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 HTML Reports" >> $GITHUB_STEP_SUMMARY
+          echo "HTML reports have been uploaded as artifacts." >> $GITHUB_STEP_SUMMARY
+        fi
+----
+
+=== Configuration Options
+
+==== Server Version
+
+Change the PaperMC version by modifying the `VERSION` environment variable:
+
+[source,yaml]
+----
+env:
+  VERSION: '1.21.4'  # Use your target version
+----
+
+==== Plugin Loading
+
+To test your plugin, you need to load it into the server. There are several approaches:
+
+. **Use server plugins directory**
+
+[source,yaml]
+----
+- name: Copy plugin to server
+  run: |
+    mkdir -p /tmp/pilaf-plugins
+    cp -r build/plugins/*.jar /tmp/pilaf-plugins/
+
+- name: Mount plugins directory
+  # Update the service to mount plugins
+----
+
+. **Use Docker volume mount**
+
+[source,yaml]
+----
+services:
+  minecraft:
+    # ... other config
+    volumes:
+      - ./build/plugins:/plugins
+----
+
+==== Custom Test Command
+
+If your project uses a different test command:
+
+[source,yaml]
+----
+- name: Run Pilaf tests
+  run: |
+    # Run specific test files
+    pilaf test tests/integration/*.pilaf.test.js
+
+    # Or use npm script
+    pnpm run test:integration
+----
+
+=== Environment Variables
+
+The workflow sets these environment variables for Pilaf:
+
+[horizontal]
+RCON_HOST:: localhost (Docker service hostname)
+RCON_PORT:: 25575
+RCON_PASSWORD:: pilaf_test (matches server config)
+MC_HOST:: localhost
+MC_PORT:: 25565
+CI:: true (enables CI-specific behavior)
+
+=== Test Results
+
+==== JUnit XML Output
+
+Pilaf generates JUnit XML reports for GitHub Actions test result publishing:
+
+[source,yaml]
+----
+- name: Publish test results
+  uses: EnricoMi/publish-unit-test-result-action@v2
+  with:
+    files: "test-results/**/*.xml"
+----
+
+Configure output in `jest.config.js`:
+
+[source,javascript]
+----
+module.exports = {
+  testResultsProcessor: './jest-junit-processor',
+  // ...
+};
+----
+
+==== HTML Reports
+
+HTML reports are uploaded as artifacts for manual review:
+
+[source,yaml]
+----
+- name: Upload Pilaf HTML reports
+  uses: actions/upload-artifact@v4
+  with:
+    name: pilaf-html-reports
+    path: target/pilaf-reports/
+----
+
+=== Best Practices
+
+. **Use matrix testing**
+
+Test against multiple Minecraft versions:
+
+[source,yaml]
+----
+strategy:
+  matrix:
+    mc-version: ['1.21.4', '1.21.8']
+----
+. **Cache dependencies**
+
+Use pnpm cache to speed up builds:
+
+[source,yaml]
+----
+- name: Setup pnpm cache
+  uses: actions/cache@v4
+  with:
+    path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+    key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+----
+
+. **Set appropriate timeouts**
+
+Minecraft server startup can take 1-2 minutes:
+
+[source,yaml]
+----
+jobs:
+  pilaf-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60  # Adjust based on your test suite
+----
+
+. **Always cleanup**
+
+Use `if: always()` for cleanup steps:
+
+[source,yaml]
+----
+- name: Upload reports
+  if: always()  # Runs even if tests fail
+----
+
+=== Example Project Structure
+
+Recommended structure for your plugin:
+
+----
+my-plugin/
+├── .github/
+│   └── workflows/
+│       └── pilaf-tests.yml
+├── src/
+│   └── main/
+│       └── java/
+│           └── com/
+│               └── example/
+│                   └── MyPlugin.java
+├── tests/
+│   ├── integration/
+│   │   ├── basic-rcon.pilaf.test.js
+│   │   ├── inventory.pilaf.test.js
+│   │   └── commands.pilaf.test.js
+│   └── jest.config.js
+├── package.json
+├── pnpm-workspace.yaml
+└── pom.xml
+----
+
+=== Troubleshooting
+
+==== Server Not Ready
+
+If tests fail with connection errors, increase the wait time:
+
+[source,yaml]
+----
+- name: Wait for Minecraft server
+  run: sleep 120  # Increase from 90 to 120 seconds
+----
+
+==== RCON Connection Failed
+
+Verify RCON settings match between workflow and service:
+
+[source,yaml]
+----
+# Service configuration
+env:
+  RCON_PORT: '25575'
+  RCON_PASSWORD: 'pilaf_test'
+
+# Test step must use same values
+env:
+  RCON_PORT: 25575
+  RCON_PASSWORD: pilaf_test
+----
+
+==== Plugin Not Loading
+
+Ensure your plugin JAR is built before tests run:
+
+[source,yaml]
+----
+- name: Build plugin
+  run: mvn clean package
+
+- name: Copy plugin to server
+  run: cp target/*.jar /path/to/server/plugins/
+----
+
+=== Next Steps
+
+* link:writing-tests.html[Writing Tests] - Create your Pilaf tests
+* link:actions-reference.html[Actions Reference] - Available test actions
+* link:../getting-started/installation.html[Installation] - Set up Pilaf in your project

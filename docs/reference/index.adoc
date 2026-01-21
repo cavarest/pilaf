@@ -1,0 +1,254 @@
+---
+title: API Reference
+nav_order: 4
+---
+
+== API Reference
+
+Complete API documentation for Pilaf packages.
+
+=== @pilaf/framework
+
+Main testing framework with Jest integration.
+
+==== StoryRunner
+
+[source,javascript]
+----
+const { StoryRunner } = require('@pilaf/framework');
+
+const runner = new StoryRunner(options);
+await runner.execute(story);
+----
+
+*Constructor Options*:
+* `logger` (object, optional) - Custom logger (default: console)
+* `reporter` (object, optional) - Custom reporter instance
+
+*Methods*:
+* `loadStory(filePath)` - Load story from YAML file
+* `execute(story)` - Execute a story object or file
+* `executeSetup(setup)` - Execute story setup
+* `executeTeardown(teardown)` - Execute story teardown
+
+==== Jest Integration
+
+Pilaf integrates with Jest through custom test files:
+
+[source,javascript]
+----
+const { describe, it, expect } = require('@jest/globals');
+const { StoryRunner } = require('@pilaf/framework');
+
+describe('My Tests', () => {
+  it('should test something', async () => {
+    const runner = new StoryRunner();
+    const result = await runner.execute(story);
+    expect(result.success).toBe(true);
+  });
+});
+----
+
+=== @pilaf/backends
+
+Backend implementations for RCON and Mineflayer.
+
+==== PilafBackendFactory
+
+[source,javascript]
+----
+const { PilafBackendFactory } = require('@pilaf/backends');
+
+const rcon = await PilafBackendFactory.create('rcon', config);
+const mineflayer = await PilafBackendFactory.create('mineflayer', config);
+----
+
+==== RconBackend
+
+[source,javascript]
+----
+const { RconBackend } = require('@pilaf/backends');
+
+const rcon = new RconBackend();
+await rcon.connect({
+  host: 'localhost',
+  port: 25575,
+  password: 'secret',
+  timeout: 30000
+});
+
+const response = await rcon.send('list');
+await rcon.disconnect();
+----
+
+*Methods*:
+* `connect(config)` - Connect to RCON server
+* `send(command)` - Send RCON command
+* `sendCommand(command, timeout)` - Send with custom timeout
+* `disconnect()` - Close connection
+* `getPlayerInventory(username)` - Get player inventory
+
+==== MineflayerBackend
+
+[source,javascript]
+----
+const { MineflayerBackend } = require('@pilaf/backends');
+
+const backend = new MineflayerBackend();
+await backend.connect({
+  host: 'localhost',
+  port: 25565,
+  auth: 'offline'
+});
+
+const bot = await backend.createBot({ username: 'player' });
+const entities = await backend.getEntities();
+
+await backend.quitBot(bot);
+await backend.disconnect();
+----
+
+*Methods*:
+* `connect(config)` - Connect to server
+* `waitForServerReady(options)` - Wait for server
+* `createBot(options)` - Create bot player
+* `quitBot(bot)` - Disconnect bot
+* `getEntities()` - Get all entities
+* `getPlayerInventory(username)` - Get player inventory
+* `disconnect()` - Close connection
+
+=== @pilaf/cli
+
+Command-line interface for running Pilaf tests.
+
+[source,bash]
+----
+# Run all Pilaf tests
+pilaf test
+
+# Run specific file
+pilaf test my-test.pilaf.test.js
+
+# Show version
+pilaf --version
+
+# Show help
+pilaf --help
+----
+
+=== @pilaf/reporting
+
+Vue.js-based HTML report generation.
+
+[source,javascript]
+----
+const { PilafReporter } = require('@pilaf/reporting');
+
+const reporter = new PilafReporter(options);
+await reporter.generate(results);
+----
+
+=== Story Object Reference
+
+==== Structure
+
+[source,javascript]
+----
+{
+  name: string,           // Required: Story name
+  description: string,    // Optional: Description
+  setup: {
+    server: {
+      type: string,       // 'paper'
+      version: string     // '1.21.8'
+    },
+    players: [
+      {
+        name: string,     // Display name
+        username: string  // Minecraft username
+      }
+    ]
+  },
+  steps: [
+    {
+      name: string,       // Step name
+      action: string,     // Action type
+      store_as: string,   // Optional: Store result
+      // ... action-specific params
+    }
+  ],
+  teardown: {
+    stop_server: boolean  // Stop server after test
+  }
+}
+----
+
+==== Action Types
+
+* `execute_command` - Execute RCON command
+* `chat` - Send chat message
+* `execute_player_command` - Execute player command
+* `move_forward` - Move player forward
+* `wait` - Wait for duration
+* `get_entities` - Get entity list
+* `get_player_inventory` - Get player inventory
+* `get_player_location` - Get player position
+* `get_entity_location` - Get entity position
+* `calculate_distance` - Calculate distance between positions
+* `login` - Reconnect player
+* `logout` - Disconnect player
+* `kill` - Kill player
+* `respawn` - Wait for respawn
+* `assert` - Make assertion
+
+See link:../guides/actions-reference.html[Actions Reference] for details.
+
+=== Assertion Reference
+
+[source,javascript]
+----
+{
+  action: 'assert',
+  condition: string,     // Condition type
+  expected: any,         // Expected value
+  actual: any,           // Actual value
+  not_empty: any         // For not_empty condition
+}
+----
+
+*Conditions*:
+* `equals` - Exact equality
+* `contains` - String contains
+* `not_empty` - Value not empty
+* `entity_exists` - Entity in list
+* `entity_not_exists` - Entity not in list
+* `has_item` - Item in inventory
+* `does_not_have_item` - Item not in inventory
+* `greater_than` - Numeric comparison
+* `less_than` - Numeric comparison
+* `greater_than_or_equals` - Numeric comparison
+* `less_than_or_equals` - Numeric comparison
+
+See link:../guides/assertions.html[Assertions Guide] for details.
+
+=== Environment Variables
+
+[source,bash]
+----
+# RCON Connection
+RCON_HOST=localhost       # RCON server host
+RCON_PORT=25575           # RCON server port
+RCON_PASSWORD=secret      # RCON password
+
+# Minecraft Server
+MC_HOST=localhost         # MC server host
+MC_PORT=25565             # MC server port
+
+# CI Detection
+CI=true                   # Enable CI mode
+----
+
+=== Need More?
+
+* link:../getting-started.html[Getting Started] - Installation and quick start
+* link:../guides.html[Guides] - Usage guides

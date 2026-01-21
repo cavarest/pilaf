@@ -1,0 +1,66 @@
+---
+title: Guides
+nav_order: 2
+has_children: true
+---
+
+== Guides
+
+In-depth guides for writing effective tests with Pilaf.
+
+=== Test Writing
+
+* link:writing-tests.html[Writing Tests] - Test structure, patterns, and best practices
+* link:actions-reference.html[Actions Reference] - Complete list of available actions
+* link:assertions.html[Assertions Guide] - All assertion types and usage
+
+=== Integration
+
+* link:github-actions.html[GitHub Actions Integration] - Set up CI/CD for your plugin
+
+=== Common Scenarios
+
+==== Testing Plugin Commands
+
+Use `execute_player_command` to test your plugin's commands:
+
+[source,javascript]
+----
+{
+  name: 'Test plugin version command',
+  action: 'execute_player_command',
+  player: 'testplayer',
+  command: '/myplugin version'
+}
+----
+
+==== Testing Entity Interactions
+
+Use `get_entities` with `entity_exists` assertions:
+
+[source,javascript]
+----
+steps: [
+  { action: 'get_entities', player: 'p', store_as: 'e' },
+  { action: 'assert', condition: 'entity_exists', expected: 'zombie', actual: '{e}' }
+]
+----
+
+==== Testing Inventory
+
+Use `get_player_inventory` with `has_item` assertions:
+
+[source,javascript]
+----
+steps: [
+  { action: 'execute_command', command: 'give p diamond' },
+  { action: 'get_player_inventory', player: 'p', store_as: 'inv' },
+  { action: 'assert', condition: 'has_item', expected: 'diamond', actual: '{inv}' }
+]
+----
+
+=== Need More?
+
+* Check link:../core.html[Core Topics] for internal details
+* See link:../reference.html[Reference] for API documentation
+* Report issues at https://github.com/cavarest/pilaf/issues[GitHub Issues]

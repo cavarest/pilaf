@@ -2,199 +2,183 @@
 layout: default
 title: Home
 nav_order: 1
-description: "Pilaf: Paper Integration Layer for Automation Functions - Minecraft plugin testing framework"
+description: "Pilaf: Pure JavaScript testing framework for Minecraft PaperMC plugins"
 permalink: /
 ---
 
 == Pilaf Documentation
 
 [.badges]
-image:https://img.shields.io/github/license/cavarest/pilaf.svg[License: MIT] image:https://github.com/cavarest/pilaf/actions/workflows/rake.yml/badge.svg["Build", link="https://github.com/cavarest/pilaf/actions/workflows/rake.yml"]
+image:https://img.shields.io/github/license/cavarest/pilaf.svg[License: MIT] image:https://github.com/cavarest/pilaf/actions/workflows/unit-tests.yml/badge.svg["Unit Tests", link="https://github.com/cavarest/pilaf/actions/workflows/unit-tests.yml"] image:https://github.com/cavarest/pilaf/actions/workflows/integration-tests.yml/badge.svg["Integration Tests", link="https://github.com/cavarest/pilaf/actions/workflows/integration-tests.yml"]
 
-Welcome to Pilaf (Paper Integration Layer for Automation Functions), a
-comprehensive YAML story-driven testing framework specifically designed for
-PaperMC Minecraft plugin developers. Pilaf transforms complex Java integration
-tests into simple, readable YAML scenarios that enable automated testing of
-Minecraft plugin functionality.
+Welcome to **Pilaf** (Paper Integration Layer for Automation Functions), a testing framework for PaperMC Minecraft plugins. Pilaf provides simple, readable JavaScript test scenarios.
 
-== Why Pilaf?
+=== Why Pilaf?
 
-=== Problem: Complex Integration Testing
+Pilaf makes PaperMC plugin testing straightforward with:
 
-Traditional PaperMC plugin testing requires extensive Java code to simulate
-player actions, execute server commands, and validate results.
+* **JavaScript Tests** - Write tests in familiar JavaScript
+* **Declarative Stories** - Describe *what* to test, not *how*
+* **Two Backends** - RCON for server commands, Mineflayer for player simulation
+* **Jest Integration** - Leverage familiar Jest testing patterns
+* **Rich Assertions** - Entities, inventory, position, and more
+* **HTML Reports** - Vue.js-based interactive test reports
 
-A single integration test can require 150+ lines of complex Java code that:
+=== Quick Example
 
-* Simulate player connections and actions
-* Execute server commands via RCON
-* Handle asynchronous responses
-* Clean up test data
-* Manage server lifecycle
-
-=== Solution: YAML Story Format
-
-Pilaf eliminates this complexity by providing a YAML-based story format:
-
-[source,yaml]
+[source,javascript]
 ----
-name: "Test Lightning Ability"
-steps:
-  - action: "execute_rcon_command"
-    command: "op test_player"
-  - action: "send_chat"
-    player: "test_player"
-    message: "/lightning"
-  - action: "wait"
-    seconds: 2
-  - action: "check_log"
-    pattern: "Lightning struck"
-    assertions:
-      - type: "assert_match"
-        pattern: "Lightning struck"
+const { describe, it, expect } = require('@jest/globals');
+const { StoryRunner } = require('@pilaf/framework');
+
+describe('My Plugin', () => {
+  it('should execute plugin commands', async () => {
+    const runner = new StoryRunner();
+
+    const story = {
+      name: 'Plugin Command Test',
+      setup: {
+        server: { type: 'paper', version: '1.21.8' },
+        players: [{ name: 'Test Player', username: 'tester' }]
+      },
+      steps: [
+        {
+          name: 'Make player operator',
+          action: 'execute_command',
+          command: 'op tester'
+        },
+        {
+          name: 'Execute plugin command',
+          action: 'execute_player_command',
+          player: 'tester',
+          command: '/myplugin command'
+        },
+        {
+          name: 'Verify result',
+          action: 'assert',
+          condition: 'contains',
+          expected: 'success',
+          actual: '{previous_result}'
+        }
+      ],
+      teardown: { stop_server: false }
+    };
+
+    const result = await runner.execute(story);
+    expect(result.success).toBe(true);
+  });
+});
 ----
 
-=== Key Benefits
+=== Key Features
 
-* *Human-Readable*: YAML stories that non-developers can understand and maintain
-* *Declarative*: Describe *what* to test rather than *how* to test it
-* *Multi-Backend*: Support for Docker, Mineflayer, and HeadlessMc backends
-* *Comprehensive*: Rich assertions, state capture, and comparison capabilities
-* *CI/CD Ready*: Seamless integration with GitHub Actions and other CI systems
+* *RCON Backend* - Execute server commands via RCON protocol
+* *Mineflayer Backend* - Simulate players with realistic behavior
+* *Variable Storage* - Store and reference values between steps
+* *Rich Actions* - 20+ built-in actions for common test scenarios
+* *Comprehensive Assertions* - Entities, inventory, position, numeric comparisons
+* *Jest Integration* - Use familiar Jest patterns and reporters
 
-== Supported Backends
-
-[cols="1,3"]
-|===
-|Backend |Description
-
-|link:pages/architecture.html#docker-backend[Docker Backend]
-|Launches PaperMC server using Docker Compose with RCON support
-
-|link:pages/architecture.html#mineflayer-backend[Mineflayer Backend]
-|Headless JavaScript client for realistic player simulation
-
-|link:pages/architecture.html#headlessmc-backend[HeadlessMc Backend]
-|Self-contained Java backend for CI/CD environments
-|===
-
-== Quick Start
+=== Quick Start
 
 [source,bash]
 ----
-# Clone the repository
-git clone https://github.com/cavarest/pilaf.git
-cd pilaf
+# Install Pilaf
+pnpm add -D @pilaf/framework @pilaf/backends @pilaf/cli
 
-# Build the project
-./gradlew build
-
-# Run a test story
-./gradlew run --args="--backend docker demo-story.yaml"
+# Run your first test
+pilaf test my-first-test.pilaf.test.js
 ----
 
-See the link:pages/quick-start.html[5-Minute Quick Start Guide] for a step-by-step tutorial.
+See link:getting-started/quick-start.html[Quick Start Guide] for details.
 
-== Documentation Structure
-
-=== link:pages/index.html[Core Topics]
-Essential concepts and architecture for understanding Pilaf.
-
-=== link:tutorials/index.html[Tutorials]
-Step-by-step guides to help you get started and accomplish specific tasks.
-
-=== link:guides/index.html[Guides]
-In-depth guides for writing stories, best practices, and advanced usage.
-
-=== link:references/index.html[References]
-Complete command reference for all server actions, player actions, and assertions.
-
-== Pilaf Actions
-
-=== Server Actions
-Execute RCON commands on the Minecraft server:
-
-* `execute_rcon_command` - Run any RCON command
-* `check_server_property` - Verify server configuration
-* `wait_for_log` - Wait for specific log patterns
-* `get_server_info` - Retrieve server status and information
-
-=== Player Actions
-Simulate player interactions through connected clients:
-
-* `send_chat` - Send chat messages as a player
-* `move_player` - Move player to specific coordinates
-* `give_item` - Give items to players
-* `attack_entity` - Simulate player attacks
-* And more...
-
-=== Story Actions
-Control story flow and validation:
-
-* `wait` - Pause execution for specified duration
-* `capture_state` - Store server or player state
-* `assert_state` - Compare captured states
-* `assert_log` - Verify log patterns
-* `assert_chat` - Check chat message content
-
-== Key Features
-
-* *YAML Story DSL*: Human-readable test scenarios
-* *Multi-Player Support*: Test interactions between multiple players
-* *State Management*: Capture and compare server/player states
-* *Rich Assertions*: Log, chat, entity, and inventory validation
-* *Backend Abstraction*: Switch between Docker, Mineflayer, and HeadlessMc
-* *Comprehensive Reporting*: HTML and JUnit XML report generation
-* *GitHub Actions Integration*: Ready-made CI/CD workflows
-
-== System Architecture
+=== Architecture
 
 [source]
 ----
-                        Pilaf Test Framework
-                              │
-              ┌───────────────┼───────────────┐
-              │               │               │
-              ▼               ▼               ▼
-      ┌───────────┐   ┌───────────┐   ┌───────────┐
-      │   Docker  │   │ Mineflayer│   │HeadlessMc │
-      │  Backend  │   │  Backend  │   │  Backend  │
-      └─────┬─────┘   └─────┬─────┘   └─────┬─────┘
-            │               │               │
-            └───────────────┼───────────────┘
+                    Jest Test Runner
+                          │
+                          ▼
+                    ┌───────────────┐
+                    │  StoryRunner  │
+                    │  (Framework)  │
+                    └───────┬───────┘
                             │
-                            ▼
-              ┌─────────────────────────────┐
-              │    Minecraft Server         │
-              │    (PaperMC 1.20.4+)        │
-              └─────────────────────────────┘
-                            │
-                            ▼
-              ┌─────────────────────────────┐
-              │      RCON Interface         │
-              │      Port: 25575            │
-              └─────────────────────────────┘
+              ┌─────────────┼─────────────┐
+              │             │             │
+              ▼             ▼             ▼
+      ┌───────────┐ ┌───────────┐ ┌─────────────┐
+      │   RCON    │ │Mineflayer │ │   Reporter   │
+      │  Backend  │ │  Backend  │ │  (Vue.js)    │
+      └─────┬─────┘ └─────┬─────┘ └─────────────┘
+            │             │
+            └─────────────┼──────────────────┐
+                          │                  │
+                          ▼                  ▼
+                ┌─────────────────┐  ┌─────────────┐
+                │ PaperMC Server  │  │   HTML      │
+                │  (1.21.8+)      │  │   Reports   │
+                │  RCON: 25575    │  └─────────────┘
+                └─────────────────┘
 ----
 
-See link:pages/architecture.html[Architecture Overview] for detailed system design.
+See link:getting-started/architecture.html[Architecture Overview] for details.
 
-== Requirements
+=== Documentation Map
 
-* Java 21 (LTS) or later
-* Docker and Docker Compose (for Docker backend)
-* Node.js 16+ (for Mineflayer backend)
-* Gradle 8.x
+==== link:getting-started.html[Getting Started]
+* link:getting-started/installation.html[Installation] - Set up Pilaf in your project
+* link:getting-started/quick-start.html[Quick Start] - Run your first test in 5 minutes
+* link:getting-started/architecture.html[Architecture] - Understand how Pilaf works
 
-== Installation
+==== link:guides.html[Guides]
+* link:guides/writing-tests.html[Writing Tests] - Test structure and patterns
+* link:guides/actions-reference.html[Actions Reference] - Complete action list
+* link:guides/assertions.html[Assertions Guide] - All assertion types
 
-See the link:pages/installation.html[Installation Guide] for detailed setup instructions.
+==== link:core.html[Core Topics]
+* link:core/story-runner.html[StoryRunner] - Test execution engine internals
+* link:core/backends.html[Backend Architecture] - RCON and Mineflayer details
 
-== Getting Help
+==== link:reference.html[API Reference]
+* Complete API documentation for all packages
 
-* *GitHub Issues*: https://github.com/cavarest/pilaf/issues[Report bugs or request features]
-* *GitHub Repository*: https://github.com/cavarest/pilaf[View source code]
-* *Documentation*: https://cavarest.github.io/pilaf/[Live documentation]
+=== Available Actions
 
-== License
+.Server Commands
+* `execute_command` - Execute RCON command
+
+.Player Actions
+* `chat` - Send chat message
+* `execute_player_command` - Execute player command
+* `move_forward` - Move player forward
+
+.Query Actions
+* `get_entities` - Get entity list
+* `get_player_inventory` - Get player inventory
+* `get_player_location` - Get player position
+* `get_entity_location` - Get entity position
+
+.Control Actions
+* `wait` - Pause execution
+* `login` / `logout` - Reconnect/disconnect player
+* `kill` / `respawn` - Player lifecycle
+
+See link:guides/actions-reference.html[Actions Reference] for complete list.
+
+=== Requirements
+
+* Node.js 18+
+* pnpm 10+
+* PaperMC Server 1.21.8+ with RCON enabled
+* Docker (optional, for containerized testing)
+
+=== License
 
 Pilaf is open source under the link:https://opensource.org/licenses/MIT[MIT License].
+
+=== Getting Help
+
+* *GitHub*: https://github.com/cavarest/pilaf[View source code]
+* *Issues*: https://github.com/cavarest/pilaf/issues[Report bugs or request features]
+* *Documentation*: https://cavarest.github.io/pilaf/[Live documentation]

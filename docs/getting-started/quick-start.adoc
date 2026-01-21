@@ -1,0 +1,232 @@
+---
+title: Quick Start
+nav_order: 2
+parent: Getting Started
+---
+
+== Quick Start Guide
+
+Get up and running with Pilaf in 5 minutes.
+
+=== Step 1: Create Your First Test
+
+Create a file named `my-first-test.pilaf.test.js`:
+
+[source,javascript]
+----
+const { describe, it, expect } = require('@jest/globals');
+const { StoryRunner } = require('@pilaf/framework');
+
+describe('My First Pilaf Test', () => {
+  it('should execute a simple RCON command', async () => {
+    const runner = new StoryRunner();
+
+    const story = {
+      name: 'Simple RCON Test',
+      description: 'Test basic RCON command execution',
+
+      setup: {
+        server: { type: 'paper', version: '1.21.8' }
+      },
+
+      steps: [
+        {
+          name: 'Get server version',
+          action: 'execute_command',
+          command: 'version'
+        }
+      ],
+
+      teardown: {
+        stop_server: false
+      }
+    };
+
+    const result = await runner.execute(story);
+    expect(result.success).toBe(true);
+  });
+});
+----
+
+=== Step 2: Run the Test
+
+[source,bash]
+----
+# Run with Pilaf CLI
+pilaf test my-first-test.pilaf.test.js
+
+# Or use Jest directly
+npx jest my-first-test.pilaf.test.js
+----
+
+=== Step 3: Create a Test with Players
+
+Create `player-test.pilaf.test.js`:
+
+[source,javascript]
+----
+const { describe, it, expect } = require('@jest/globals');
+const { StoryRunner } = require('@pilaf/framework');
+
+describe('Player Interaction Test', () => {
+  it('should connect a player and execute commands', async () => {
+    const runner = new StoryRunner();
+
+    const story = {
+      name: 'Player Commands Test',
+      description: 'Test player interaction with server',
+
+      setup: {
+        server: { type: 'paper', version: '1.21.8' },
+        players: [
+          { name: 'Test Player', username: 'testplayer' }
+        ]
+      },
+
+      steps: [
+        {
+          name: 'Make player operator',
+          action: 'execute_command',
+          command: 'op testplayer'
+        },
+        {
+          name: 'Send chat message',
+          action: 'chat',
+          player: 'testplayer',
+          message: 'Hello from Pilaf!'
+        },
+        {
+          name: 'Wait for processing',
+          action: 'wait',
+          duration: 2
+        }
+      ],
+
+      teardown: {
+        stop_server: false
+      }
+    };
+
+    const result = await runner.execute(story);
+    expect(result.success).toBe(true);
+  });
+});
+----
+
+=== Step 4: Run with Variables
+
+Create `variable-test.pilaf.test.js`:
+
+[source,javascript]
+----
+const { describe, it, expect } = require('@jest/globals');
+const { StoryRunner } = require('@pilaf/framework');
+
+describe('Variable Storage Test', () => {
+  it('should store and use variables between steps', async () => {
+    const runner = new StoryRunner();
+
+    const story = {
+      name: 'Variable Test',
+      description: 'Test variable storage and retrieval',
+
+      setup: {
+        server: { type: 'paper', version: '1.21.8' },
+        players: [
+          { name: 'Test Player', username: 'testplayer' }
+        ]
+      },
+
+      steps: [
+        {
+          name: 'Get player location',
+          action: 'get_player_location',
+          player: 'testplayer',
+          store_as: 'initial_position'
+        },
+        {
+          name: 'Move player forward',
+          action: 'move_forward',
+          player: 'testplayer',
+          duration: 2
+        },
+        {
+          name: 'Get new position',
+          action: 'get_player_location',
+          player: 'testplayer',
+          store_as: 'new_position'
+        },
+        {
+          name: 'Calculate distance',
+          action: 'calculate_distance',
+          from: '{initial_position}',
+          to: '{new_position}',
+          store_as: 'distance_traveled'
+        },
+        {
+          name: 'Verify movement',
+          action: 'assert',
+          condition: 'greater_than',
+          actual: '{distance_traveled}',
+          expected: 0
+        }
+      ],
+
+      teardown: {
+        stop_server: false
+      }
+    };
+
+    const result = await runner.execute(story);
+    expect(result.success).toBe(true);
+  });
+});
+----
+
+=== Step 5: Run Your Tests and Generate Reports
+
+[source,bash]
+----
+# Run all Pilaf tests
+pilaf test
+
+# Run specific test file
+pilaf test player-test.pilaf.test.js
+
+# Run with verbose output
+pilaf test --verbose
+
+# Generate HTML report (default: target/pilaf-reports/index.html)
+pilaf test --report-html
+
+# Set custom report output path
+pilaf test --report-path ./my-report.html
+----
+
+==== Viewing the HTML Report
+
+When you run tests with `--report-html`, Pilaf generates an interactive HTML report that shows:
+
+* **Story Overview** - Test name, pass/fail status, step count
+* **Step Details** - Each step with its executor (RCON, player, ASSERT)
+* **Action/Response Pairs** - Raw actions and responses:
+** `→ action` (yellow) - The action performed
+** `← response` (green) - The response received
+* **Console Logs** - Full log output for debugging
+
+Open the report in your browser:
+[source,bash]
+----
+# Default location
+open target/pilaf-reports/index.html
+
+# Custom location
+open ./my-report.html----
+
+=== What's Next?
+
+* link:../guides/writing-tests.html[Writing Tests Guide] - Learn advanced test patterns
+* link:../guides/actions-reference.html[Actions Reference] - Complete list of available actions
+* link:../guides/assertions.html[Assertions Guide] - Learn about assertion types
+* link:architecture.adoc[Architecture Overview] - Understand Pilaf's internals
+* link:../core/story-runner.html[StoryRunner Deep Dive] - Internal implementation details

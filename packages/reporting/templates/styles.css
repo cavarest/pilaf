@@ -2,3 +2,8 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
+
+/* Minecraft PE font for h1 */
+h1 {
+  font-family: 'MINECRAFT PE', sans-serif !important;
+}

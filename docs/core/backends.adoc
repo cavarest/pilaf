@@ -1,0 +1,267 @@
+---
+title: Backend Architecture
+nav_order: 2
+parent: Core Topics
+---
+
+== Backend Architecture
+
+Details of Pilaf's backend implementations for RCON and Mineflayer.
+
+=== Overview
+
+Pilaf provides two backend types:
+
+* **RconBackend** - Server command execution via RCON protocol
+* **MineflayerBackend** - Player simulation using Mineflayer library
+
+Both implement the `PilafBackend` base interface.
+
+=== Backend Factory
+
+Backends are created through `PilafBackendFactory`:
+
+[source,javascript]
+----
+const { PilafBackendFactory } = require('@pilaf/backends');
+
+// Create RCON backend
+const rcon = await PilafBackendFactory.create('rcon', {
+  host: 'localhost',
+  port: 25575,
+  password: 'secret'
+});
+
+// Create Mineflayer backend
+const mineflayer = await PilafBackendFactory.create('mineflayer', {
+  host: 'localhost',
+  port: 25565,
+  auth: 'offline',
+  rconHost: 'localhost',
+  rconPort: 25575,
+  rconPassword: 'secret'
+});
+----
+
+=== RconBackend
+
+Located at: `packages/backends/lib/rcon-backend.js`
+
+==== Connection
+
+[source,javascript]
+----
+const rcon = new RconBackend();
+await rcon.connect({
+  host: 'localhost',
+  port: 25575,
+  password: 'secret',
+  timeout: 30000  // 30 second connection timeout
+});
+----
+
+==== Sending Commands
+
+[source,javascript]
+----
+const response = await rcon.send('time query daytime');
+// response.raw = "The time is 12345"
+// response.parsed = 12345 (if JSON)
+----
+
+==== Timeouts
+
+To prevent hanging, all RCON operations have timeouts:
+
+* **Connect timeout**: 30 seconds (configurable)
+* **Send timeout**: 10 seconds (configurable)
+
+[source,javascript]
+----
+// Timeout implementation
+await Promise.race([
+  Rcon.connect({ host, port, password }),
+  new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Timeout')), timeout)
+  )
+]);
+----
+
+==== Disconnection
+
+[source,javascript]
+----
+await rcon.disconnect();
+// Always disconnect to prevent Jest hanging
+----
+
+=== MineflayerBackend
+
+Located at: `packages/backends/lib/mineflayer-backend.js`
+
+==== Connection
+
+[source,javascript]
+----
+const backend = await PilafBackendFactory.create('mineflayer', {
+  host: 'localhost',
+  port: 25565,
+  auth: 'offline',      // or 'microsoft'
+  rconHost: 'localhost',
+  rconPort: 25575,
+  rconPassword: 'secret'
+});
+
+await backend.waitForServerReady({ timeout: 60000 });
+----
+
+==== Creating Bot Players
+
+[source,javascript]
+----
+const bot = await backend.createBot({
+  username: 'testplayer',
+  spawnTimeout: 60000
+});
+----
+
+The bot is a standard Mineflayer bot instance with all Mineflayer methods available.
+
+==== Server Readiness
+
+[source,javascript]
+----
+await backend.waitForServerReady({
+  timeout: 60000,    // Max wait time
+  interval: 3000     // Check interval
+});
+----
+
+Polls using RCON `list` command until server responds.
+
+==== Querying Entities
+
+[source,javascript]
+----
+const entities = await backend.getEntities();
+// Returns array of entity objects:
+// [{ id, name, type, position: {x, y, z}, ... }]
+----
+
+==== Querying Inventory
+
+[source,javascript]
+----
+const inventory = await backend.getPlayerInventory('username');
+// Returns object:
+// { items: [{ name, count, slot }], slots: 36 }
+----
+
+==== Quitting Bots
+
+[source,javascript]
+----
+const result = await backend.quitBot(bot);
+// result.success = true/false
+// result.reason = error message if failed
+----
+
+IMPORTANT: Always quit bots before disconnecting backend to prevent leaks.
+
+==== Disconnection
+
+[source,javascript]
+----
+await backend.disconnect();
+----
+
+=== Backend Interface
+
+All backends must implement:
+
+* `connect(config)` - Establish connection
+* `disconnect()` - Close connection
+* `createBot(options)` - (Mineflayer only) Create bot instance
+* `quitBot(bot)` - (Mineflayer only) Disconnect bot
+* `getEntities()` - (Mineflayer only) List entities
+* `getPlayerInventory(username)` - Get player inventory
+* `send(command)` - (RCON only) Execute command
+
+=== Connection Management
+
+==== StoryRunner Usage
+
+[source,javascript]
+----
+// Setup phase
+this.backends.rcon = await PilafBackendFactory.create('rcon', config);
+this.backends.players.set('username', playerBackend);
+
+// During steps
+await this.backends.rcon.send('list');
+const entities = await this.backends.players.get('username').getEntities();
+
+// Teardown phase
+await this.backends.rcon.disconnect();
+await this.backends.players.get('username').disconnect();
+----
+
+==== Reconnection Pattern
+
+For testing reconnection, create fresh backend instances:
+
+[source,javascript]
+----
+// Logout (disconnect bot)
+await backend.quitBot(bot);
+
+// Login (create fresh backend + new bot)
+const freshBackend = await PilafBackendFactory.create('mineflayer', config);
+const newBot = await freshBackend.createBot({ username });
+----
+
+=== Error Handling
+
+==== Connection Errors
+
+[source,javascript]
+----
+try {
+  await backend.connect(config);
+} catch (error) {
+  if (error.message.includes('timeout')) {
+    // Handle timeout
+  } else if (error.message.includes('refused')) {
+    // Server not running
+  }
+}
+----
+
+==== Command Errors
+
+[source,javascript]
+----
+try {
+  await rcon.send('invalid command');
+} catch (error) {
+  // Parse error from server response
+}
+----
+
+=== Performance Considerations
+
+* **Connection pooling** - Reuse backends across steps
+* **Timeouts** - Prevent hanging on unresponsive servers
+* **Sequential operations** - Mineflayer operations are serialized
+* **Bot limits** - Too many bots can impact server performance
+
+=== Security Notes
+
+* **RCON passwords** - Use environment variables, never hardcode
+* **Offline mode** - For testing only, production should use `auth: 'microsoft'`
+* **Firewall** - RCON port should not be exposed publicly
+
+=== Next Steps
+
+* link:story-runner.html[StoryRunner Deep Dive] - How backends are used in stories
+* link:../getting-started/architecture.html[Architecture Overview] - System architecture

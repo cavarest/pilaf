@@ -1,0 +1,32 @@
+services:
+  minecraft:
+    image: itzg/minecraft-server
+    container_name: pilaf-minecraft-dev
+    ports:
+      - "${MC_PORT:-25566}:25565"
+      - "${RCON_PORT:-25576}:25575"
+    environment:
+      EULA: 'TRUE'
+      ONLINE_MODE: 'false'
+      TYPE: 'PAPER'
+      VERSION: '1.21.8'
+      RCON_PASSWORD: '${RCON_PASSWORD:-cavarest}'
+      ENABLE_RCON: 'true'
+      RCON_PORT: '25575'
+      MAX_PLAYERS: '5'
+      MEMORY: '1G'
+      SPAWN_PROTECTION: '0'
+      DEBUG: 'false'
+      CONNECTION_TIMEOUT_THRESHOLD: '120000'
+      WHITELIST: ''
+    volumes:
+      - mc-data:/data
+    healthcheck:
+      test: ["CMD", "mc-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 15
+      start_period: 120s
+
+volumes:
+  mc-data:

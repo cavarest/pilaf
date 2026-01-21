@@ -97,12 +97,7 @@ class BotLifecycleManager {
         if (!resolved) {
           resolved = true;
           // Force cleanup on timeout
-          bot.removeAllListeners('end');
-          bot.removeAllListeners('error');
-          // Also close the underlying client connection if it exists
-          if (bot._client) {
-            bot._client.end();
-          }
+          this._forceCleanup(bot);
           resolve({ success: false, reason: 'Disconnect timeout' });
         }
       }, disconnectTimeout);
@@ -115,11 +110,8 @@ class BotLifecycleManager {
         if (!resolved) {
           resolved = true;
           clearTimeout(timeoutId);
-          // Explicitly close the underlying client connection
-          // This ensures no residual socket state remains
-          if (bot._client) {
-            bot._client.end();
-          }
+          // Force cleanup to ensure all timers and listeners are cleared
+          this._forceCleanup(bot);
           resolve({ success: true, reason: 'Clean disconnect' });
         }
       });
@@ -129,10 +121,8 @@ class BotLifecycleManager {
         if (!resolved) {
           resolved = true;
           clearTimeout(timeoutId);
-          // Still close the client on error
-          if (bot._client) {
-            bot._client.end();
-          }
+          // Force cleanup on error
+          this._forceCleanup(bot);
           resolve({ success: false, reason: `Disconnect error: ${err.message}` });
         }
       });
@@ -146,14 +136,54 @@ class BotLifecycleManager {
         if (!resolved) {
           resolved = true;
           clearTimeout(timeoutId);
-          // Close client on quit failure
-          if (bot._client) {
-            bot._client.end();
-          }
+          // Force cleanup on quit failure
+          this._forceCleanup(bot);
           resolve({ success: false, reason: `Quit failed: ${error.message}` });
         }
       }
     });
+  }
+
+  /**
+   * Force cleanup of bot resources
+   * Clears all event listeners, timers, and destroys the socket
+   * @private
+   * @param {Object} bot - Mineflayer bot instance
+   */
+  static _forceCleanup(bot) {
+    if (!bot) return;
+
+    // Remove all event listeners to prevent further callbacks
+    try {
+      bot.removeAllListeners();
+    } catch (e) {
+      // Ignore errors
+    }
+
+    // Clean up the underlying client connection
+    if (bot._client) {
+      try {
+        // Remove all listeners from the client
+        bot._client.removeAllListeners();
+        // End the connection
+        bot._client.end();
+        // Destroy the socket forcefully
+        if (bot._client.socket) {
+          bot._client.socket.destroy();
+        }
+      } catch (e) {
+        // Ignore errors
+      }
+    }
+
+    // Clear any standard output streams that might have listeners
+    if (bot._serverCertificate) {
+      try {
+        bot._serverCertificate.removeAllListeners();
+      } catch (e) {
+        // Ignore
+      }
+    }
   }
 
   /**

@@ -1,3 +1,0 @@
-backend: "mock"
-report_directory: "build/pilaf-reports"
-verbose: true

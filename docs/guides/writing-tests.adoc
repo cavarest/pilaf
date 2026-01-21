@@ -1,0 +1,553 @@
+---
+title: Writing Tests
+nav_order: 1
+parent: Guides
+---
+
+== Writing Tests with Pilaf
+
+Learn how to write effective integration tests for your PaperMC plugins using Pilaf's story-based testing framework.
+
+=== Test File Structure
+
+Pilaf test files use the `*.pilaf.test.js` naming convention:
+
+[source,javascript]
+----
+const { describe, it, expect } = require('@jest/globals');
+const { StoryRunner } = require('@pilaf/framework');
+
+describe('My Plugin Tests', () => {
+  it('should test plugin functionality', async () => {
+    const runner = new StoryRunner();
+    const story = { /* story object */ };
+    const result = await runner.execute(story);
+    expect(result.success).toBe(true);
+  });
+});
+----
+
+=== Step Naming Conventions
+
+Step names are important for report readability. Use these conventions:
+
+==== RCON Steps
+
+Prefix RCON steps with `[RCON]`:
+
+[source,javascript]
+----
+{
+  name: '[RCON] Give diamond sword to player',
+  action: 'execute_command',
+  command: 'give testplayer diamond_sword'
+}
+----
+
+==== Player Action Steps
+
+Prefix player actions with `[player: username]`:
+
+[source,javascript]
+----
+{
+  name: '[player: testplayer] Get inventory',
+  action: 'get_player_inventory',
+  player: 'testplayer',
+  store_as: 'inventory'
+}
+----
+
+==== Assertion Steps
+
+Assertion steps describe what is being verified:
+
+[source,javascript]
+----
+{
+  name: 'Verify player has diamond sword',
+  action: 'assert',
+  condition: 'has_item',
+  expected: 'diamond_sword',
+  actual: '{inventory}'
+}
+----
+
+==== Wait Steps
+
+Wait steps describe what is being waited for:
+
+[source,javascript]
+----
+{
+  name: 'Wait for item processing',
+  action: 'wait',
+  duration: 1
+}
+----
+
+=== Story Structure
+
+A story is a JavaScript object with the following structure:
+
+[source,javascript]
+----
+{
+  // Required: Story name
+  name: 'Story Name',
+
+  // Optional: Story description
+  description: 'What this story tests',
+
+  // Required: Setup configuration
+  setup: {
+    server: { /* server config */ },
+    players: [ /* player configs */ ]
+  },
+
+  // Required: Array of test steps
+  steps: [
+    { /* step 1 */ },
+    { /* step 2 */ }
+  ],
+
+  // Required: Teardown configuration
+  teardown: {
+    stop_server: false  // true to stop server after test
+  }
+}
+----
+
+=== Setup Configuration
+
+==== Server Setup
+
+[source,javascript]
+----
+setup: {
+  server: {
+    type: 'paper',
+    version: '1.21.8'
+  }
+}
+----
+
+The server type is currently informational. Connection details come from environment variables:
+
+* `RCON_HOST` - RCON server host (default: localhost)
+* `RCON_PORT` - RCON server port (default: 25575)
+* `RCON_PASSWORD` - RCON password
+* `MC_HOST` - Minecraft server host (default: localhost)
+* `MC_PORT` - Minecraft server port (default: 25565)
+
+==== Player Setup
+
+[source,javascript]
+----
+setup: {
+  server: { type: 'paper', version: '1.21.8' },
+  players: [
+    {
+      name: 'Test Player One',
+      username: 'player1'
+    },
+    {
+      name: 'Test Player Two',
+      username: 'player2'
+    }
+  ]
+}
+----
+
+Each player gets a separate Mineflayer bot connection.
+
+=== Step Definition
+
+Each step must have:
+
+* `name` - Human-readable step name (use conventions above)
+* `action` - Action type to execute
+
+Additional parameters depend on the action type.
+
+[source,javascript]
+----
+{
+  name: 'Get server time',
+  action: 'execute_command',
+  command: 'time query daytime'
+}
+----
+
+=== Variable Storage
+
+Store step results using `store_as`:
+
+[source,javascript]
+----
+{
+  name: 'Get player position',
+  action: 'get_player_location',
+  player: 'testplayer',
+  store_as: 'start_position'  // Result stored here
+}
+
+// Later, reference the stored value
+{
+  name: 'Calculate distance',
+  action: 'calculate_distance',
+  from: '{start_position}',  // Reference with {}
+  to: '{end_position}'
+}
+----
+
+=== Common Test Patterns
+
+==== Test Plugin Commands
+
+[source,javascript]
+----
+steps: [
+  {
+    name: '[RCON] Make player operator',
+    action: 'execute_command',
+    command: 'op testplayer'
+  },
+  {
+    name: 'Wait for op to take effect',
+    action: 'wait',
+    duration: 1
+  },
+  {
+    name: '[player: testplayer] Execute plugin command',
+    action: 'execute_player_command',
+    player: 'testplayer',
+    command: '/myplugin command args'
+  },
+  {
+    name: 'Wait for command processing',
+    action: 'wait',
+    duration: 2
+  }
+]
+----
+
+==== Test Entity Interactions
+
+[source,javascript]
+----
+steps: [
+  {
+    name: '[player: testplayer] Get initial entities',
+    action: 'get_entities',
+    player: 'testplayer',
+    store_as: 'initial_entities'
+  },
+  {
+    name: '[RCON] Spawn a zombie',
+    action: 'execute_command',
+    command: 'summon zombie ~ ~1 ~'
+  },
+  {
+    name: 'Wait for spawn',
+    action: 'wait',
+    duration: 2
+  },
+  {
+    name: '[player: testplayer] Get updated entities',
+    action: 'get_entities',
+    player: 'testplayer',
+    store_as: 'entities'
+  },
+  {
+    name: 'Verify zombie exists',
+    action: 'assert',
+    condition: 'entity_exists',
+    expected: 'zombie',
+    actual: '{entities}'
+  }
+]
+----
+
+==== Test Inventory Changes
+
+[source,javascript]
+----
+steps: [
+  {
+    name: '[RCON] Clear inventory',
+    action: 'execute_command',
+    command: 'clear testplayer'
+  },
+  {
+    name: 'Wait for clear',
+    action: 'wait',
+    duration: 1
+  },
+  {
+    name: '[player: testplayer] Get initial inventory',
+    action: 'get_player_inventory',
+    player: 'testplayer',
+    store_as: 'inventory_before'
+  },
+  {
+    name: 'Verify no diamonds initially',
+    action: 'assert',
+    condition: 'does_not_have_item',
+    expected: 'diamond',
+    actual: '{inventory_before}'
+  },
+  {
+    name: '[RCON] Give 64 diamonds',
+    action: 'execute_command',
+    command: 'give testplayer diamond 64'
+  },
+  {
+    name: 'Wait for item processing',
+    action: 'wait',
+    duration: 1
+  },
+  {
+    name: '[player: testplayer] Get updated inventory',
+    action: 'get_player_inventory',
+    player: 'testplayer',
+    store_as: 'inventory_after'
+  },
+  {
+    name: 'Verify player has diamonds',
+    action: 'assert',
+    condition: 'has_item',
+    expected: 'diamond',
+    actual: '{inventory_after}'
+  }
+]
+----
+
+==== Test Player Movement
+
+[source,javascript]
+----
+steps: [
+  {
+    name: '[player: testplayer] Get starting position',
+    action: 'get_player_location',
+    player: 'testplayer',
+    store_as: 'start'
+  },
+  {
+    name: '[player: testplayer] Move forward',
+    action: 'move_forward',
+    player: 'testplayer',
+    duration: 2
+  },
+  {
+    name: 'Wait for movement',
+    action: 'wait',
+    duration: 1
+  },
+  {
+    name: '[player: testplayer] Get ending position',
+    action: 'get_player_location',
+    player: 'testplayer',
+    store_as: 'end'
+  },
+  {
+    name: 'Calculate distance traveled',
+    action: 'calculate_distance',
+    from: '{start}',
+    to: '{end}',
+    store_as: 'distance'
+  },
+  {
+    name: 'Verify player moved',
+    action: 'assert',
+    condition: 'greater_than',
+    actual: '{distance}',
+    expected: 0
+  }
+]
+----
+
+=== Complete Example
+
+Here's a complete example showing a story with RCON and player actions:
+
+[source,javascript]
+----
+const { describe, it, expect } = require('@jest/globals');
+const { StoryRunner } = require('@pilaf/framework');
+
+describe('Inventory Testing Examples', () => {
+  // Add delay between tests to prevent connection throttling
+  beforeEach(async () => {
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  });
+
+  it('should test giving items to player', async () => {
+    const runner = new StoryRunner();
+
+    const story = {
+      name: 'Give Items Test',
+      description: 'Demonstrates giving items and verifying inventory',
+
+      setup: {
+        server: { type: 'paper', version: '1.21.8' },
+        players: [
+          { name: 'Item Receiver', username: 'receiver' }
+        ]
+      },
+
+      steps: [
+        {
+          name: '[RCON] Clear inventory',
+          action: 'execute_command',
+          command: 'clear receiver'
+        },
+        {
+          name: 'Wait for clear',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: receiver] Get initial inventory',
+          action: 'get_player_inventory',
+          player: 'receiver',
+          store_as: 'initial_inventory'
+        },
+        {
+          name: 'Verify no diamonds initially',
+          action: 'assert',
+          condition: 'does_not_have_item',
+          expected: 'diamond',
+          actual: '{initial_inventory}'
+        },
+        {
+          name: '[RCON] Give 64 diamonds',
+          action: 'execute_command',
+          command: 'give receiver diamond 64'
+        },
+        {
+          name: 'Wait for item processing',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: receiver] Get updated inventory',
+          action: 'get_player_inventory',
+          player: 'receiver',
+          store_as: 'updated_inventory'
+        },
+        {
+          name: 'Verify player has diamonds',
+          action: 'assert',
+          condition: 'has_item',
+          expected: 'diamond',
+          actual: '{updated_inventory}'
+        }
+      ],
+
+      teardown: {
+        stop_server: false
+      }
+    };
+
+    const result = await runner.execute(story);
+    expect(result.success).toBe(true);
+  });
+});
+----
+
+=== HTML Report Output
+
+When you run tests with the Pilaf reporter, an HTML report is generated that shows:
+
+* **Story overview** - Name, pass/fail status, step count
+* **Step details** - Each step with its executor (RCON, player, ASSERT)
+* **Action/Response pairs** - Raw actions and responses for:
+  ** RCON commands (command sent, response received)
+  ** Player queries (function called, data returned)
+  ** Player actions (action performed, confirmation)
+* **Assertions** - What was checked and the result
+* **Console logs** - Full log output for debugging
+
+The report is generated at `target/pilaf-reports/index.html` by default.
+
+=== Best Practices
+
+. **Use descriptive names**
+** Story and step names should clearly describe what is being tested
+** Use the naming conventions to identify action types
+
+. **Clean up resources**
+** Always use `teardown.stop_server: false` for tests that share a server
+** Use `stop_server: true` only for the last test or isolation tests
+
+. **Use variable storage**
+** Store intermediate results with `store_as`
+** Reference stored values with `{variableName}`
+
+. **Add appropriate waits**
+** Use `wait` action for server processing time
+** Wait after spawning entities, giving items, or player actions
+
+. **Test one thing per story**
+** Each story should test a specific feature or scenario
+** Makes failures easier to diagnose
+
+. **Prevent connection throttling**
+** Add `beforeEach` delays when running multiple stories
+** Minecraft servers rate-limit new connections
+
+=== Organizing Tests
+
+Group related tests using `describe`:
+
+[source,javascript]
+----
+describe('Player Commands', () => {
+  beforeEach(async () => {
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  });
+
+  it('should execute /ability command', async () => { /* ... */ });
+  it('should execute /plugin command', async () => { /* ... */ });
+});
+
+describe('Entity Interactions', () => {
+  beforeEach(async () => {
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  });
+
+  it('should spawn entities', async () => { /* ... */ });
+  it('should attack entities', async () => { /* ... */ });
+});
+----
+
+=== Running Tests
+
+[source,bash]
+----
+# Run all Pilaf tests
+pilaf test
+
+# Run specific test file
+pilaf test tests/my-plugin.pilaf.test.js
+
+# Run with verbose output
+pilaf test --verbose
+
+# Generate HTML report (default location: target/pilaf-reports/index.html)
+pilaf test --report-html
+
+# Set custom report output path
+pilaf test --report-path ./my-report.html
+
+# Run with environment variables
+RCON_HOST=localhost RCON_PORT=25576 MC_PORT=25566 pilaf test
+----
+
+=== Next Steps
+
+* link:actions-reference.html[Actions Reference] - Complete list of actions
+* link:assertions.html[Assertions Guide] - Assertion types and usage
+* link:../core/story-runner.html[StoryRunner Deep Dive] - Internal details

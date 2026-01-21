@@ -140,6 +140,10 @@ class StoryRunner {
     } catch (error) {
       storyResults.success = false;
       storyResults.error = error.message;
+      this.logger.log(`[StoryRunner] Error: ${error.message}`);
+      if (error.stack) {
+        this.logger.log(`[StoryRunner] Stack: ${error.stack.split('\n').slice(0, 3).join('\n')}`);
+      }
     }
 
     storyResults.duration = Date.now() - startTime;
@@ -231,6 +235,9 @@ class StoryRunner {
       await this.backends.rcon.disconnect();
       this.backends.rcon = null;
     }
+
+    // Wait for cleanup to complete
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   /**
@@ -247,6 +254,9 @@ class StoryRunner {
       throw new Error(`Player "${name}" must have a username`);
     }
 
+    // Wait a bit before creating new bot to avoid connection conflicts
+    await new Promise(resolve => setTimeout(resolve, 200));
+
     // Create player backend
     const backend = await PilafBackendFactory.create('mineflayer', {
       host: process.env.MC_HOST || 'localhost',
@@ -257,14 +267,31 @@ class StoryRunner {
       rconPassword: process.env.RCON_PASSWORD || 'cavarest'
     });
 
-    // Wait for server ready
+    // Wait for server to be ready
     await backend.waitForServerReady({ timeout: 60000, interval: 3000 });
 
-    // Create bot
-    const bot = await backend.createBot({
-      username,
-      spawnTimeout: 60000
-    });
+    // Create bot with retry logic
+    let bot;
+    let lastError;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        bot = await backend.createBot({
+          username,
+          spawnTimeout: 60000
+        });
+        break; // Success, exit retry loop
+      } catch (error) {
+        lastError = error;
+        if (attempt < 3) {
+          this.logger.log(`[StoryRunner] Bot creation attempt ${attempt} failed: ${error.message}, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+      }
+    }
+
+    if (!bot) {
+      throw new Error(`Failed to create bot after 3 attempts: ${lastError.message}`);
+    }
 
     this.backends.players.set(username, backend);
     this.bots.set(username, bot);
@@ -386,8 +413,10 @@ class StoryRunner {
         throw new Error('execute_command requires "command" parameter');
       }
 
+      this.logger.log(`[StoryRunner] ACTION: RCON ${command}`);
+
       const result = await this.backends.rcon.send(command);
-      this.logger.log(`[StoryRunner] RCON command: ${command} -> ${result.raw}`);
+      this.logger.log(`[StoryRunner] RESPONSE: ${result.raw}`);
     },
 
     /**
@@ -407,8 +436,9 @@ class StoryRunner {
         throw new Error(`Player "${player}" not found`);
       }
 
+      this.logger.log(`[StoryRunner] ACTION: ${player} chat: ${message}`);
       bot.chat(message);
-      this.logger.log(`[StoryRunner] ${player} chat: ${message}`);
+      this.logger.log(`[StoryRunner] RESPONSE: Message sent`);
     },
 
     /**
@@ -446,15 +476,28 @@ class StoryRunner {
       } else if (condition === 'entity_exists') {
         // expected: entity name to check for
         // actual: array of entities from get_entities
-        const entity = actual.find(e => e.name === expected || e.customName === expected || e.customName?.text === expected);
+        const entity = actual.find(e =>
+          e.name === expected ||
+          e.customName === expected ||
+          e.displayName === expected ||
+          e.customName?.text === expected
+        );
         if (!entity) {
+          // Debug: log available entity names
+          const availableNames = actual.map(e => e.name || e.displayName || e.customName).slice(0, 10).join(', ');
+          this.logger.log(`[StoryRunner] Available entities (first 10): ${availableNames}`);
           throw new Error(`Assertion failed: entity "${expected}" not found`);
         }
         this.logger.log(`[StoryRunner] Assertion passed: entity "${expected}" exists`);
       } else if (condition === 'entity_not_exists') {
         // expected: entity name to check for
         // actual: array of entities from get_entities
-        const entity = actual.find(e => e.name === expected || e.customName === expected || e.customName?.text === expected);
+        const entity = actual.find(e =>
+          e.name === expected ||
+          e.customName === expected ||
+          e.displayName === expected ||
+          e.customName?.text === expected
+        );
         if (entity) {
           throw new Error(`Assertion failed: entity "${expected}" still exists`);
         }
@@ -693,8 +736,10 @@ class StoryRunner {
         throw new Error(`Player "${player}" backend not found`);
       }
 
+      this.logger.log(`[StoryRunner] ACTION: getEntities() for ${player}`);
+
       const entities = await backend.getEntities();
-      this.logger.log(`[StoryRunner] Found ${entities.length} entities for ${player}`);
+      this.logger.log(`[StoryRunner] RESPONSE: Found ${entities.length} entities: ${entities.slice(0, 5).map(e => e.name || e.customName || e.id).join(', ')}${entities.length > 5 ? '...' : ''}`);
 
       // Return entities for use in assertions/steps
       return entities;
@@ -715,8 +760,14 @@ class StoryRunner {
         throw new Error(`Player "${player}" backend not found`);
       }
 
+      this.logger.log(`[StoryRunner] ACTION: getPlayerInventory() for ${player}`);
+
       const inventory = await backend.getPlayerInventory(player);
-      this.logger.log(`[StoryRunner] Retrieved inventory for ${player}: ${inventory.items.length} items`);
+      const itemCount = inventory.items?.length || 0;
+      const itemSummary = itemCount > 0
+        ? inventory.items.slice(0, 5).map(i => i.type || i.name).join(', ') + (itemCount > 5 ? '...' : '')
+        : 'empty';
+      this.logger.log(`[StoryRunner] RESPONSE: ${itemCount} items (${itemSummary})`);
 
       // Return inventory for use in assertions/steps
       return inventory;
@@ -740,8 +791,9 @@ class StoryRunner {
         throw new Error(`Player "${player}" not found`);
       }
 
+      this.logger.log(`[StoryRunner] ACTION: ${player} execute command: ${command}`);
       bot.chat(command);
-      this.logger.log(`[StoryRunner] ${player} executed command: ${command}`);
+      this.logger.log(`[StoryRunner] RESPONSE: Command sent`);
     },
 
     /**
@@ -753,6 +805,8 @@ class StoryRunner {
       if (!player) {
         throw new Error('get_player_location requires "player" parameter');
       }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} getLocation()`);
 
       const bot = this.bots.get(player);
       if (!bot) {
@@ -767,7 +821,7 @@ class StoryRunner {
         pitch: bot.entity.pitch
       };
 
-      this.logger.log(`[StoryRunner] ${player} location: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)}`);
+      this.logger.log(`[StoryRunner] RESPONSE: x=${position.x.toFixed(2)}, y=${position.y.toFixed(2)}, z=${position.z.toFixed(2)}`);
       return position;
     },
 

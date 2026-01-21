@@ -1,0 +1,57 @@
+---
+title: Core Topics
+nav_order: 3
+has_children: true
+---
+
+== Core Topics
+
+Deep dive into Pilaf internals and implementation details.
+
+=== Components
+
+* link:story-runner.html[StoryRunner] - Test execution engine
+* link:backends.html[Backend Architecture] - RCON and Mineflayer implementations
+
+=== Key Concepts
+
+==== Variable Storage
+
+Store step results and reference them later:
+
+[source,javascript]
+----
+// Store result
+{ action: 'get_player_location', player: 'p', store_as: 'pos' }
+
+// Reference stored value
+{ action: 'calculate_distance', from: '{pos}', to: '{new_pos}' }
+----
+
+==== Backend Pooling
+
+Pilaf maintains a pool of backend connections:
+
+* `backends.rcon` - Single RCON connection
+* `backends.players` - Map of username → MineflayerBackend
+
+==== Resource Lifecycle
+
+. Setup → Connect backends, create bots
+. Steps → Execute actions using backends
+. Teardown → Disconnect everything (ALWAYS runs)
+
+=== For Contributors
+
+Interested in contributing to Pilaf?
+
+* Code is in `packages/` directory
+* Tests are in `tests/` directory
+* Use `pnpm test` to run tests
+* Follow existing code patterns
+
+=== Need More?
+
+* link:../getting-started.html[Getting Started] - New user guide
+* link:../guides.html[Guides] - Usage documentation
+* link:../reference.html[Reference] - API documentation

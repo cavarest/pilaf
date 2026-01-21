@@ -9,9 +9,9 @@
     "papermc",
     "mineflayer",
     "rcon",
-    "yaml",
     "integration-testing",
-    "game-testing"
+    "game-testing",
+    "jest"
   ],
   "author": "Pilaf Team",
   "license": "MIT",
@@ -22,6 +22,8 @@
   "scripts": {
     "test": "jest --testMatch='**/*.pilaf.test.js' --verbose --runInBand",
     "test:ci": "jest --testMatch='**/*.pilaf.test.js' --ci --testResultsProcessor='jest-junit' --runInBand",
+    "test:report": "jest --config=jest.config.report.json",
+    "test:examples": "jest --testMatch='examples/**/*.example.pilaf.test.js' --runInBand",
     "build": "pnpm -r --filter './packages/**' build",
     "lint": "eslint packages/**/*.js",
     "pilaf": "node packages/cli/bin/pilaf.js"
@@ -57,6 +59,6 @@
   },
   "engines": {
     "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
+    "pnpm": ">=10.0.0"
   }
 }

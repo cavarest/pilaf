@@ -10,6 +10,7 @@ class RconBackend extends PilafBackend {
     super();
     this.client = null;
     this.connected = false;
+    this._connectTimeout = null;
   }
 
   /**
@@ -29,15 +30,33 @@ class RconBackend extends PilafBackend {
 
     try {
       // Add timeout to prevent hanging on slow/unresponsive RCON servers
+      // Store timeout ID so we can clear it on success
+      const timeoutPromise = new Promise((_, reject) => {
+        this._connectTimeout = setTimeout(() => {
+          this._connectTimeout = null;
+          reject(new Error(`RCON connection timeout after ${timeout}ms`));
+        }, timeout);
+      });
+
       this.client = await Promise.race([
         Rcon.connect({ host, port, password }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error(`RCON connection timeout after ${timeout}ms`)), timeout)
-        )
+        timeoutPromise
       ]);
+
+      // Clear timeout if connection succeeded
+      if (this._connectTimeout) {
+        clearTimeout(this._connectTimeout);
+        this._connectTimeout = null;
+      }
+
       this.connected = true;
       return this;
     } catch (error) {
+      // Clean up timeout on error
+      if (this._connectTimeout) {
+        clearTimeout(this._connectTimeout);
+        this._connectTimeout = null;
+      }
       throw new Error(`Failed to connect to RCON: ${error.message}`);
     }
   }
@@ -47,10 +66,36 @@ class RconBackend extends PilafBackend {
    * @returns {Promise<void>}
    */
   async disconnect() {
+    // Clear connection timeout if still pending
+    if (this._connectTimeout) {
+      clearTimeout(this._connectTimeout);
+      this._connectTimeout = null;
+    }
+
     if (this.client) {
-      await this.client.end();
+      // Store the client reference before clearing
+      const client = this.client;
       this.client = null;
       this.connected = false;
+
+      // Destroy the socket immediately without waiting for TCP FIN
+      // This prevents Jest from hanging on open handles
+      if (client.socket) {
+        try {
+          client.socket.destroy();
+        } catch (e) {
+          // Socket might already be destroyed
+        }
+      }
+
+      // Clear all event listeners from the internal emitter
+      if (client.emitter) {
+        try {
+          client.emitter.removeAllListeners();
+        } catch (e) {
+          // Emitter might already be cleaned up
+        }
+      }
     }
   }
 
@@ -65,16 +110,34 @@ class RconBackend extends PilafBackend {
       throw new Error('Not connected to RCON server');
     }
 
+    // Create a single timeout that we can cancel
+    let timeoutId = null;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error(`RCON command timeout after ${timeout}ms`));
+      }, timeout);
+    });
+
     try {
-      // Add timeout to prevent hanging on slow/unresponsive commands
+      // Race the actual send against the timeout
       const response = await Promise.race([
         this.client.send(command),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error(`RCON command timeout after ${timeout}ms`)), timeout)
-        )
+        timeoutPromise
       ]);
+
+      // Clear timeout if command succeeded
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+
       return this._parseResponse(response);
     } catch (error) {
+      // Clear timeout on error
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
       throw new Error(`Failed to send command: ${error.message}`);
     }
   }

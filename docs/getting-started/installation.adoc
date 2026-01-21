@@ -1,0 +1,196 @@
+---
+title: Installation
+nav_order: 1
+parent: Getting Started
+---
+
+== Installation
+
+Install Pilaf to start testing your PaperMC plugins with JavaScript.
+
+=== Prerequisites
+
+Before installing Pilaf, ensure you have:
+
+* **Node.js 18+** - Pilaf requires Node.js version 18 or higher
+* **pnpm 10+** - Package manager for installing Pilaf and dependencies
+* **PaperMC Server** - A running PaperMC 1.21.8+ server with RCON enabled
+* **Docker** (optional) - For running PaperMC in containerized environments
+
+=== Project Setup
+
+==== For New Projects
+
+Create a new directory for your tests:
+
+[source,bash]
+----
+mkdir my-plugin-tests
+cd my-plugin-tests
+pnpm init
+----
+
+==== For Existing Plugins
+
+Add Pilaf to your existing PaperMC plugin project:
+
+[source,bash]
+----
+# In your plugin root directory
+pnpm init  # If you don't have package.json yet
+----
+
+=== Install Pilaf
+
+==== Using pnpm (Recommended)
+
+[source,bash]
+----
+pnpm add -D @pilaf/framework @pilaf/backends @pilaf/cli
+----
+
+==== Using npm
+
+[source,bash]
+----
+npm install --save-dev @pilaf/framework @pilaf/backends @pilaf/cli
+----
+
+==== Using yarn
+
+[source,bash]
+----
+yarn add --dev @pilaf/framework @pilaf/backends @pilaf/cli
+----
+
+=== Configure Jest
+
+Create or update `jest.config.js` in your project root:
+
+[source,javascript]
+----
+module.exports = {
+  testMatch: ['**/*.pilaf.test.js'],
+  reporters: ['default'],
+  testTimeout: 300000, // 5 minutes for server operations
+};
+----
+
+For HTML report generation, see link:../guides/github-actions.html[GitHub Actions Integration].
+
+=== Configure PaperMC Server
+
+Ensure your PaperMC server has RCON enabled in `server.properties`:
+
+[source,properties]
+----
+# server.properties
+enable-rcon=true
+rcon.password=your_password
+rcon.port=25575
+broadcast-rcon-to-ops=false
+----
+
+=== Environment Variables
+
+Set these environment variables for your tests.
+
+==== Local Development
+
+Create a `.env` file in your project root (add to `.gitignore`):
+
+[source,bash]
+----
+# .env
+RCON_HOST=localhost
+RCON_PORT=25575
+RCON_PASSWORD=your_password
+
+MC_HOST=localhost
+MC_PORT=25565
+----
+
+Load the variables in your shell:
+
+[source,bash]
+----
+# macOS/Linux
+source .env
+
+# Or export directly
+export RCON_HOST=localhost
+export RCON_PORT=25575
+export RCON_PASSWORD=your_password
+export MC_HOST=localhost
+export MC_PORT=25565
+----
+
+==== GitHub Actions
+
+When using GitHub Actions, these are set automatically in the workflow:
+
+[source,yaml]
+----
+- name: Run Pilaf tests
+  env:
+    RCON_HOST: localhost
+    RCON_PORT: 25575
+    RCON_PASSWORD: pilaf_test
+    MC_HOST: localhost
+    MC_PORT: 25565
+  run: pilaf test
+----
+
+See link:../guides/github-actions.html[GitHub Actions Integration] for complete workflow setup.
+
+=== Create Test Directory
+
+Organize your tests:
+
+[source,bash]
+----
+mkdir -p tests/integration
+touch tests/integration/my-first-test.pilaf.test.js
+----
+
+=== Verify Installation
+
+[source,bash]
+----
+# Check if Pilaf CLI is available
+pilaf --version
+
+# Run help command
+pilaf --help
+----
+
+=== Example package.json
+
+Your `package.json` should include:
+
+[source,json]
+----
+{
+  "name": "my-plugin-tests",
+  "version": "1.0.0",
+  "description": "Pilaf tests for my PaperMC plugin",
+  "scripts": {
+    "test": "pilaf test",
+    "test:ci": "pilaf test --reporters=default --reporters=jest-junit"
+  },
+  "devDependencies": {
+    "@pilaf/backends": "workspace:*",
+    "@pilaf/cli": "workspace:*",
+    "@pilaf/framework": "workspace:*",
+    "@jest/globals": "^29.7.0",
+    "jest": "^29.7.0"
+  }
+}
+----
+
+=== Next Steps
+
+* link:quick-start.html[Quick Start Guide] - Run your first test in 5 minutes
+* link:architecture.html[Architecture Overview] - Understand how Pilaf works
+* link:../guides/github-actions.html[GitHub Actions Integration] - Set up CI/CD
+

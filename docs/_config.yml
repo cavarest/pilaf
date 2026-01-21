@@ -3,7 +3,7 @@
 
 # Site settings
 title: Pilaf documentation
-description: Paper Integration Layer for Automation Functions - Minecraft plugin testing framework
+description: Pure JavaScript testing framework for Minecraft PaperMC plugins
 url: https://cavarest.github.io
 baseurl: /pilaf
 
@@ -24,18 +24,6 @@ asciidoctor:
     - toc=left
     - toclevels=3
 
-# Just the Docs collections configuration
-just_the_docs:
-  collections:
-    core:
-      name: Core Topics
-    tutorials:
-      name: Tutorials
-    guides:
-      name: Guides
-    references:
-      name: Command Reference
-
 # Build settings
 plugins:
   - jekyll-asciidoc
@@ -44,16 +32,16 @@ plugins:
 
 # Collections configuration
 collections:
-  core:
-    output: true
-    permalink: /:collection/:path/
-  tutorials:
+  getting-started:
     output: true
     permalink: /:collection/:path/
   guides:
     output: true
     permalink: /:collection/:path/
-  references:
+  core:
+    output: true
+    permalink: /:collection/:path/
+  reference:
     output: true
     permalink: /:collection/:path/
 
@@ -120,13 +108,7 @@ defaults:
       layout: "default"
   - scope:
       path: ""
-      type: "core"
-    values:
-      layout: "default"
-      nav_exclude: false
-  - scope:
-      path: ""
-      type: "tutorials"
+      type: "getting-started"
     values:
       layout: "default"
       nav_exclude: false
@@ -138,7 +120,13 @@ defaults:
       nav_exclude: false
   - scope:
       path: ""
-      type: "references"
+      type: "core"
+    values:
+      layout: "default"
+      nav_exclude: false
+  - scope:
+      path: ""
+      type: "reference"
     values:
       layout: "default"
       nav_exclude: false

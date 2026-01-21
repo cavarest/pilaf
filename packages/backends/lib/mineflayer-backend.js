@@ -213,9 +213,26 @@ class MineflayerBackend extends PilafBackend {
     for (const bot of bots) {
       if (bot.entities) {
         Object.values(bot.entities).forEach(entity => {
+          // Use the built-in getCustomName() method from prismarine-entity
+          // This properly extracts custom name from entity.metadata[2]
+          let customName = null;
+          try {
+            if (typeof entity.getCustomName === 'function') {
+              const customNameObj = entity.getCustomName();
+              if (customNameObj) {
+                // ChatMessage object has a toString() method or text property
+                customName = customNameObj.toString ? customNameObj.toString() : (customNameObj.text || customNameObj);
+              }
+            }
+          } catch (e) {
+            // Ignore errors from getCustomName
+          }
+
           allEntities.push({
             id: entity.id,
             name: entity.name || entity.username,
+            displayName: entity.displayName,
+            customName: customName,
             type: entity.type,
             position: entity.position,
             health: entity.health
