@@ -2,5 +2,14 @@
   "name": "@pilaf/reporting",
   "version": "1.0.0",
   "main": "lib/index.js",
+  "files": [
+    "lib/**/*",
+    "templates/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {}
 }
