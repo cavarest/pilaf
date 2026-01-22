@@ -10,7 +10,7 @@ on:
 
 permissions:
   contents: write
-  # id-token: write  # Uncomment after first publish and trusted publishing is configured
+  id-token: write  # Required for trusted publishing
 
 jobs:
   release:
@@ -70,14 +70,13 @@ jobs:
     - name: Publish packages to npm
       run: |
         VERSION="${{ inputs.version }}"
-        echo "Publishing @pilaf packages@$VERSION to npm..."
+        echo "Publishing @pilaf packages@$VERSION to npm using OIDC..."
         # Publish in dependency order
-        pnpm --filter @pilaf/backends publish --access public --no-git-checks
-        pnpm --filter @pilaf/reporting publish --access public --no-git-checks
-        pnpm --filter @pilaf/framework publish --access public --no-git-checks
-        pnpm --filter @pilaf/cli publish --access public --no-git-checks
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        pnpm --filter @pilaf/backends publish --access public --no-git-checks --provenance
+        pnpm --filter @pilaf/reporting publish --access public --no-git-checks --provenance
+        pnpm --filter @pilaf/framework publish --access public --no-git-checks --provenance
+        pnpm --filter @pilaf/cli publish --access public --no-git-checks --provenance
+      # No NODE_AUTH_TOKEN needed - uses OIDC
 
     - name: Commit version changes
       run: |
