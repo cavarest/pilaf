@@ -1,0 +1,8 @@
+# Tests
+*.spec.js
+*.test.js
+
+# Development files
+.env
+.env.*
+*.log
