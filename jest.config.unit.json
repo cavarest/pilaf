@@ -1,0 +1,37 @@
+{
+  "testEnvironment": "node",
+  "testTimeout": 30000,
+  "testMatch": [
+    "<rootDir>/packages/**/*.spec.js",
+    "<rootDir>/packages/**/*.test.js"
+  ],
+  "moduleNameMapper": {
+    "^@pilaf/backends$": "<rootDir>/packages/backends/lib",
+    "^@pilaf/framework$": "<rootDir>/packages/framework/lib",
+    "^@pilaf/reporting$": "<rootDir>/packages/reporting/lib",
+    "^@pilaf/cli$": "<rootDir>/packages/cli/lib"
+  },
+  "collectCoverageFrom": [
+    "packages/*/lib/**/*.js",
+    "!packages/*/lib/**/*.spec.js",
+    "!packages/*/lib/**/*.test.js"
+  ],
+  "coverageDirectory": "coverage",
+  "coverageReporters": ["text", "lcov", "html"],
+  "reporters": [
+    "default",
+    [
+      "jest-junit",
+      {
+        "outputDirectory": "test-results",
+        "outputName": "junit.xml",
+        "ancestorSeparator": " › ",
+        "uniqueOutputName": false,
+        "suiteNameTemplate": "{filepath}",
+        "classNameTemplate": "{classname}",
+        "titleTemplate": "{title}",
+        "addFileAttribute": true
+      }
+    ]
+  ]
+}
