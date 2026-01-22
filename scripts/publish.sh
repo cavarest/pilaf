@@ -44,7 +44,7 @@ publish_package() {
 
     # Publish
     echo "   📤 Publishing to npm..."
-    if pnpm publish --access public; then
+    if pnpm publish --access public --no-git-checks; then
         echo "   ✅ $pkg_name published successfully!"
     else
         echo "   ❌ Failed to publish $pkg_name"
