@@ -1,350 +1,607 @@
 # Pilaf
 
-**Pure JavaScript testing framework for Minecraft PaperMC plugin development.**
+> **Pure JavaScript testing framework for Minecraft PaperMC plugin development.**
 
-Pilaf replaces complex Java integration tests with simple, readable JavaScript test scenarios using Jest and Mineflayer.
+Pilaf replaces complex Java integration tests with simple, readable JavaScript test scenarios using Jest and Mineflayer/RCON backends.
 
-## Features
+[![npm version](https://badge.fury.io/js/%40pilaf%2Fcli.svg)](https://www.npmjs.com/package/@pilaf/cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-- **Pure JavaScript** - No Java code required for testing
-- **Jest Integration** - Familiar describe/it syntax with full Jest ecosystem
-- **RCON Backend** - Direct server command execution
-- **Mineflayer Backend** - Realistic player simulation for complex interactions
-- **StoryRunner** - Declarative test stories with variable storage
-- **HTML Reports** - Vue.js-powered interactive test reports
+## Why Pilaf?
 
-## Requirements
+Testing PaperMC plugins traditionally requires writing complex Java integration tests. Pilaf makes this simple by:
 
-- Node.js 18+
-- pnpm 10+
-- PaperMC Server 1.21.8+ with RCON enabled
-- Docker (optional, for containerized testing)
-
-## Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/cavarest/pilaf.git
-cd pilaf
-
-# Install dependencies
-pnpm install
-
-# Build all packages
-pnpm build
-```
+- **Writing tests in JavaScript** - No Java compilation, no plugin jar dependencies
+- **Using familiar Jest syntax** - `describe`, `it`, `expect` - same as your frontend tests
+- **Testing against real servers** - Mineflayer bot players or RCON for command execution
+- **Getting instant feedback** - Run tests locally while developing
+- **Beautiful HTML reports** - Share test results with your team
 
 ## Quick Start
 
-### 1. Configure Your Server
-
-Ensure your PaperMC server has RCON enabled in `server.properties`:
-
-```properties
-enable-rcon=true
-rcon.password=your_password
-rcon.port=25575
-broadcast-rcon-to-ops=false
-```
-
-### 2. Set Environment Variables
-
 ```bash
-export RCON_HOST=localhost
-export RCON_PORT=25575
-export RCON_PASSWORD=your_password
-export MC_HOST=localhost
-export MC_PORT=25565
+# Install Pilaf CLI
+pnpm add -D @pilaf/cli
+
+# Or install individual packages
+pnpm add -D @pilaf/framework @pilaf/backends @pilaf/reporting
 ```
 
-### 3. Write a Test
+### Your First Test
 
-Create `my-first-test.pilaf.test.js`:
+Create `tests/basic-command.pilaf.test.js`:
 
 ```javascript
 const { describe, it, expect } = require('@jest/globals');
 const { StoryRunner } = require('@pilaf/framework');
 
-describe('My Plugin Tests', () => {
-  it('should execute RCON commands', async () => {
+describe('My Plugin', () => {
+  it('should execute my custom command', async () => {
     const runner = new StoryRunner();
 
-    const story = {
-      name: 'Basic RCON Test',
+    const result = await runner.execute({
+      name: 'Basic command test',
       setup: {
         server: { type: 'paper', version: '1.21.8' }
       },
       steps: [
         {
-          name: 'Get server version',
+          name: 'Make player an operator',
           action: 'execute_command',
-          command: 'version'
+          command: 'op TestPlayer'
+        },
+        {
+          name: 'Execute my plugin command',
+          action: 'execute_player_command',
+          player: 'TestPlayer',
+          command: '/myplugin hello'
         }
       ],
       teardown: { stop_server: false }
-    };
+    });
 
-    const result = await runner.execute(story);
     expect(result.success).toBe(true);
   });
 });
 ```
 
-### 4. Run Tests
+### Configure Jest
 
-```bash
-# Run all Pilaf tests
-pnpm test
+Add to your `jest.config.js`:
 
-# Run specific test file
-pnpm test my-first-test.pilaf.test.js
-
-# Run with verbose output
-pnpm test --verbose
-
-# Run for CI (generates JUnit XML)
-pnpm test:ci
+```javascript
+module.exports = {
+  testMatch: ['**/*.pilaf.test.js'],
+  testTimeout: 300000, // 5 minutes for server operations
+  reporters: [
+    'default',
+    ['@pilaf/framework/lib/reporters/pilaf-reporter.js', {
+      outputPath: 'target/pilaf-reports/index.html',
+      suiteName: 'My Plugin Tests'
+    }]
+  ]
+};
 ```
 
-## Generating HTML Reports
-
-Generate interactive HTML reports from your tests:
+### Run Tests
 
 ```bash
-# Generate report from examples/
-pnpm test:report
-
-# The report will be saved to:
-# target/pilaf-reports/index.html
-```
-
-Open the report in your browser:
-```bash
-# macOS
-open target/pilaf-reports/index.html
-
-# Linux
-xdg-open target/pilaf-reports/index.html
-
-# Windows
-start target/pilaf-reports/index.html
-```
-
-## Running Tests
-
-### Quick Start (Run with Docker)
-
-```bash
-# Start server and run all tests
-./run-tests.sh
-
-# Start server and run specific test
-./run-tests.sh tests/player-integration.pilaf.test.js
-
-# Start server and generate report
-./run-tests.sh pnpm test:report
-```
-
-**Configuration** (single source of truth):
-- All ports and settings defined in `.env.example` (defaults)
-- `docker-compose.dev.yml` reads from environment variables
-- `run-tests.sh` reads from environment variables
-- **Works out of the box** - no setup needed!
-
-**Default Dev Ports** (to avoid conflicts with production servers):
-- Minecraft: `localhost:25566` (instead of default 25565)
-- RCON: `localhost:25576` (instead of default 25575)
-
-**Optional:** Customize by creating `.env`:
-```bash
-# Only create .env if you need to change defaults
-cp .env.example .env
-
-# Then edit .env to change ports
-MC_PORT=25570
-RCON_PORT=25575
-```
-
-The script will:
-1. Start a PaperMC server in Docker
-2. Wait for it to be ready (60-90 seconds)
-3. Run your tests
-4. Leave the server running for more tests
-
-Stop the server when done:
-```bash
-docker-compose -f docker-compose.dev.yml down
-```
-
-### Manual Server Setup
-
-If you have your own PaperMC server:
-
-1. Enable RCON in `server.properties`:
-```properties
-enable-rcon=true
-rcon.password=cavarest
-rcon.port=25575
-```
-
-2. Set environment variables:
-```bash
+# Set up your environment (or use .env file)
 export RCON_HOST=localhost
 export RCON_PORT=25575
-export RCON_PASSWORD=cavarest
-export MC_HOST=localhost
-export MC_PORT=25565
-```
+export RCON_PASSWORD=your_password
 
-3. Run tests:
-```bash
+# Run tests
 pnpm test
+
+# Generate HTML report
+pnpm test --reporters=default --reporters=@pilaf/framework/lib/reporters/pilaf-reporter.js
 ```
 
-## Example Tests
+---
 
-See the `examples/` directory for complete examples:
+## Writing Stories
 
-- `basic-rcon.example.pilaf.test.js` - RCON commands
-- `player-interaction.example.pilaf.test.js` - Player chat and movement
-- `entity-interaction.example.pilaf.test.js` - Entity spawning and lifecycle
-- `inventory-testing.example.pilaf.test.js` - Item giving and inventory checks
+Stories are declarative test scenarios that define setup, steps, and teardown.
 
-## Test Reports
+### Story Structure
 
-Pilaf generates multiple types of test reports:
+```javascript
+const story = {
+  // Human-readable name
+  name: 'My Test Story',
 
-- **Console Output** - Real-time test results in terminal
-- **JUnit XML** - `test-results/junit.xml` for CI/CD integration
-- **HTML Reports** - `target/pilaf-reports/index.html` interactive reports
+  // Server and player setup
+  setup: {
+    server: {
+      type: 'paper',      // Server type
+      version: '1.21.8',  // Minecraft version
+      rcon: {             // RCON connection
+        host: 'localhost',
+        port: 25575,
+        password: 'your_password'
+      }
+    },
+    players: [
+      {
+        name: 'TestPlayer',  // Internal reference name
+        username: 'TestPlayer',  // Minecraft username
+        auth: 'offline'     // Authentication type
+      }
+    ]
+  },
 
-### Generating HTML Reports
+  // Test steps executed in sequence
+  steps: [
+    {
+      name: 'Step description',
+      action: 'action_name',
+      // action-specific parameters...
+    }
+  ],
+
+  // Cleanup after test
+  teardown: {
+    stop_server: false,  // Keep server running for more tests
+    disconnect_players: true
+  }
+};
+```
+
+### Available Actions
+
+#### Server Actions
+
+| Action | Description | Parameters |
+|--------|-------------|------------|
+| `execute_command` | Execute RCON command | `command` (string) |
+| `wait` | Pause execution | `duration` (ms) |
+| `assert` | Make assertion | `condition`, `expected` |
+
+#### Player Actions (Mineflayer only)
+
+| Action | Description | Parameters |
+|--------|-------------|------------|
+| `execute_player_command` | Execute command as player | `player`, `command` |
+| `chat` | Send chat message | `player`, `message` |
+| `move_forward` | Move player forward | `player`, `duration` (ms) |
+| `login` / `logout` | Reconnect/disconnect player | `player` |
+| `respawn` | Respawn player | `player` |
+
+#### Entity Actions (Mineflayer only)
+
+| Action | Description | Parameters |
+|--------|-------------|------------|
+| `get_entities` | Get nearby entities | `player`, `store_as` |
+| `get_entity_location` | Get entity position | `entity`, `store_as` |
+| `kill_entity` | Kill an entity | `entity` |
+
+#### Inventory Actions (Mineflayer only)
+
+| Action | Description | Parameters |
+|--------|-------------|------------|
+| `get_player_inventory` | Get inventory contents | `player`, `store_as` |
+| `give_item` | Give item to player | `player`, `item`, `count` |
+
+#### State Actions
+
+| Action | Description | Parameters |
+|--------|-------------|------------|
+| `get_player_location` | Get player position | `player`, `store_as` |
+| `calculate_distance` | Calculate distance | `from`, `to`, `store_as` |
+
+### Using Stored Values
+
+Store results from actions and use them later:
+
+```javascript
+const story = {
+  name: 'Using stored values',
+  setup: {
+    server: { type: 'paper', version: '1.21.8' },
+    players: [{ name: 'P1', username: 'Player1' }]
+  },
+  steps: [
+    {
+      name: 'Get player position',
+      action: 'get_player_location',
+      player: 'P1',
+      store_as: 'start_position'  // Store the result
+    },
+    {
+      name: 'Move player forward',
+      action: 'move_forward',
+      player: 'P1',
+      duration: 1000
+    },
+    {
+      name: 'Get new position',
+      action: 'get_player_location',
+      player: 'P1',
+      store_as: 'end_position'
+    },
+    {
+      name: 'Calculate distance traveled',
+      action: 'calculate_distance',
+      from: '{start_position}',  // Reference with {}
+      to: '{end_position}',
+      store_as: 'distance'
+    },
+    {
+      name: 'Verify distance',
+      action: 'assert',
+      condition: '{distance} > 0',  // Use stored value
+      expected: true
+    }
+  ],
+  teardown: { stop_server: false }
+};
+```
+
+### Complete Example
+
+```javascript
+const { describe, it, expect } = require('@jest/globals');
+const { StoryRunner } = require('@pilaf/framework');
+
+describe('Teleport Plugin', () => {
+  it('should teleport player to spawn', async () => {
+    const runner = new StoryRunner();
+
+    const result = await runner.execute({
+      name: 'Teleport to spawn test',
+      setup: {
+        server: {
+          type: 'paper',
+          version: '1.21.8',
+          rcon: {
+            host: process.env.RCON_HOST || 'localhost',
+            port: parseInt(process.env.RCON_PORT) || 25575,
+            password: process.env.RCON_PASSWORD || 'dragon'
+          }
+        },
+        players: [
+          {
+            name: 'Steve',
+            username: 'TestSteve',
+            auth: 'offline'
+          }
+        ]
+      },
+      steps: [
+        {
+          name: 'Teleport player away from spawn',
+          action: 'execute_command',
+          command: 'tp TestSteve 100 64 100'
+        },
+        {
+          name: 'Get current position',
+          action: 'get_player_location',
+          player: 'Steve',
+          store_as: 'away_position'
+        },
+        {
+          name: 'Execute spawn teleport command',
+          action: 'execute_player_command',
+          player: 'Steve',
+          command: '/spawn'
+        },
+        {
+          name: 'Wait for teleport',
+          action: 'wait',
+          duration: 500
+        },
+        {
+          name: 'Get spawn position',
+          action: 'get_player_location',
+          player: 'Steve',
+          store_as: 'spawn_position'
+        },
+        {
+          name: 'Verify at spawn coordinates',
+          action: 'assert',
+          condition: '{spawn_position}.x === 0 && {spawn_position}.z === 0',
+          expected: true
+        }
+      ],
+      teardown: { stop_server: false }
+    });
+
+    expect(result.success).toBe(true);
+  });
+});
+```
+
+---
+
+## Backends
+
+Pilaf supports multiple backends for different testing needs:
+
+### RCON Backend
+
+Best for server-side command testing:
+
+```javascript
+{
+  setup: {
+    server: {
+      rcon: {
+        host: 'localhost',
+        port: 25575,
+        password: 'password'
+      }
+    }
+  }
+}
+```
+
+**Features:**
+- Execute server commands
+- Query server state
+- Fast and lightweight
+
+### Mineflayer Backend
+
+Best for player interaction testing:
+
+```javascript
+{
+  setup: {
+    server: {
+      type: 'paper',
+      version: '1.21.8'
+    },
+    players: [{
+      name: 'TestPlayer',
+      username: 'BotPlayer',
+      auth: 'offline'
+    }]
+  }
+}
+```
+
+**Features:**
+- Realistic player simulation
+- Chat, movement, inventory
+- Entity interactions
+
+---
+
+## Configuration
+
+### Environment Variables
 
 ```bash
-# Generate HTML report from examples
-pnpm test:report
+# RCON Connection
+RCON_HOST=localhost
+RCON_PORT=25575
+RCON_PASSWORD=your_password
+
+# Minecraft Server
+MC_HOST=localhost
+MC_PORT=25565
+
+# Authentication
+MC_AUTH=offline  # or 'microsoft' for real auth
+```
+
+### .env File
+
+Create `.env` in your project root:
+
+```env
+RCON_HOST=localhost
+RCON_PORT=25575
+RCON_PASSWORD=pilaf_test
+MC_HOST=localhost
+MC_PORT=25566
+MC_AUTH=offline
+```
+
+### Jest Configuration
+
+```javascript
+// jest.config.js
+module.exports = {
+  testMatch: ['**/*.pilaf.test.js'],
+  testTimeout: 300000,
+  moduleNameMapper: {
+    '^@pilaf/backends$': '<rootDir>/node_modules/@pilaf/backends/lib',
+    '^@pilaf/framework$': '<rootDir>/node_modules/@pilaf/framework/lib',
+    '^@pilaf/reporting$': '<rootDir>/node_modules/@pilaf/reporting/lib'
+  },
+  reporters: [
+    'default',
+    ['@pilaf/framework/lib/reporters/pilaf-reporter.js', {
+      outputPath: 'target/pilaf-reports/index.html',
+      suiteName: 'Plugin Tests'
+    }]
+  ]
+};
+```
+
+---
+
+## HTML Reports
+
+Pilaf generates interactive HTML reports showing:
+- All test stories and their steps
+- Action/response pairs for each step
+- Console logs per story
+- Execution time and status
+
+![HTML Report Example](https://cavarest.github.io/pilaf/images/report-screenshot.png)
+
+Generate reports:
+
+```bash
+# Run with HTML report generation
+pnpm test --reporters=default --reporters=@pilaf/framework/lib/reporters/pilaf-reporter.js
 
 # View the report
 open target/pilaf-reports/index.html
 ```
 
-### Custom Report Configuration
+---
 
-Create `jest.config.report.json` for custom report settings:
+## Docker Setup (Optional)
 
-```json
-{
-  "reporters": [
-    [
-      "<rootDir>/packages/framework/lib/reporters/pilaf-reporter.js",
-      {
-        "outputPath": "target/pilaf-reports/my-report.html",
-        "suiteName": "My Custom Suite"
-      }
-    ]
-  ]
-}
-```
-
-## Project Structure
-
-```
-pilaf/
-├── packages/
-│   ├── backends/      # RCON and Mineflayer implementations
-│   ├── cli/           # Command-line interface
-│   ├── framework/     # Jest integration + StoryRunner
-│   └── reporting/     # Vue.js HTML report generation
-├── tests/             # Integration tests
-│   ├── stories/       # Reusable story objects
-│   └── *.pilaf.test.js # Test files
-├── examples/          # Example tests
-└── docs/              # Full documentation
-```
-
-## Story Structure
-
-Pilaf tests use declarative "stories":
-
-```javascript
-{
-  name: 'Story Name',
-  setup: {
-    server: { type: 'paper', version: '1.21.8' },
-    players: [{ name: 'Player', username: 'player1' }]
-  },
-  steps: [
-    {
-      name: 'Step name',
-      action: 'execute_command',
-      command: 'op player1'
-    },
-    {
-      name: 'Store result',
-      action: 'get_player_location',
-      player: 'player1',
-      store_as: 'position'  // Store for later use
-    },
-    {
-      name: 'Use stored value',
-      action: 'calculate_distance',
-      from: '{position}',  // Reference with {}
-      to: '{new_position}'
-    }
-  ],
-  teardown: { stop_server: false }
-}
-```
-
-## Available Actions
-
-- `execute_command` - Execute RCON command
-- `chat` - Send chat message as player
-- `execute_player_command` - Execute player command
-- `move_forward` - Move player forward
-- `wait` - Pause execution
-- `get_entities` - Get entity list
-- `get_player_inventory` - Get player inventory
-- `get_player_location` - Get player position
-- `get_entity_location` - Get entity position
-- `calculate_distance` - Calculate distance between positions
-- `login` / `logout` - Reconnect/disconnect player
-- `kill` / `respawn` - Player lifecycle
-- `assert` - Make assertions
-
-See [docs/guides/actions-reference.html](docs/guides/actions-reference.html) for complete reference.
-
-## Documentation
-
-Full documentation is available in the `docs/` directory:
-
-- [Getting Started](docs/getting-started/)
-- [Guides](docs/guides/)
-- [Core Topics](docs/core/)
-- [API Reference](docs/reference/)
-
-Or view online: https://cavarest.github.io/pilaf/
-
-## Development
+Use Docker to run a test server:
 
 ```bash
-# Install dependencies
-pnpm install
+# Start PaperMC server
+docker-compose -f docker-compose.test.yml up -d
 
 # Run tests
 pnpm test
 
-# Lint code
-pnpm lint
-
-# Build packages
-pnpm build
+# Stop server
+docker-compose -f docker-compose.test.yml down
 ```
+
+Example `docker-compose.test.yml`:
+
+```yaml
+version: '3.8'
+services:
+  minecraft:
+    image: itzg/minecraft-server
+    environment:
+      EULA: 'TRUE'
+      TYPE: 'PAPER'
+      VERSION: '1.21.8'
+      RCON_PASSWORD: 'pilaf_test'
+      ENABLE_RCON: 'true'
+    ports:
+      - '25565:25565'
+      - '25575:25575'
+```
+
+---
+
+## Examples
+
+Check the `examples/` directory for complete examples:
+
+- **basic-rcon** - Simple RCON command testing
+- **player-interaction** - Player chat and commands
+- **entity-interaction** - Entity spawning and management
+- **inventory-testing** - Item manipulation
+
+---
+
+## GitHub Actions Integration
+
+Add CI/CD to your plugin repository:
+
+```yaml
+# .github/workflows/pilaf-tests.yml
+name: Pilaf Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  pilaf-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    services:
+      minecraft:
+        image: itzg/minecraft-server
+        ports:
+          - 25565:25565
+          - 25575:25575
+        env:
+          EULA: 'TRUE'
+          TYPE: 'PAPER'
+          VERSION: '1.21.8'
+          RCON_PASSWORD: 'pilaf_test'
+          ENABLE_RCON: 'true'
+        options: >-
+          --health-cmd "mcstatus localhost:25565 ping"
+          --health-interval 10s
+          --health-timeout 60s
+          --health-retries 10
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 8
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Wait for server
+      run: |
+        for i in {1..60}; do
+          if mcstatus localhost:25565 ping &>/dev/null; then
+            echo "Server is ready!"
+            break
+          fi
+          echo "Waiting for server... ($i/60)"
+          sleep 1
+        done
+
+    - name: Run Pilaf tests
+      env:
+        RCON_HOST: localhost
+        RCON_PORT: 25575
+        RCON_PASSWORD: pilaf_test
+      run: pnpm test
+
+    - name: Upload HTML report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: pilaf-report
+        path: target/pilaf-reports/
+```
+
+---
+
+## Documentation
+
+Full documentation: [https://cavarest.github.io/pilaf/](https://cavarest.github.io/pilaf/)
+
+- [Getting Started](https://cavarest.github.io/pilaf/docs/getting-started/)
+- [Story Writing Guide](https://cavarest.github.io/pilaf/docs/guides/writing-stories.html)
+- [Actions Reference](https://cavarest.github.io/pilaf/docs/guides/actions-reference.html)
+- [GitHub Actions Setup](https://cavarest.github.io/pilaf/docs/guides/github-actions.html)
+
+---
+
+## Packages
+
+```
+@pilaf/cli         # Command-line interface
+@pilaf/framework   # Jest integration + StoryRunner
+@pilaf/backends    # RCON and Mineflayer backends
+@pilaf/reporting   # HTML report generation
+```
+
+---
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT © Pilaf Team
 
-## Contributing
+---
 
-Contributions welcome! Please read our contributing guidelines and submit pull requests to https://github.com/cavarest/pilaf/pull/new/main
+## Links
+
+- [GitHub](https://github.com/cavarest/pilaf)
+- [npm](https://www.npmjs.com/package/@pilaf/cli)
+- [Documentation](https://cavarest.github.io/pilaf/)
+- [Issues](https://github.com/cavarest/pilaf/issues)
