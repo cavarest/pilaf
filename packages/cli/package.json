@@ -5,6 +5,9 @@
   "bin": {
     "pilaf": "./bin/pilaf.js"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@pilaf/framework": "workspace:*",
     "commander": "^12.0.0",

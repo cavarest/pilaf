@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 1.0.1, 2.0.0)'
+        description: 'Version to release (e.g., 1.0.0, 1.0.1, 2.0.0)'
         required: true
         type: string
 
 permissions:
   contents: write
-  id-token: write
+  # id-token: write  # Uncomment after first publish and trusted publishing is configured
 
 jobs:
   release:
@@ -56,28 +56,40 @@ jobs:
         git config --global user.email "11865+ronaldtse@users.noreply.github.com"
         git config --global user.name "GitHub Action"
 
-    - name: Update version in package.json
+    - name: Update version in all packages
       run: |
         VERSION="${{ inputs.version }}"
         echo "Setting version to $VERSION"
-        npm version $VERSION --no-git-tag-version --allow-same-version
+        pnpm -r exec npm version $VERSION --no-git-tag-version --allow-same-version
 
     - name: Run tests before publishing
       run: |
         echo "Running tests..."
         pnpm test:examples
-        # pnpm test:ci  # Uncomment to run full test suite
 
-    - name: Publish to npm using Trusted Publishing
+    - name: Publish packages to npm
       run: |
         VERSION="${{ inputs.version }}"
-        echo "Publishing @cavarest/pilaf@$VERSION to npm..."
-        pnpm publish --access public --no-git-checks
+        echo "Publishing @pilaf packages@$VERSION to npm..."
+        # Publish in dependency order
+        pnpm --filter @pilaf/backends publish --access public --no-git-checks
+        pnpm --filter @pilaf/reporting publish --access public --no-git-checks
+        pnpm --filter @pilaf/framework publish --access public --no-git-checks
+        pnpm --filter @pilaf/cli publish --access public --no-git-checks
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    - name: Commit version changes
+      run: |
+        VERSION="${{ inputs.version }}"
+        git add "packages/*/package.json"
+        git commit -m "chore: release v$VERSION"
 
     - name: Create Git tag
       run: |
         VERSION="${{ inputs.version }}"
         git tag -a "v$VERSION" -m "Release v$VERSION"
+        git push origin main
         git push origin "v$VERSION"
 
     - name: Create GitHub Release
@@ -95,7 +107,13 @@ jobs:
           ### Installation
 
           ```bash
-          pnpm add -D @cavarest/pilaf
+          # Install the CLI
+          pnpm add -D @pilaf/cli
+
+          # Or install individual packages
+          pnpm add -D @pilaf/framework
+          pnpm add -D @pilaf/backends
+          pnpm add -D @pilaf/reporting
           ```
 
           ### Documentation
@@ -111,6 +129,9 @@ jobs:
     - name: Verify release on npm
       run: |
         VERSION="${{ inputs.version }}"
-        echo "Verifying @cavarest/pilaf@$VERSION is available on npm..."
+        echo "Verifying packages are available on npm..."
         sleep 30  # Wait for npm registry to propagate
-        npm view @cavarest/pilaf@$VERSION
+        npm view @pilaf/backends@$VERSION
+        npm view @pilaf/reporting@$VERSION
+        npm view @pilaf/framework@$VERSION
+        npm view @pilaf/cli@$VERSION

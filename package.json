@@ -1,7 +1,7 @@
 {
-  "name": "@cavarest/pilaf",
+  "name": "@pilaf/root",
   "version": "1.0.0",
-  "private": false,
+  "private": true,
   "description": "Pure JS testing framework for Minecraft PaperMC plugins",
   "keywords": [
     "minecraft",
@@ -19,25 +19,6 @@
     "type": "git",
     "url": "https://github.com/cavarest/pilaf.git"
   },
-  "main": "packages/framework/lib/index.js",
-  "bin": {
-    "pilaf": "./packages/cli/bin/pilaf.js"
-  },
-  "exports": {
-    ".": "./packages/framework/lib/index.js",
-    "./backends": "./packages/backends/lib/index.js",
-    "./reporting": "./packages/reporting/lib/index.js"
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
-  "files": [
-    "packages/*/lib/**/*",
-    "packages/*/bin/**/*",
-    "LICENSE",
-    "README.md"
-  ],
   "scripts": {
     "test": "jest --testMatch='**/*.pilaf.test.js' --verbose --runInBand",
     "test:ci": "jest --testMatch='**/*.pilaf.test.js' --ci --testResultsProcessor='jest-junit' --runInBand",

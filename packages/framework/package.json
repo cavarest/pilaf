@@ -2,6 +2,9 @@
   "name": "@pilaf/framework",
   "version": "1.0.0",
   "main": "lib/index.js",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@pilaf/backends": "workspace:*",
     "@pilaf/reporting": "workspace:*",
