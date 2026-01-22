@@ -2,9 +2,11 @@
 set -e
 
 VERSION="1.0.0"
-PILAF_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PILAF_ROOT="$(dirname "$SCRIPT_DIR")"
 
 echo "🚀 Publishing Pilaf v$VERSION to npm..."
+echo "Pilaf root: $PILAF_ROOT"
 echo ""
 
 # Check if logged in to npm
@@ -22,8 +24,9 @@ publish_package() {
     local pkg_name="$2"
 
     echo "📦 Publishing $pkg_name..."
+    echo "   Path: $pkg_path"
 
-    cd "$pkg_path"
+    pushd "$pkg_path" > /dev/null || exit 1
 
     # Pack first to verify contents
     echo "   🔍 Verifying package contents..."
@@ -34,6 +37,7 @@ publish_package() {
     if tar -tzf "$tarball_name" 2>/dev/null | grep -qE "\.spec\.js|\.test\.js"; then
         echo "   ❌ ERROR: Test files found in package! Aborting."
         rm -f "$tarball_name"
+        popd > /dev/null
         exit 1
     fi
     rm -f "$tarball_name"
@@ -44,10 +48,11 @@ publish_package() {
         echo "   ✅ $pkg_name published successfully!"
     else
         echo "   ❌ Failed to publish $pkg_name"
+        popd > /dev/null
         exit 1
     fi
 
-    cd "$PILAF_ROOT"
+    popd > /dev/null
     echo ""
 }
 
