@@ -47,21 +47,32 @@ jobs:
     - name: Run unit tests
       run: |
         echo "🧪 Running Pilaf unit tests..."
-        pnpm -r --filter "@pilaf/*" test
+        pnpm exec jest --config=jest.config.unit.json --ci
         echo "✅ Unit tests completed."
 
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action@v2
       if: always() && !cancelled()
       with:
-        files: "test-results/**/*.xml"
+        files: "test-results/junit.xml"
         check_name: Unit Test Report
         comment_mode: "off"
         fail_on: "test failures"
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: unit-test-results
+        path: test-results/junit.xml
 
     - name: Display test summary
       if: always()
       run: |
         echo "## Unit Test Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Unit tests completed." >> $GITHUB_STEP_SUMMARY
+        if [ -f test-results/junit.xml ]; then
+          echo "✅ Unit tests completed and results published." >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ No test results found." >> $GITHUB_STEP_SUMMARY
+        fi
