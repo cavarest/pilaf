@@ -99,6 +99,7 @@ jobs:
       run: pnpm test:unit
 
     - name: Publish packages to npm public registry
+      if: inputs.bump != 'no-bump'
       run: |
         echo "Publishing @pilaf packages v${{ steps.version.outputs.version }} to npm..."
         mkdir -p release-tarballs
@@ -108,6 +109,17 @@ jobs:
           npm pack --pack-destination ../../release-tarballs
           # Publish to npm public registry
           npm publish --access public
+          cd ../..
+        done
+
+    - name: Create tarballs for GitHub Release (no-bump mode)
+      if: inputs.bump == 'no-bump'
+      run: |
+        echo "Creating tarballs for v${{ steps.version.outputs.version }}..."
+        mkdir -p release-tarballs
+        for pkg in backends reporting framework cli; do
+          cd packages/$pkg
+          npm pack --pack-destination ../../release-tarballs
           cd ../..
         done
 
@@ -152,6 +164,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Verify release on npm
+      if: inputs.bump != 'no-bump'
       run: |
         VERSION="${{ steps.version.outputs.version }}"
         echo "Verifying packages are available on npm..."
