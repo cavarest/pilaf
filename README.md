@@ -7,6 +7,8 @@ Pilaf replaces complex Java integration tests with simple, readable JavaScript t
 [![npm version](https://badge.fury.io/js/%40pilaf%2Fcli.svg)](https://www.npmjs.com/package/@pilaf/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+[![Documentation](https://img.shields.io/badge/Website-pilaf_documentation-blue.svg)](https://cavarest.github.io/pilaf/)
+
 ## Why Pilaf?
 
 Testing PaperMC plugins traditionally requires writing complex Java integration tests. Pilaf makes this simple by:
