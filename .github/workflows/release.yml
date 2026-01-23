@@ -18,8 +18,8 @@ on:
         type: string
 
 permissions:
-  contents: write
   id-token: write
+  contents: write
 
 jobs:
   release:
@@ -40,7 +40,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
 
     - name: Get pnpm store directory
       id: pnpm-cache
@@ -91,6 +91,21 @@ jobs:
 
     - name: Run tests
       run: pnpm test:unit
+
+    - name: Debug OIDC environment
+      run: |
+        echo "=== OIDC Environment Variables ==="
+        env | grep -i oidc || echo "No OIDC vars found"
+        echo ""
+        echo "=== Actions ID Token Variables ==="
+        env | grep ACTIONS_ID_TOKEN || echo "No ACTIONS_ID_TOKEN vars found"
+        echo ""
+        echo "=== npm version ==="
+        npm --version
+        echo ""
+        echo "=== .npmrc contents ==="
+        cat ~/.npmrc 2>/dev/null || echo "No .npmrc found"
+        echo ""
 
     - name: Publish packages to npm
       run: |
