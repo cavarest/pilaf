@@ -109,8 +109,8 @@ jobs:
 
     - name: Run tests before publishing
       run: |
-        echo "Running tests..."
-        pnpm test:examples
+        echo "Running unit tests..."
+        pnpm test:unit
 
     - name: Publish packages to npm
       run: |
