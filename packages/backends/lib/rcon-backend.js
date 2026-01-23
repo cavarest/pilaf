@@ -20,6 +20,7 @@ class RconBackend extends PilafBackend {
    * @param {number} config.port - RCON port
    * @param {string} config.password - RCON password
    * @param {number} [config.timeout=30000] - Connection timeout in milliseconds
+   * @param {number} [config.maxRetries=5] - Max connection retry attempts
    * @returns {Promise<void>}
    */
   async connect(config) {
@@ -27,38 +28,53 @@ class RconBackend extends PilafBackend {
     const port = config?.port || 25575;
     const password = config?.password || '';
     const timeout = config?.timeout || 30000; // 30 second default timeout
+    const maxRetries = config?.maxRetries || 5; // Retry up to 5 times
 
-    try {
-      // Add timeout to prevent hanging on slow/unresponsive RCON servers
-      // Store timeout ID so we can clear it on success
-      const timeoutPromise = new Promise((_, reject) => {
-        this._connectTimeout = setTimeout(() => {
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Add timeout to prevent hanging on slow/unresponsive RCON servers
+        // Store timeout ID so we can clear it on success
+        const timeoutPromise = new Promise((_, reject) => {
+          this._connectTimeout = setTimeout(() => {
+            this._connectTimeout = null;
+            reject(new Error(`RCON connection timeout after ${timeout}ms`));
+          }, timeout);
+        });
+
+        this.client = await Promise.race([
+          Rcon.connect({ host, port, password }),
+          timeoutPromise
+        ]);
+
+        // Clear timeout if connection succeeded
+        if (this._connectTimeout) {
+          clearTimeout(this._connectTimeout);
           this._connectTimeout = null;
-          reject(new Error(`RCON connection timeout after ${timeout}ms`));
-        }, timeout);
-      });
+        }
 
-      this.client = await Promise.race([
-        Rcon.connect({ host, port, password }),
-        timeoutPromise
-      ]);
+        this.connected = true;
+        return this;
+      } catch (error) {
+        // Clean up timeout on error
+        if (this._connectTimeout) {
+          clearTimeout(this._connectTimeout);
+          this._connectTimeout = null;
+        }
 
-      // Clear timeout if connection succeeded
-      if (this._connectTimeout) {
-        clearTimeout(this._connectTimeout);
-        this._connectTimeout = null;
+        lastError = error;
+
+        // If not the last attempt, wait before retrying with exponential backoff
+        if (attempt < maxRetries) {
+          const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Max 5 seconds
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
       }
-
-      this.connected = true;
-      return this;
-    } catch (error) {
-      // Clean up timeout on error
-      if (this._connectTimeout) {
-        clearTimeout(this._connectTimeout);
-        this._connectTimeout = null;
-      }
-      throw new Error(`Failed to connect to RCON: ${error.message}`);
     }
+
+    // All retries exhausted
+    throw new Error(`Failed to connect to RCON after ${maxRetries} attempts: ${lastError.message}`);
   }
 
   /**

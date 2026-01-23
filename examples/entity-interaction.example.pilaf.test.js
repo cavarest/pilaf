@@ -19,7 +19,7 @@ describe('Entity Interaction Examples', () => {
 
     const story = {
       name: 'Entity Spawn Test',
-      description: 'Demonstrates entity spawning and query operations',
+      description: 'Demonstrates chicken spawning and query operations',
 
       setup: {
         server: { type: 'paper', version: '1.21.8' },
@@ -36,9 +36,9 @@ describe('Entity Interaction Examples', () => {
           store_as: 'initial_entities'
         },
         {
-          name: '[RCON] Spawn a zombie',
+          name: '[RCON] Spawn a chicken',
           action: 'execute_command',
-          command: 'summon zombie ~ ~1 ~'
+          command: 'summon chicken ~ ~1 ~'
         },
         {
           name: 'Wait for spawn',
@@ -52,10 +52,10 @@ describe('Entity Interaction Examples', () => {
           store_as: 'updated_entities'
         },
         {
-          name: 'Verify zombie exists',
+          name: 'Verify chicken exists',
           action: 'assert',
           condition: 'entity_exists',
-          expected: 'zombie',
+          expected: 'chicken',
           actual: '{updated_entities}'
         }
       ],
@@ -91,9 +91,9 @@ describe('Entity Interaction Examples', () => {
           store_as: 'entities_before'
         },
         {
-          name: '[RCON] Spawn named zombie',
+          name: '[RCON] Spawn named chicken',
           action: 'execute_command',
-          command: 'summon zombie ~ ~ ~ {CustomName:"TestZombie"}'
+          command: 'summon chicken ~ ~ ~ {CustomName:"TestChicken"}'
         },
         {
           name: 'Wait for spawn',
@@ -107,16 +107,16 @@ describe('Entity Interaction Examples', () => {
           store_as: 'entities_after'
         },
         {
-          name: 'Verify zombie spawned',
+          name: 'Verify chicken spawned',
           action: 'assert',
           condition: 'entity_exists',
-          expected: 'TestZombie',
+          expected: 'TestChicken',
           actual: '{entities_after}'
         },
         {
-          name: '[RCON] Kill the zombie',
+          name: '[RCON] Kill the chicken',
           action: 'execute_command',
-          command: 'kill @e[type=zombie]'
+          command: 'kill @e[type=chicken]'
         },
         {
           name: 'Wait for death and entity cleanup',
@@ -130,10 +130,10 @@ describe('Entity Interaction Examples', () => {
           store_as: 'entities_final'
         },
         {
-          name: 'Verify zombie removed',
+          name: 'Verify chicken removed',
           action: 'assert',
           condition: 'entity_not_exists',
-          expected: 'TestZombie',
+          expected: 'TestChicken',
           actual: '{entities_final}'
         }
       ],

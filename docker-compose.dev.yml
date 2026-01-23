@@ -35,9 +35,9 @@ services:
       VIEW_DISTANCE: '4'
       SIMULATION_DISTANCE: '4'
 
-      # === DISABLE ENTITY SPAWNING ===
-      SPAWN_ANIMALS: 'false'
-      SPAWN_MONSTERS: 'false'
+      # === ENTITY SPAWNING FOR TESTING ===
+      SPAWN_ANIMALS: 'true'     # Enable for entity testing
+      SPAWN_MONSTERS: 'false'   # Disable hostile mobs
       SPAWN_NPCS: 'false'
 
       # === CUSTOM FLAT WORLD LAYERS ===
