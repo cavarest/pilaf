@@ -20,6 +20,7 @@ on:
 permissions:
   id-token: write
   contents: write
+  packages: write
 
 jobs:
   release:
@@ -95,12 +96,29 @@ jobs:
     - name: Run tests
       run: pnpm test:unit
 
-    - name: Publish packages to npm
+    - name: Publish packages to npm public registry
       run: |
         echo "Publishing @pilaf packages v${{ steps.version.outputs.version }} to npm..."
+        mkdir -p release-tarballs
         for pkg in backends reporting framework cli; do
           cd packages/$pkg
+          # Create tarball for GitHub Release
+          npm pack --pack-destination ../../release-tarballs
+          # Publish to npm public registry
           npm publish --access public
+          cd ../..
+        done
+
+    - name: Publish packages to GitHub Packages
+      run: |
+        echo "Publishing @pilaf packages v${{ steps.version.outputs.version }} to GitHub Packages..."
+        # Configure npm for GitHub Packages
+        npm config set @pilaf:registry https://npm.pkg.github.com
+        npm config set //npm.pkg.github.com/:_authToken ${{ secrets.GITHUB_TOKEN }}
+
+        for pkg in backends reporting framework cli; do
+          cd packages/$pkg
+          npm publish
           cd ../..
         done
 
@@ -115,11 +133,12 @@ jobs:
         git push origin main
         git push origin "v$VERSION"
 
-    - name: Create GitHub Release
+    - name: Create GitHub Release with tarballs
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ steps.version.outputs.version }}
         name: v${{ steps.version.outputs.version }}
+        files: release-tarballs/*.tgz
         body: |
           ## Pilaf v${{ steps.version.outputs.version }}
 
@@ -131,6 +150,16 @@ jobs:
 
           # Or install individual packages
           pnpm add -D @pilaf/framework @pilaf/backends @pilaf/reporting
+          ```
+
+          ### GitHub Packages
+
+          To install from GitHub Packages:
+
+          ```bash
+          npm config set @pilaf:registry https://npm.pkg.github.com
+          npm config set //npm.pkg.github.com/:_authToken YOUR_GITHUB_TOKEN
+          pnpm add -D @pilaf/cli
           ```
 
           ### Documentation
@@ -148,5 +177,18 @@ jobs:
         echo "Verifying packages are available on npm..."
         for pkg in backends reporting framework cli; do
           timeout 60s bash -c "until npm view @pilaf/$pkg@$VERSION &>/dev/null; do sleep 2; done"
-          echo "✓ @pilaf/$pkg@$VERSION"
+          echo "✓ @pilaf/$pkg@$VERSION on npm"
+        done
+
+    - name: Verify release on GitHub Packages
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        echo "Verifying packages are available on GitHub Packages..."
+        # Configure npm for GitHub Packages
+        npm config set @pilaf:registry https://npm.pkg.github.com
+        npm config set //npm.pkg.github.com/:_authToken ${{ secrets.GITHUB_TOKEN }}
+
+        for pkg in backends reporting framework cli; do
+          timeout 60s bash -c "until npm view @pilaf/$pkg@$VERSION &>/dev/null; do sleep 2; done"
+          echo "✓ @pilaf/$pkg@$VERSION on GitHub Packages"
         done
