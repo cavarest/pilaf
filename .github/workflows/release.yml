@@ -116,11 +116,11 @@ jobs:
       run: |
         VERSION="${{ steps.new_version.outputs.version }}"
         echo "Publishing @pilaf packages@$VERSION to npm using OIDC..."
-        # Publish in dependency order
-        pnpm --filter @pilaf/backends publish --access public --no-git-checks --provenance
-        pnpm --filter @pilaf/reporting publish --access public --no-git-checks --provenance
-        pnpm --filter @pilaf/framework publish --access public --no-git-checks --provenance
-        pnpm --filter @pilaf/cli publish --access public --no-git-checks --provenance
+        # Publish in dependency order using npm publish (required for OIDC)
+        cd packages/backends && npm publish --access public --provenance && cd ../..
+        cd packages/reporting && npm publish --access public --provenance && cd ../..
+        cd packages/framework && npm publish --access public --provenance && cd ../..
+        cd packages/cli && npm publish --access public --provenance && cd ../..
       # No NODE_AUTH_TOKEN needed - uses OIDC
 
     - name: Commit version changes
