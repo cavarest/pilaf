@@ -95,21 +95,6 @@ jobs:
     - name: Run tests
       run: pnpm test:unit
 
-    - name: Debug OIDC environment
-      run: |
-        echo "=== OIDC Environment Variables ==="
-        env | grep -i oidc || echo "No OIDC vars found"
-        echo ""
-        echo "=== Actions ID Token Variables ==="
-        env | grep ACTIONS_ID_TOKEN || echo "No ACTIONS_ID_TOKEN vars found"
-        echo ""
-        echo "=== npm version ==="
-        npm --version
-        echo ""
-        echo "=== .npmrc contents ==="
-        cat ~/.npmrc 2>/dev/null || echo "No .npmrc found"
-        echo ""
-
     - name: Publish packages to npm
       run: |
         echo "Publishing @pilaf packages v${{ steps.version.outputs.version }} to npm..."
