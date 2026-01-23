@@ -19,6 +19,37 @@ services:
       DEBUG: 'false'
       CONNECTION_TIMEOUT_THRESHOLD: '120000'
       WHITELIST: ''
+
+      # === DETERMINISTIC FLAT WORLD FOR TESTING ===
+      LEVEL: 'pilaf-test'
+      LEVEL_TYPE: 'FLAT'
+      SEED: '1234567890'
+      GENERATE_STRUCTURES: 'false'
+      MAX_WORLD_SIZE: '50'
+      MODE: 'creative'
+      DIFFICULTY: 'peaceful'
+      PVP: 'false'
+      ALLOW_NETHER: 'false'
+
+      # === PERFORMANCE FOR TESTING ===
+      VIEW_DISTANCE: '4'
+      SIMULATION_DISTANCE: '4'
+
+      # === DISABLE ENTITY SPAWNING ===
+      SPAWN_ANIMALS: 'false'
+      SPAWN_MONSTERS: 'false'
+      SPAWN_NPCS: 'false'
+
+      # === CUSTOM FLAT WORLD LAYERS ===
+      GENERATOR_SETTINGS: >-
+        {
+          "layers": [
+            {"block": "minecraft:bedrock", "height": 1},
+            {"block": "minecraft:dirt", "height": 2},
+            {"block": "minecraft:grass_block", "height": 1}
+          ],
+          "biome": "minecraft:plains"
+        }
     volumes:
       - mc-data:/data
     healthcheck:
