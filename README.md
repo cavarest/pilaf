@@ -573,61 +573,62 @@ jobs:
 
 ## Releasing
 
-### Option 1: Using GitHub Actions (Recommended)
+### Using GitHub Actions (Recommended)
 
-Pilaf uses npm trusted publishing for secure, token-less releases:
+Pilaf uses npm trusted publishing for secure, token-less releases. The workflow automatically calculates and bumps versions based on semver:
 
+**Via GitHub CLI:**
 ```bash
-# Trigger release via GitHub CLI
-gh workflow run release.yml -f version=1.0.1
+# Patch release (1.0.0 → 1.0.1)
+gh workflow run release.yml -f bump=patch
 
-# Or via the GitHub UI:
-# https://github.com/cavarest/pilaf/actions/workflows/release.yml
-# Click "Run workflow" → Enter version → "Run workflow"
+# Minor release (1.0.0 → 1.1.0)
+gh workflow run release.yml -f bump=minor
+
+# Major release (1.0.0 → 2.0.0)
+gh workflow run release.yml -f bump=major
+
+# Custom version
+gh workflow run release.yml -f bump=custom -f custom_version=1.2.3
 ```
 
+**Via GitHub UI:**
+1. Go to: https://github.com/cavarest/pilaf/actions/workflows/release.yml
+2. Click "Run workflow"
+3. Choose bump type: `patch`, `minor`, `major`, or `custom`
+4. If `custom`, enter the version number
+5. Click "Run workflow"
+
 The workflow will:
+- ✅ Auto-calculate new version from current version
 - ✅ Update version in all `@pilaf/*` packages
 - ✅ Run tests
 - ✅ Publish packages to npm using OIDC
 - ✅ Create git tag and push
 - ✅ Create GitHub release
 
-### Option 2: Manual Release
+### Manual Release
 
 For manual releases or first-time setup:
 
 ```bash
 # 1. Bump version for all packages
-VERSION="1.0.1"
-pnpm -r exec npm version $VERSION --no-git-tag-version
+pnpm -r exec npm version patch   # 1.0.0 → 1.0.1
+# or
+pnpm -r exec npm version minor   # 1.0.0 → 1.1.0
+# or
+pnpm -r exec npm version major   # 1.0.0 → 2.0.0
+# or specific version
+VERSION="1.0.1" pnpm -r exec npm version $VERSION --no-git-tag-version
 
 # 2. Run the publish script
 ./scripts/publish.sh
-
-# Or publish manually in order:
-cd packages/backends && pnpm publish --access public --no-git-checks && cd ../..
-cd packages/reporting && pnpm publish --access public --no-git-checks && cd ../..
-cd packages/framework && pnpm publish --access public --no-git-checks && cd ../..
-cd packages/cli && pnpm publish --access public --no-git-checks && cd ../..
 
 # 3. Create and push tag
 git add packages/*/package.json
 git commit -m "chore: release v$VERSION"
 git tag -a "v$VERSION" -m "Release v$VERSION"
 git push origin main --tags
-```
-
-### Version Bump Quick Reference
-
-```bash
-# Bump all packages to specific version
-VERSION="1.0.1" pnpm -r exec npm version $VERSION --no-git-tag-version
-
-# Or use npm version types (interactive)
-pnpm -r exec npm version patch   # 1.0.0 -> 1.0.1
-pnpm -r exec npm version minor   # 1.0.0 -> 1.1.0
-pnpm -r exec npm version major   # 1.0.0 -> 2.0.0
 ```
 
 ---
