@@ -5,6 +5,10 @@
   "bin": {
     "pilaf": "./bin/pilaf.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cavarest/pilaf"
+  },
   "files": [
     "bin/**/*",
     "lib/*.js",
