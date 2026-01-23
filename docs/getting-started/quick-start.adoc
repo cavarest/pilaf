@@ -183,7 +183,111 @@ describe('Variable Storage Test', () => {
 });
 ----
 
-=== Step 5: Run Your Tests and Generate Reports
+=== Step 5: Setting Up a Test Server (Optional)
+
+For local development, you can use Docker to run a deterministic test server.
+
+Create `docker-compose.dev.yml`:
+
+[source,yaml]
+----
+version: '3.8'
+services:
+  minecraft:
+    image: itzg/minecraft-server
+    container_name: pilaf-minecraft-dev
+    ports:
+      - "${MC_PORT:-25566}:25565"
+      - "${RCON_PORT:-25576}:25575"
+    environment:
+      EULA: 'TRUE'
+      ONLINE_MODE: 'false'
+      TYPE: 'PAPER'
+      VERSION: '1.21.8'
+      RCON_PASSWORD: '${RCON_PASSWORD:-cavarest}'
+      ENABLE_RCON: 'true'
+      RCON_PORT: '25575'
+      MAX_PLAYERS: '5'
+      MEMORY: '1G'
+      SPAWN_PROTECTION: '0'
+      WHITELIST: ''
+
+      # === DETERMINISTIC FLAT WORLD FOR TESTING ===
+      LEVEL: 'pilaf-test'
+      LEVEL_TYPE: 'FLAT'
+      SEED: '1234567890'
+      GENERATE_STRUCTURES: 'false'
+      MAX_WORLD_SIZE: '50'
+      MODE: 'creative'
+      DIFFICULTY: 'peaceful'
+      PVP: 'false'
+      ALLOW_NETHER: 'false'
+
+      # === PERFORMANCE FOR TESTING ===
+      VIEW_DISTANCE: '4'
+      SIMULATION_DISTANCE: '4'
+
+      # === ENTITY SPAWNING FOR TESTING ===
+      SPAWN_ANIMALS: 'true'     # Enable for entity testing
+      SPAWN_MONSTERS: 'false'   # Disable hostile mobs
+      SPAWN_NPCS: 'false'
+
+      # === CUSTOM FLAT WORLD LAYERS ===
+      GENERATOR_SETTINGS: >-
+        {
+          "layers": [
+            {"block": "minecraft:bedrock", "height": 1},
+            {"block": "minecraft:dirt", "height": 2},
+            {"block": "minecraft:grass_block", "height": 1}
+          ],
+          "biome": "minecraft:plains"
+        }
+    volumes:
+      - mc-data:/data
+    healthcheck:
+      test: ["CMD", "mc-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 15
+      start_period: 120s
+
+volumes:
+  mc-data:
+----
+
+Start the server:
+
+[source,bash]
+----
+# Start the server
+docker-compose -f docker-compose.dev.yml up -d
+
+# Run tests with the configured environment
+RCON_HOST=localhost RCON_PORT=25576 RCON_PASSWORD=cavarest MC_HOST=localhost MC_PORT=25566 pilaf test
+
+# View logs
+docker-compose -f docker-compose.dev.yml logs -f
+
+# Stop the server
+docker-compose -f docker-compose.dev.yml down
+
+# Clean world data for fresh tests
+docker-compose -f docker-compose.dev.yml down -v
+----
+
+[NOTE]
+====
+The test configuration uses:
+
+* *Deterministic seed* - Same world every run (seed: `1234567890`)
+* *Flat world* - 4 layers: bedrock, 2 dirt, 1 grass block
+* *Small world* - 50 block radius for fast generation
+* *Peaceful mode* - No hostile mobs, creative mode for easy testing
+* *Animals enabled* - For entity spawn/persistence testing
+* *Reduced view distance* - Faster chunk loading
+====
+
+=== Step 6: Run Your Tests and Generate Reports
 
 [source,bash]
 ----
@@ -225,6 +329,7 @@ open ./my-report.html----
 
 === What's Next?
 
+* link:../guides/testing-environment.html[Testing Environment Setup] - Configure Docker for deterministic tests
 * link:../guides/writing-tests.html[Writing Tests Guide] - Learn advanced test patterns
 * link:../guides/actions-reference.html[Actions Reference] - Complete list of available actions
 * link:../guides/assertions.html[Assertions Guide] - Learn about assertion types

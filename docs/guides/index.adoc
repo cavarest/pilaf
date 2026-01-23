@@ -16,6 +16,7 @@ In-depth guides for writing effective tests with Pilaf.
 
 === Integration
 
+* link:testing-environment.html[Testing Environment Setup] - Docker configuration for deterministic tests
 * link:github-actions.html[GitHub Actions Integration] - Set up CI/CD for your plugin
 
 === Common Scenarios

@@ -1,0 +1,406 @@
+---
+title: Testing Environment Setup
+nav_order: 5
+parent: Guides
+---
+
+== Testing Environment Setup
+
+This guide covers configuring a deterministic testing environment for Pilaf tests.
+
+=== Overview
+
+A well-configured testing environment ensures:
+
+* *Determinism* - Same world state every test run
+* *Speed* - Fast server startup and chunk loading
+* *Predictability* - No random mobs or structures interfering
+* *Isolation* - Clean slate for each test suite
+
+=== Docker Configuration
+
+The recommended approach uses Docker with the `itzg/minecraft-server` image.
+
+==== Complete docker-compose.dev.yml
+
+[source,yaml]
+----
+version: '3.8'
+services:
+  minecraft:
+    image: itzg/minecraft-server
+    container_name: pilaf-minecraft-dev
+    ports:
+      - "${MC_PORT:-25566}:25565"
+      - "${RCON_PORT:-25576}:25575"
+    environment:
+      # === BASIC SERVER CONFIG ===
+      EULA: 'TRUE'
+      ONLINE_MODE: 'false'
+      TYPE: 'PAPER'
+      VERSION: '1.21.8'
+      RCON_PASSWORD: '${RCON_PASSWORD:-cavarest}'
+      ENABLE_RCON: 'true'
+      RCON_PORT: '25575'
+      MAX_PLAYERS: '5'
+      MEMORY: '1G'
+      SPAWN_PROTECTION: '0'
+      WHITELIST: ''
+
+      # === DETERMINISTIC FLAT WORLD FOR TESTING ===
+      LEVEL: 'pilaf-test'
+      LEVEL_TYPE: 'FLAT'
+      SEED: '1234567890'
+      GENERATE_STRUCTURES: 'false'
+      MAX_WORLD_SIZE: '50'
+      MODE: 'creative'
+      DIFFICULTY: 'peaceful'
+      PVP: 'false'
+      ALLOW_NETHER: 'false'
+
+      # === PERFORMANCE FOR TESTING ===
+      VIEW_DISTANCE: '4'
+      SIMULATION_DISTANCE: '4'
+
+      # === ENTITY SPAWNING FOR TESTING ===
+      SPAWN_ANIMALS: 'true'     # Enable for entity testing
+      SPAWN_MONSTERS: 'false'   # Disable hostile mobs
+      SPAWN_NPCS: 'false'
+
+      # === CUSTOM FLAT WORLD LAYERS ===
+      GENERATOR_SETTINGS: >-
+        {
+          "layers": [
+            {"block": "minecraft:bedrock", "height": 1},
+            {"block": "minecraft:dirt", "height": 2},
+            {"block": "minecraft:grass_block", "height": 1}
+          ],
+          "biome": "minecraft:plains"
+        }
+    volumes:
+      - mc-data:/data
+    healthcheck:
+      test: ["CMD", "mc-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 15
+      start_period: 120s
+
+volumes:
+  mc-data:
+----
+
+=== Configuration Explained
+
+==== World Generation Settings
+
+[cols="1,3"]
+|===
+|Setting|Purpose
+
+|`LEVEL: 'pilaf-test'`
+|Named world save for consistent test environment
+
+|`LEVEL_TYPE: 'FLAT'`
+|Superflat world generation for predictable terrain
+
+|`SEED: '1234567890'`
+|Fixed seed ensures same world every run
+
+|`GENERATE_STRUCTURES: 'false'`
+|No villages, mineshafts, or other structures
+
+|`MAX_WORLD_SIZE: '50'`
+|50-block radius world border (small and fast)
+
+|`GENERATOR_SETTINGS`
+|Custom 4-layer world: bedrock + 2 dirt + grass
+|===
+
+==== Gameplay Settings
+
+[cols="1,3"]
+|===
+|Setting|Purpose
+
+|`MODE: 'creative'`
+|Creative mode for easy testing (flying, infinite items)
+
+|`DIFFICULTY: 'peaceful'`
+|No hostile mobs, regenerating health
+
+|`PVP: 'false'`
+|Disable player-vs-player damage
+
+|`ALLOW_NETHER: 'false'`
+|Disable Nether dimension (faster startup)
+|===
+
+==== Performance Settings
+
+[cols="1,3"]
+|===
+|Setting|Purpose
+
+|`VIEW_DISTANCE: '4'`
+|Reduced chunk loading for faster tests
+
+|`SIMULATION_DISTANCE: '4'`
+|Reduced entity simulation range
+
+|`MEMORY: '1G'`
+|1GB RAM is sufficient for testing
+|===
+
+==== Entity Spawning Settings
+
+[cols="1,3"]
+|===
+|Setting|Purpose
+
+|`SPAWN_ANIMALS: 'true'`
+|Enable peaceful creatures for entity tests
+
+|`SPAWN_MONSTERS: 'false'`
+|Disable zombies, creepers, etc.
+
+|`SPAWN_NPCS: 'false'`
+|Disable villager spawning
+|===
+
+=== Usage Commands
+
+[source,bash]
+----
+# Start the server
+docker-compose -f docker-compose.dev.yml up -d
+
+# Wait for RCON to be ready
+# Check logs to see when "Done! For help, type \"help\""
+docker-compose -f docker-compose.dev.yml logs -f minecraft
+
+# Run tests with environment variables
+export RCON_HOST=localhost
+export RCON_PORT=25576
+export RCON_PASSWORD=cavarest
+export MC_HOST=localhost
+export MC_PORT=25566
+
+pilaf test
+
+# Or using pnpm
+pnpm test:report
+
+# Stop the server
+docker-compose -f docker-compose.dev.yml down
+
+# Clean world data (start fresh)
+docker-compose -f docker-compose.dev.yml down -v
+----
+
+=== Environment Variables
+
+Create a `.env` file in your project root:
+
+[source,bash]
+----
+# Minecraft Server Connection
+MC_HOST=localhost
+MC_PORT=25566
+
+# RCON Connection
+RCON_HOST=localhost
+RCON_PORT=25576
+RCON_PASSWORD=cavarest
+
+# Authentication (offline mode for testing)
+MC_AUTH=offline
+
+# Optional: Custom world generation
+# LEVEL=my-test-world
+# SEED=54321
+----
+
+=== Custom World Generation
+
+You can customize the flat world layers using `GENERATOR_SETTINGS`:
+
+[source,yaml]
+----
+# Single grass block at y=64
+GENERATOR_SETTINGS: '{"layers": [{"block": "minecraft:grass_block", "height": 1}], "biome": "minecraft:plains"}'
+
+# Custom multi-layer world
+GENERATOR_SETTINGS: >-
+  {
+    "layers": [
+      {"block": "minecraft:bedrock", "height": 1},
+      {"block": "minecraft:stone", "height": 3},
+      {"block": "minecraft:grass_block", "height": 1}
+    ],
+    "biome": "minecraft:desert"
+  }
+----
+
+Available blocks for layers:
+* `minecraft:bedrock`
+* `minecraft:stone`
+* `minecraft:dirt`
+* `minecraft:grass_block`
+* `minecraft:sand`
+* `minecraft:water`
+* `minecraft:lava`
+* And any other registered block ID
+
+=== CI/CD Integration
+
+For GitHub Actions, use the same configuration in your workflow:
+
+[source,yaml]
+----
+# .github/workflows/pilaf-tests.yml
+name: Pilaf Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    services:
+      minecraft:
+        image: itzg/minecraft-server
+        ports:
+          - 25566:25565
+          - 25576:25575
+        env:
+          EULA: 'TRUE'
+          ONLINE_MODE: 'false'
+          TYPE: 'PAPER'
+          VERSION: '1.21.8'
+          RCON_PASSWORD: 'pilaf_test'
+          ENABLE_RCON: 'true'
+          RCON_PORT: '25575'
+
+          # Include all world generation settings from above
+          LEVEL: 'pilaf-test'
+          LEVEL_TYPE: 'FLAT'
+          SEED: '1234567890'
+          # ... (see full config above)
+        options: >-
+          --health-cmd="mc-health"
+          --health-interval=10s
+          --health-timeout=60s
+          --health-retries=10
+          --health-start-period=120s
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run Pilaf tests
+        env:
+          RCON_HOST: localhost
+          RCON_PORT: 25576
+          RCON_PASSWORD: pilaf_test
+          MC_HOST: localhost
+          MC_PORT: 25566
+        run: pnpm test
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pilaf-report
+          path: target/pilaf-reports/
+----
+
+=== RCON Connection Retry Logic
+
+Pilaf's RCON backend includes automatic retry logic to handle initial connection issues:
+
+[source,javascript]
+----
+// Automatic retry with exponential backoff
+// Retry attempts: 5 (default)
+// Backoff: 1s, 2s, 4s, 5s, 5s (max)
+// Total wait time: ~17 seconds
+
+// Configurable via connect():
+await rconBackend.connect({
+  host: 'localhost',
+  port: 25576,
+  password: 'password',
+  maxRetries: 5,  // Optional: custom retry count
+  timeout: 30000   // Optional: connection timeout
+});
+----
+
+This ensures tests don't fail due to temporary RCON unavailability during server startup.
+
+=== Troubleshooting
+
+==== Server won't start
+
+Check the logs:
+[source,bash]
+----
+docker-compose -f docker-compose.dev.yml logs minecraft
+----
+
+Common issues:
+* *Port already in use* - Change `MC_PORT` or `RCON_PORT` in `.env`
+* *EULA not accepted* - Ensure `EULA: 'TRUE'` is set
+* *Out of memory* - Increase `MEMORY` setting
+
+==== Tests fail with "Failed to connect to RCON"
+
+The RCON service needs time to start up. The retry logic handles this automatically. If tests still fail:
+
+1. Increase the `start_period` in the healthcheck
+2. Add more retries in your test setup
+3. Check that RCON port isn't blocked by firewall
+
+==== World not generating correctly
+
+Verify the `GENERATOR_SETTINGS` JSON is valid:
+
+[source,bash]
+----
+# Test JSON validity
+echo '{"layers": [{"block": "minecraft:bedrock", "height": 1}]}' | jq .
+----
+
+Common issues:
+* Missing quotes around block IDs
+* Trailing commas in JSON
+* Incorrect biome name
+
+=== Best Practices
+
+. Between test runs
+* Use `docker-compose down -v` to start with a fresh world
+* This ensures tests don't interfere with each other
+
+. For reproducible bugs
+* Keep the same seed (`SEED: '1234567890'`)
+* Document the exact coordinates where issues occur
+
+. For faster iteration
+* Reduce `MAX_WORLD_SIZE` for smaller worlds
+* Lower `VIEW_DISTANCE` for faster chunk loading
+* Use `MODE: 'creative'` to skip survival mechanics
+
+. For entity testing
+* Keep `SPAWN_ANIMALS: 'true'`
+* Use peaceful creatures (chickens, cows, pigs)
+* Avoid hostile mobs as they despawn in peaceful mode

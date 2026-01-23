@@ -451,32 +451,88 @@ Use Docker to run a test server:
 
 ```bash
 # Start PaperMC server
-docker-compose -f docker-compose.test.yml up -d
+docker-compose -f docker-compose.dev.yml up -d
 
 # Run tests
-pnpm test
+RCON_HOST=localhost RCON_PORT=25576 RCON_PASSWORD=cavarest MC_HOST=localhost MC_PORT=25566 pnpm test:report
 
 # Stop server
-docker-compose -f docker-compose.test.yml down
+docker-compose -f docker-compose.dev.yml down
 ```
 
-Example `docker-compose.test.yml`:
+Example `docker-compose.dev.yml` with **deterministic flat world for testing**:
 
 ```yaml
 version: '3.8'
 services:
   minecraft:
     image: itzg/minecraft-server
+    container_name: pilaf-minecraft-dev
+    ports:
+      - "${MC_PORT:-25566}:25565"
+      - "${RCON_PORT:-25576}:25575"
     environment:
       EULA: 'TRUE'
+      ONLINE_MODE: 'false'
       TYPE: 'PAPER'
       VERSION: '1.21.8'
-      RCON_PASSWORD: 'pilaf_test'
+      RCON_PASSWORD: '${RCON_PASSWORD:-cavarest}'
       ENABLE_RCON: 'true'
-    ports:
-      - '25565:25565'
-      - '25575:25575'
+      RCON_PORT: '25575'
+      MAX_PLAYERS: '5'
+      MEMORY: '1G'
+      SPAWN_PROTECTION: '0'
+      WHITELIST: ''
+
+      # === DETERMINISTIC FLAT WORLD FOR TESTING ===
+      LEVEL: 'pilaf-test'
+      LEVEL_TYPE: 'FLAT'
+      SEED: '1234567890'
+      GENERATE_STRUCTURES: 'false'
+      MAX_WORLD_SIZE: '50'
+      MODE: 'creative'
+      DIFFICULTY: 'peaceful'
+      PVP: 'false'
+      ALLOW_NETHER: 'false'
+
+      # === PERFORMANCE FOR TESTING ===
+      VIEW_DISTANCE: '4'
+      SIMULATION_DISTANCE: '4'
+
+      # === ENTITY SPAWNING FOR TESTING ===
+      SPAWN_ANIMALS: 'true'     # Enable for entity testing
+      SPAWN_MONSTERS: 'false'   # Disable hostile mobs
+      SPAWN_NPCS: 'false'
+
+      # === CUSTOM FLAT WORLD LAYERS ===
+      GENERATOR_SETTINGS: >-
+        {
+          "layers": [
+            {"block": "minecraft:bedrock", "height": 1},
+            {"block": "minecraft:dirt", "height": 2},
+            {"block": "minecraft:grass_block", "height": 1}
+          ],
+          "biome": "minecraft:plains"
+        }
+    volumes:
+      - mc-data:/data
+    healthcheck:
+      test: ["CMD", "mc-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 15
+      start_period: 120s
+
+volumes:
+  mc-data:
 ```
+
+**Configuration benefits:**
+- **Deterministic**: Fixed seed ensures same world every run
+- **Fast**: Small world size and reduced view distances speed up tests
+- **Predictable**: Flat terrain with custom layers simplifies coordinate testing
+- **No hostile mobs**: Peaceful mode with monsters disabled
+- **Entity testing**: Animals enabled for spawn/persistence tests
 
 ---
 
@@ -513,19 +569,49 @@ jobs:
       minecraft:
         image: itzg/minecraft-server
         ports:
-          - 25565:25565
-          - 25575:25575
+          - 25566:25565
+          - 25576:25575
         env:
           EULA: 'TRUE'
+          ONLINE_MODE: 'false'
           TYPE: 'PAPER'
           VERSION: '1.21.8'
           RCON_PASSWORD: 'pilaf_test'
           ENABLE_RCON: 'true'
+          RCON_PORT: '25575'
+          MAX_PLAYERS: '5'
+          SPAWN_PROTECTION: '0'
+
+          # Deterministic flat world for testing
+          LEVEL: 'pilaf-test'
+          LEVEL_TYPE: 'FLAT'
+          SEED: '1234567890'
+          GENERATE_STRUCTURES: 'false'
+          MAX_WORLD_SIZE: '50'
+          MODE: 'creative'
+          DIFFICULTY: 'peaceful'
+          PVP: 'false'
+          ALLOW_NETHER: 'false'
+          VIEW_DISTANCE: '4'
+          SIMULATION_DISTANCE: '4'
+          SPAWN_ANIMALS: 'true'
+          SPAWN_MONSTERS: 'false'
+          SPAWN_NPCS: 'false'
+          GENERATOR_SETTINGS: >-
+            {
+              "layers": [
+                {"block": "minecraft:bedrock", "height": 1},
+                {"block": "minecraft:dirt", "height": 2},
+                {"block": "minecraft:grass_block", "height": 1}
+              ],
+              "biome": "minecraft:plains"
+            }
         options: >-
-          --health-cmd "mcstatus localhost:25565 ping"
-          --health-interval 10s
-          --health-timeout 60s
-          --health-retries 10
+          --health-cmd="mc-health"
+          --health-interval=10s
+          --health-timeout=60s
+          --health-retries=10
+          --health-start-period=120s
 
     steps:
     - uses: actions/checkout@v4
@@ -543,22 +629,13 @@ jobs:
     - name: Install dependencies
       run: pnpm install
 
-    - name: Wait for server
-      run: |
-        for i in {1..60}; do
-          if mcstatus localhost:25565 ping &>/dev/null; then
-            echo "Server is ready!"
-            break
-          fi
-          echo "Waiting for server... ($i/60)"
-          sleep 1
-        done
-
     - name: Run Pilaf tests
       env:
         RCON_HOST: localhost
-        RCON_PORT: 25575
+        RCON_PORT: 25576
         RCON_PASSWORD: pilaf_test
+        MC_HOST: localhost
+        MC_PORT: 25566
       run: pnpm test
 
     - name: Upload HTML report
