@@ -4,6 +4,7 @@ const { StoryRunner } = require('./StoryRunner');
 const { waitForEvents, captureEvents } = require('./helpers/events');
 const { captureState, compareStates } = require('./helpers/state');
 const { toHaveReceivedLightningStrikes } = require('./matchers/game-matchers');
+const { createTestContext, cleanupTestContext } = require('./test-context');
 
 const { PilafBackendFactory } = require('@pilaf/backends');
 
@@ -46,5 +47,9 @@ module.exports = {
   compareStates,
 
   // Matchers
-  toHaveReceivedLightningStrikes
+  toHaveReceivedLightningStrikes,
+
+  // Test Context
+  createTestContext,
+  cleanupTestContext
 };

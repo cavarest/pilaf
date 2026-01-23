@@ -16,6 +16,42 @@ pnpm add @pilaf/framework
 pnpm add -D jest@^29.0.0
 ```
 
+## Quick Start - Bot Player Testing
+
+The simplest way to test with bot players:
+
+```javascript
+const { createTestContext, cleanupTestContext } = require('@pilaf/framework');
+
+describe('My Plugin Tests', () => {
+  let context;
+
+  beforeAll(async () => {
+    // Creates RCON connection + bot player in one call
+    context = await createTestContext({
+      username: 'TestPlayer',
+      host: 'localhost',
+      gamePort: 25565,
+      rconPort: 25575,
+      rconPassword: 'minecraft'
+    });
+  });
+
+  afterAll(async () => {
+    await cleanupTestContext(context);
+  });
+
+  it('should execute command as bot', async () => {
+    // Use bot.chat() for player commands
+    context.bot.chat('/gamemode creative');
+
+    // Use backend.sendCommand() for RCON commands
+    const result = await context.backend.sendCommand('seed');
+    expect(result.raw).toContain('Seed');
+  });
+});
+```
+
 ## StoryRunner
 
 The `StoryRunner` executes declarative test stories against Minecraft servers.

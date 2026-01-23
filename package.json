@@ -20,6 +20,7 @@
     "url": "https://github.com/cavarest/pilaf.git"
   },
   "scripts": {
+    "postinstall": "node scripts/fix-prismarine-physics.js",
     "test": "jest --testMatch='**/*.pilaf.test.js' --verbose --runInBand",
     "test:ci": "jest --testMatch='**/*.pilaf.test.js' --ci --testResultsProcessor='jest-junit' --runInBand",
     "test:unit": "jest --config=jest.config.unit.json",
