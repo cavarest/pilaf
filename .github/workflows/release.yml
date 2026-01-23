@@ -8,6 +8,7 @@ on:
         required: true
         type: choice
         options:
+          - no-bump
           - patch
           - minor
           - major
@@ -20,7 +21,6 @@ on:
 permissions:
   id-token: write
   contents: write
-  packages: write
 
 jobs:
   release:
@@ -69,7 +69,9 @@ jobs:
         BUMP="${{ inputs.bump }}"
         CURRENT=$(node -p "require('./packages/cli/package.json').version")
 
-        if [ "$BUMP" = "custom" ]; then
+        if [ "$BUMP" = "no-bump" ]; then
+          NEW_VERSION="$CURRENT"
+        elif [ "$BUMP" = "custom" ]; then
           NEW_VERSION="${{ inputs.custom_version }}"
         else
           IFS='.' read -ra PARTS <<< "$CURRENT"
@@ -109,20 +111,8 @@ jobs:
           cd ../..
         done
 
-    - name: Publish packages to GitHub Packages
-      run: |
-        echo "Publishing @pilaf packages v${{ steps.version.outputs.version }} to GitHub Packages..."
-        # Configure npm for GitHub Packages
-        npm config set @pilaf:registry https://npm.pkg.github.com
-        npm config set //npm.pkg.github.com/:_authToken ${{ secrets.GITHUB_TOKEN }}
-
-        for pkg in backends reporting framework cli; do
-          cd packages/$pkg
-          npm publish
-          cd ../..
-        done
-
     - name: Commit and tag release
+      if: inputs.bump != 'no-bump'
       run: |
         VERSION="${{ steps.version.outputs.version }}"
         git config user.email "11865+ronaldtse@users.noreply.github.com"
@@ -152,16 +142,6 @@ jobs:
           pnpm add -D @pilaf/framework @pilaf/backends @pilaf/reporting
           ```
 
-          ### GitHub Packages
-
-          To install from GitHub Packages:
-
-          ```bash
-          npm config set @pilaf:registry https://npm.pkg.github.com
-          npm config set //npm.pkg.github.com/:_authToken YOUR_GITHUB_TOKEN
-          pnpm add -D @pilaf/cli
-          ```
-
           ### Documentation
 
           [Documentation](https://cavarest.github.io/pilaf/)
@@ -178,17 +158,4 @@ jobs:
         for pkg in backends reporting framework cli; do
           timeout 60s bash -c "until npm view @pilaf/$pkg@$VERSION &>/dev/null; do sleep 2; done"
           echo "✓ @pilaf/$pkg@$VERSION on npm"
-        done
-
-    - name: Verify release on GitHub Packages
-      run: |
-        VERSION="${{ steps.version.outputs.version }}"
-        echo "Verifying packages are available on GitHub Packages..."
-        # Configure npm for GitHub Packages
-        npm config set @pilaf:registry https://npm.pkg.github.com
-        npm config set //npm.pkg.github.com/:_authToken ${{ secrets.GITHUB_TOKEN }}
-
-        for pkg in backends reporting framework cli; do
-          timeout 60s bash -c "until npm view @pilaf/$pkg@$VERSION &>/dev/null; do sleep 2; done"
-          echo "✓ @pilaf/$pkg@$VERSION on GitHub Packages"
         done
