@@ -12,8 +12,8 @@
  * Use context.bot.chat() for player commands
  */
 
-const { MineflayerBackend } = require('../backends/lib/mineflayer-backend.js');
-const { RconBackend } = require('../backends/lib/rcon-backend.js');
+const { MineflayerBackend } = require('../../backends/lib/mineflayer-backend.js');
+const { RconBackend } = require('../../backends/lib/rcon-backend.js');
 
 /**
  * Create a test context with both RCON and a bot player
