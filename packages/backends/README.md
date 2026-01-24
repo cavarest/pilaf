@@ -136,6 +136,170 @@ const isHealthy = await checker.check();
 console.log(isHealthy.status); // 'healthy' | 'unhealthy'
 ```
 
+## QueryHelper
+
+Convenience methods for common RCON queries with structured response parsing.
+
+```javascript
+const { QueryHelper } = require('@pilaf/backends');
+
+const helper = new QueryHelper(rconBackend);
+
+// List players
+const players = await helper.listPlayers();
+// { online: 2, players: ['Steve', 'Alex'] }
+
+// Get world time
+const time = await helper.getWorldTime();
+// { time: 1500, daytime: true }
+
+// Get weather
+const weather = await helper.getWeather();
+// { weather: 'clear' }
+
+// Additional methods: getDifficulty(), getGameMode(), getTPS(), getSeed()
+```
+
+## EventObserver
+
+Clean API for subscribing to Minecraft server events with pattern matching.
+
+```javascript
+const { EventObserver } = require('@pilaf/backends');
+
+const observer = new EventObserver({ logMonitor, parser });
+
+// Subscribe to player joins
+const unsubscribe = observer.onPlayerJoin((event) => {
+  console.log('Player joined:', event.data.player);
+});
+
+// Subscribe with wildcard pattern
+observer.onEvent('entity.death.*', (event) => {
+  console.log('Player died:', event.type);
+});
+
+// Start observing
+await observer.start();
+
+// Stop when done
+unsubscribe();
+observer.stop();
+```
+
+## LogMonitor
+
+Orchestrates log collection, parsing, and correlation with real-time event emission.
+
+```javascript
+const { LogMonitor, DockerLogCollector, MinecraftLogParser, UsernameCorrelationStrategy } = require('@pilaf/backends');
+
+const monitor = new LogMonitor({
+  collector: new DockerLogCollector({ container: 'mc-server', follow: true }),
+  parser: new MinecraftLogParser(),
+  correlation: new UsernameCorrelationStrategy(),
+  bufferSize: 1000
+});
+
+// Subscribe to events
+monitor.on('event', (event) => {
+  console.log('Event:', event.type, event.data);
+});
+
+monitor.on('correlation', (session) => {
+  console.log('Player session:', session.username, session.events.length);
+});
+
+// Start monitoring
+await monitor.start();
+```
+
+## Correlation Strategies
+
+### UsernameCorrelationStrategy
+
+Tracks player sessions by grouping events by username.
+
+```javascript
+const { UsernameCorrelationStrategy } = require('@pilaf/backends');
+
+const strategy = new UsernameCorrelationStrategy();
+
+// Returns session object with all events for that player
+const session = strategy.correlate({
+  type: 'entity.join',
+  data: { player: 'Steve' }
+});
+
+console.log(session.username); // 'Steve'
+console.log(session.isActive); // true
+
+// Session ends on leave event
+strategy.correlate({
+  type: 'entity.leave',
+  data: { player: 'Steve' }
+});
+```
+
+### TagCorrelationStrategy
+
+Groups events by custom tag/ID with automatic expiration.
+
+```javascript
+const { TagCorrelationStrategy } = require('@pilaf/backends');
+
+const strategy = new TagCorrelationStrategy({
+  tagExtractor: (event) => event.data.commandId,
+  timeout: 5000  // 5 seconds
+});
+
+// Correlates request/response events
+strategy.correlate({ type: 'command.issued', data: { commandId: 'cmd-1' } });
+strategy.correlate({ type: 'command.success', data: { commandId: 'cmd-1' } });
+
+// Events are grouped by commandId and auto-expire after timeout
+```
+
+## Enhanced MineflayerBackend
+
+The MineflayerBackend now includes integrated query and event observation features.
+
+```javascript
+const { MineflayerBackend } = require('@pilaf/backends');
+
+const backend = new MineflayerBackend();
+await backend.connect({
+  host: 'localhost',
+  port: 25565,
+  auth: 'offline',
+  rconPort: 25575,
+  rconPassword: 'password'
+});
+
+// Query methods (delegates to QueryHelper)
+const players = await backend.listPlayers();
+const time = await backend.getWorldTime();
+const tps = await backend.getTPS();
+
+// Event observation (lazy initialization)
+backend.onPlayerJoin((event) => {
+  console.log('Player joined:', event.data.player);
+});
+
+backend.onPlayerDeath((event) => {
+  console.log('Player died:', event.data.cause);
+});
+
+// Start observing
+await backend.observe();
+
+// Check if observing
+console.log(backend.isObserving()); // true
+
+// Stop observing
+backend.unobserve();
+```
+
 ## License
 
 MIT

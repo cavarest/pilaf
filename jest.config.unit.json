@@ -5,6 +5,11 @@
     "<rootDir>/packages/**/*.spec.js",
     "<rootDir>/packages/**/*.test.js"
   ],
+  "transform": {
+    "^.+\\.js$": ["babel-jest", {
+      "presets": ["@babel/preset-env"]
+    }]
+  },
   "moduleNameMapper": {
     "^@pilaf/backends$": "<rootDir>/packages/backends/lib",
     "^@pilaf/framework$": "<rootDir>/packages/framework/lib",

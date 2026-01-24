@@ -31,6 +31,7 @@
     "pilaf": "node packages/cli/bin/pilaf.js"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.28.6",
     "eslint": "^8.56.0",
     "jest": "^29.7.0",
     "jest-junit": "^16.0.0"
