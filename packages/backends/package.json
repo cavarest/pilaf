@@ -6,9 +6,13 @@
     "type": "git",
     "url": "https://github.com/cavarest/pilaf"
   },
+  "scripts": {
+    "postinstall": "node scripts/fix-prismarine-physics.cjs"
+  },
   "files": [
     "lib/*.js",
     "lib/**/*.js",
+    "scripts/**/*.cjs",
     "!lib/**/*.spec.js",
     "!lib/**/*.test.js",
     "README.md",

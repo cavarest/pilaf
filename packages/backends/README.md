@@ -937,6 +937,208 @@ describe('Elemental Dragon Tests', () => {
 
 ---
 
+## 🎯 Using QueryHelper with createTestContext
+
+When using `@pilaf/framework`'s `createTestContext()` helper, you can access QueryHelper through either the separate RCON backend or via the MineflayerBackend:
+
+```javascript
+const { createTestContext, cleanupTestContext } = require('@pilaf/framework');
+
+describe('Plugin Tests with QueryHelper', () => {
+  let context;
+
+  beforeAll(async () => {
+    context = await createTestContext({
+      username: 'TestPlayer',
+      rconPassword: 'dragon123'
+    });
+  });
+
+  afterAll(async () => {
+    await cleanupTestContext(context);
+  });
+
+  it('should verify player position using QueryHelper', async () => {
+    // Get player info BEFORE using RCON backend directly
+    const beforeInfo = await context.rcon.send('data get entity TestPlayer Pos');
+
+    // Execute ability
+    context.bot.chat('/myplugin teleport 100 64 100');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Get player info AFTER
+    const afterInfo = await context.rcon.send('data get entity TestPlayer Pos');
+
+    // Or use MineflayerBackend's QueryHelper (if available)
+    // const info = await context.backend.getPlayerInfo('TestPlayer');
+    // expect(info.position.x).toBeCloseTo(100);
+  });
+
+  it('should verify server TPS', async () => {
+    // Use QueryHelper methods via backend
+    const { tps } = await context.backend.getTPS();
+    expect(tps.tps).toBeGreaterThan(15);
+  });
+
+  it('should list online players', async () => {
+    const players = await context.backend.listPlayers();
+    expect(players.players).toContain('TestPlayer');
+  });
+});
+```
+
+### Why Both Backends?
+
+- **context.rcon** - For raw RCON commands that return responses (e.g., `/data get`)
+- **context.backend** - For QueryHelper methods and bot control
+- **context.bot** - For bot player actions (chat, movement)
+
+This dual-backend approach is necessary because `MineflayerBackend.sendCommand()` sends via bot chat and returns empty responses.
+
+---
+
+## ⚙️ Jest Configuration Recommendations
+
+### maxWorkers: 1 for Bot Player Tests
+
+When testing with multiple bot players, set `maxWorkers: 1` to avoid connection throttling:
+
+```javascript
+// jest.config.js
+module.exports = {
+  testMatch: ['**/*.pilaf.test.js'],
+  testTimeout: 300000,
+  maxWorkers: 1,  // ← Important: Prevents connection throttling
+  reporters: ['default']
+};
+```
+
+**Why?** Each Jest worker creates separate bot connections. Multiple workers connecting simultaneously can trigger server connection throttling or race conditions.
+
+### testTimeout: 300000
+
+Server operations (bot spawning, command execution) are slower than unit tests. Set a higher timeout:
+
+```javascript
+testTimeout: 300000,  // 5 minutes
+```
+
+### Module Resolution for ES Modules
+
+If using ES modules (`"type": "module"`), configure Jest accordingly:
+
+```javascript
+module.exports = {
+  extension: ['.js', '.cjs'],
+  transform: {},
+  testTimeout: 300000,
+  maxWorkers: 1
+};
+```
+
+---
+
+## 📊 QueryHelper vs Raw RCON Comparison
+
+### Before: Raw RCON with Manual Parsing
+
+```javascript
+// ❌ Verbose and error-prone
+const result = await context.rcon.send('data get entity TestPlayer Pos');
+
+// Manual regex parsing
+const match = result.raw.match(/Pos.*?\[.*?d/);
+if (!match) {
+  throw new Error('Could not parse position');
+}
+
+const coords = match[0].split(', ').map(s => {
+  const num = s.match(/-?\d+\.\d+/);
+  return num ? parseFloat(num[0]) : 0;
+});
+
+const x = coords[0];
+const y = coords[1];
+const z = coords[2];
+
+expect(x).toBeCloseTo(100);
+```
+
+### After: QueryHelper (Clean & Type-Safe)
+
+```javascript
+// ✅ Clean and structured
+const info = await context.backend.getPlayerInfo('TestPlayer');
+
+expect(info.position.x).toBeCloseTo(100);
+expect(info.position.y).toBeDefined();
+expect(info.health).toBeGreaterThan(0);
+```
+
+### Benefits Summary
+
+| Feature | Raw RCON | QueryHelper |
+|---------|----------|-------------|
+| **Code length** | 20+ lines | 1-2 lines |
+| **Error handling** | Manual regex | Built-in parsing |
+| **Type safety** | Strings | Structured objects |
+| **Maintainability** | Brittle (breaks on format changes) | Resilient |
+
+---
+
+## 🤖 Bot Player Limitations
+
+### Velocity-Based Abilities Don't Work on Bot Players
+
+Bot players (Mineflayer) do not respond to server velocity the same way as real players:
+
+```javascript
+// ❌ This won't work as expected with bot players
+context.bot.chat('/agile 1');  // Dash ability that applies velocity
+
+await new Promise(resolve => setTimeout(resolve, 1000));
+
+// Bot's client-side position won't reflect the server-side movement
+const botPos = context.bot.entity.position;
+console.log(botPos);  // Position unchanged (bot doesn't move)
+```
+
+**Workaround**: Test ability activation instead of actual movement:
+
+```javascript
+// ✅ Test that ability activates (not actual movement)
+context.bot.chat('/agile 1');
+await new Promise(resolve => setTimeout(resolve, 500));
+
+// Verify cooldown was applied (ability was used)
+const quickResult = await context.rcon.send('execute as TestPlayer run agile 1');
+expect(quickResult.raw).toContain('cooldown');  // Ability is on cooldown
+```
+
+### Entity Position Tracking
+
+Use server-side queries instead of bot position:
+
+```javascript
+// ❌ Don't use bot position for velocity-based abilities
+const botPos = context.bot.entity.position;  // Not updated by server velocity
+
+// ✅ Use RCON to get server-side entity position
+const result = await context.rcon.send('data get entity Pig Pos');
+// Parse the result to verify entity moved
+```
+
+### Chat and Commands Work Fine
+
+Bot players correctly handle:
+- ✅ Chat messages
+- ✅ Command execution (`/command`)
+- ✅ Inventory manipulation
+- ✅ Block interaction
+- ✅ Entity detection (`bot.entities`)
+
+---
+
 ## 🔧 Core Components
 
 ### ConnectionState
@@ -1135,6 +1337,21 @@ const {
 ---
 
 ## 🐛 Troubleshooting
+
+### Issue: Cannot find module './lib/features'
+
+**Cause**: prismarine-physics package has a bug where it imports `./lib/features` but the file is actually `./lib/features.json`.
+
+**Solution**: This is automatically fixed by the postinstall script in `@pilaf/backends`. If you're not using the postinstall script, you can create a symlink manually:
+
+```bash
+# Navigate to node_modules/prismarine-physics/lib
+cd node_modules/prismarine-physics/lib
+# Create symlink
+ln -s features.json features
+```
+
+**Note**: This fix runs automatically when `@pilaf/backends` is installed via npm/pnpm.
 
 ### Issue: Events not being captured
 
