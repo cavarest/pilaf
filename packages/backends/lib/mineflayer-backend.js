@@ -8,6 +8,7 @@ const { PilafBackend } = require('./backend.js');
 const { BotPool } = require('./BotPool.js');
 const { BotLifecycleManager } = require('./BotLifecycleManager.js');
 const { ServerHealthChecker } = require('./ServerHealthChecker.js');
+const { RconBackend } = require('./rcon-backend.js');
 const { QueryHelper } = require('./helpers/QueryHelper.js');
 const { EventObserver } = require('./helpers/EventObserver.js');
 
@@ -24,6 +25,7 @@ class MineflayerBackend extends PilafBackend {
     this._connectConfig = {};
     this._botPool = new BotPool();
     this._healthChecker = null;
+    this._rconBackend = null;  // Optional RconBackend for QueryHelper
     this._queryHelper = null;
     this._eventObserver = null;
   }
@@ -86,19 +88,36 @@ class MineflayerBackend extends PilafBackend {
       rconPassword: config?.rconPassword || 'cavarest'
     });
 
-    // Initialize query helper with the health checker's RCON backend
-    this._queryHelper = new QueryHelper(this._healthChecker.getRconBackend());
+    // Create RconBackend if RCON config is provided (for QueryHelper)
+    if (config?.rconHost || config?.rconPort || config?.rconPassword) {
+      this._rconBackend = new RconBackend();
+      await this._rconBackend.connect({
+        host: config?.rconHost || this._host,
+        port: config?.rconPort || 25575,
+        password: config?.rconPassword || 'cavarest'
+      });
+      // Initialize query helper with the RCON backend
+      this._queryHelper = new QueryHelper(this._rconBackend);
+    } else {
+      this._queryHelper = null;
+    }
 
     return this;
   }
 
   /**
-   * Disconnect all bots
+   * Disconnect all bots and RCON
    * @returns {Promise<void>}
    */
   async disconnect() {
     const results = await this._botPool.quitAll({ disconnectTimeout: 10000 });
     this._botPool.clear();
+
+    // Disconnect RCON backend if it was created
+    if (this._rconBackend) {
+      await this._rconBackend.disconnect();
+      this._rconBackend = null;
+    }
   }
 
   /**
