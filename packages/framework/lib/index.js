@@ -35,6 +35,10 @@ module.exports = {
   // Story Runner
   StoryRunner,
 
+  // Test Context Helper
+  createTestContext,
+  cleanupTestContext,
+
   // Main API
   pilaf,
   rcon,
