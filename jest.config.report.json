@@ -1,0 +1,26 @@
+{
+  "testEnvironment": "node",
+  "testTimeout": 60000,
+  "maxWorkers": 1,
+  "maxConcurrency": 1,
+  "detectOpenHandles": true,
+  "testMatch": [
+    "<rootDir>/examples/*.example.pilaf.test.js"
+  ],
+  "moduleNameMapper": {
+    "^@pilaf/backends$": "<rootDir>/packages/backends/lib/index.js",
+    "^@pilaf/framework$": "<rootDir>/packages/framework/lib/index.js",
+    "^@pilaf/reporting$": "<rootDir>/packages/reporting/lib/index.js"
+  },
+  "reporters": [
+    "default",
+    [
+      "<rootDir>/packages/framework/lib/reporters/pilaf-reporter.js",
+      {
+        "outputPath": "target/pilaf-reports/index.html",
+        "suiteName": "Pilaf Examples"
+      }
+    ]
+  ],
+  "verbose": false
+}

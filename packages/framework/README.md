@@ -16,6 +16,42 @@ pnpm add @pilaf/framework
 pnpm add -D jest@^29.0.0
 ```
 
+## Quick Start - Bot Player Testing
+
+The simplest way to test with bot players:
+
+```javascript
+const { createTestContext, cleanupTestContext } = require('@pilaf/framework');
+
+describe('My Plugin Tests', () => {
+  let context;
+
+  beforeAll(async () => {
+    // Creates RCON connection + bot player in one call
+    context = await createTestContext({
+      username: 'TestPlayer',
+      host: 'localhost',
+      gamePort: 25565,
+      rconPort: 25575,
+      rconPassword: 'minecraft'
+    });
+  });
+
+  afterAll(async () => {
+    await cleanupTestContext(context);
+  });
+
+  it('should execute command as bot', async () => {
+    // Use bot.chat() for player commands
+    context.bot.chat('/gamemode creative');
+
+    // Use backend.sendCommand() for RCON commands
+    const result = await context.backend.sendCommand('seed');
+    expect(result.raw).toContain('Seed');
+  });
+});
+```
+
 ## StoryRunner
 
 The `StoryRunner` executes declarative test stories against Minecraft servers.
@@ -170,6 +206,84 @@ module.exports = {
 ```
 
 ## Helpers
+
+### Test Context Helper
+
+The `createTestContext()` helper provides a simplified way to create bot players for testing. It sets up both RCON and Mineflayer backends simultaneously.
+
+**Why use this?**
+
+When testing Minecraft plugins with bot players, you need TWO separate connections:
+1. **Bot player** - For executing player commands (via `bot.chat()`)
+2. **RCON** - For server commands that return responses (via `rcon.send()`)
+
+The `MineflayerBackend.sendCommand()` method only sends commands via bot chat and **always returns empty** responses. You need RCON to get actual server responses for commands like `/data get`, `/teleport`, etc.
+
+```javascript
+const { createTestContext, cleanupTestContext } = require('@pilaf/framework');
+
+describe('My Plugin', () => {
+  let context;
+
+  beforeAll(async () => {
+    context = await createTestContext({
+      username: 'TestPlayer',
+      rconPassword: 'dragon123'
+    });
+  });
+
+  afterAll(async () => {
+    await cleanupTestContext(context);
+  });
+
+  it('should verify entity position after teleport', async () => {
+    // Get position BEFORE (using RCON - returns actual data!)
+    const beforeResult = await context.rcon.send('data get entity TestPlayer Pos');
+    const beforePos = parsePosition(beforeResult);
+
+    // Execute ability (using bot chat)
+    context.bot.chat('/myplugin teleport 100 64 100');
+    await wait(1000);
+
+    // Get position AFTER (using RCON - returns actual data!)
+    const afterResult = await context.rcon.send('data get entity TestPlayer Pos');
+    const afterPos = parsePosition(afterResult);
+
+    // Verify teleportation
+    expect(afterPos.x).toBeCloseTo(100, 0);
+  });
+});
+```
+
+**API Reference:**
+
+```javascript
+const context = await createTestContext({
+  username: 'TestPlayer',      // Bot username (default: 'TestPlayer')
+  host: 'localhost',           // Server host (default: 'localhost')
+  gamePort: 25565,             // Game port (default: 25565)
+  rconPort: 25575,             // RCON port (default: 25575)
+  rconPassword: 'minecraft',   // RCON password (default: 'minecraft')
+  auth: 'offline'              // Auth mode (default: 'offline')
+});
+
+// Returns:
+{
+  backend: MineflayerBackend,  // For bot control
+  rcon: RconBackend,           // For server commands WITH RESPONSES
+  bot: Object,                 // The bot player instance
+  playerName: string          // Bot's username
+}
+
+// Use RCON for commands that need responses
+const result = await context.rcon.send('data get entity TestPlayer Pos');
+
+// Use bot chat for player commands
+context.bot.chat('/mycommand');
+
+// Cleanup when done
+await cleanupTestContext(context);
+```
 
 ### State Management
 

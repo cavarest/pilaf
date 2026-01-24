@@ -8,6 +8,9 @@ const { PilafBackend } = require('./backend.js');
 const { BotPool } = require('./BotPool.js');
 const { BotLifecycleManager } = require('./BotLifecycleManager.js');
 const { ServerHealthChecker } = require('./ServerHealthChecker.js');
+const { RconBackend } = require('./rcon-backend.js');
+const { QueryHelper } = require('./helpers/QueryHelper.js');
+const { EventObserver } = require('./helpers/EventObserver.js');
 
 class MineflayerBackend extends PilafBackend {
   /**
@@ -22,6 +25,9 @@ class MineflayerBackend extends PilafBackend {
     this._connectConfig = {};
     this._botPool = new BotPool();
     this._healthChecker = null;
+    this._rconBackend = null;  // Optional RconBackend for QueryHelper
+    this._queryHelper = null;
+    this._eventObserver = null;
   }
 
   /**
@@ -82,16 +88,36 @@ class MineflayerBackend extends PilafBackend {
       rconPassword: config?.rconPassword || 'cavarest'
     });
 
+    // Create RconBackend if RCON config is provided (for QueryHelper)
+    if (config?.rconHost || config?.rconPort || config?.rconPassword) {
+      this._rconBackend = new RconBackend();
+      await this._rconBackend.connect({
+        host: config?.rconHost || this._host,
+        port: config?.rconPort || 25575,
+        password: config?.rconPassword || 'cavarest'
+      });
+      // Initialize query helper with the RCON backend
+      this._queryHelper = new QueryHelper(this._rconBackend);
+    } else {
+      this._queryHelper = null;
+    }
+
     return this;
   }
 
   /**
-   * Disconnect all bots
+   * Disconnect all bots and RCON
    * @returns {Promise<void>}
    */
   async disconnect() {
     const results = await this._botPool.quitAll({ disconnectTimeout: 10000 });
     this._botPool.clear();
+
+    // Disconnect RCON backend if it was created
+    if (this._rconBackend) {
+      await this._rconBackend.disconnect();
+      this._rconBackend = null;
+    }
   }
 
   /**
@@ -199,6 +225,245 @@ class MineflayerBackend extends PilafBackend {
    */
   getBotPool() {
     return this._botPool;
+  }
+
+  /**
+   * Get query helper instance
+   * @returns {QueryHelper}
+   */
+  getQueryHelper() {
+    return this._queryHelper;
+  }
+
+  /**
+   * Get event observer instance
+   * @returns {EventObserver}
+   */
+  getEventObserver() {
+    return this._eventObserver;
+  }
+
+  // ==========================================================================
+  // QUERY HELPER METHODS
+  // ==========================================================================
+
+  /**
+   * Get player information via RCON
+   * @param {string} username - Player username
+   * @returns {Promise<Object>} Player information
+   */
+  async getPlayerInfo(username) {
+    if (!this._queryHelper) {
+      throw new Error('Backend not connected. Call connect() first.');
+    }
+    return await this._queryHelper.getPlayerInfo(username);
+  }
+
+  /**
+   * List all online players
+   * @returns {Promise<Object>} List of players
+   */
+  async listPlayers() {
+    if (!this._queryHelper) {
+      throw new Error('Backend not connected. Call connect() first.');
+    }
+    return await this._queryHelper.listPlayers();
+  }
+
+  /**
+   * Get current world time
+   * @returns {Promise<Object>} World time information
+   */
+  async getWorldTime() {
+    if (!this._queryHelper) {
+      throw new Error('Backend not connected. Call connect() first.');
+    }
+    return await this._queryHelper.getWorldTime();
+  }
+
+  /**
+   * Get current weather
+   * @returns {Promise<Object>} Weather information
+   */
+  async getWeather() {
+    if (!this._queryHelper) {
+      throw new Error('Backend not connected. Call connect() first.');
+    }
+    return await this._queryHelper.getWeather();
+  }
+
+  /**
+   * Get difficulty level
+   * @returns {Promise<Object>} Difficulty information
+   */
+  async getDifficulty() {
+    if (!this._queryHelper) {
+      throw new Error('Backend not connected. Call connect() first.');
+    }
+    return await this._queryHelper.getDifficulty();
+  }
+
+  /**
+   * Get game mode
+   * @param {string} [player='@s'] - Target player selector
+   * @returns {Promise<Object>} Game mode information
+   */
+  async getGameMode(player = '@s') {
+    if (!this._queryHelper) {
+      throw new Error('Backend not connected. Call connect() first.');
+    }
+    return await this._queryHelper.getGameMode(player);
+  }
+
+  /**
+   * Get server TPS
+   * @returns {Promise<Object>} TPS information
+   */
+  async getTPS() {
+    if (!this._queryHelper) {
+      throw new Error('Backend not connected. Call connect() first.');
+    }
+    return await this._queryHelper.getTPS();
+  }
+
+  /**
+   * Get world seed
+   * @returns {Promise<Object>} Seed information
+   */
+  async getSeed() {
+    if (!this._queryHelper) {
+      throw new Error('Backend not connected. Call connect() first.');
+    }
+    return await this._queryHelper.getSeed();
+  }
+
+  // ==========================================================================
+  // EVENT OBSERVATION METHODS
+  // ==========================================================================
+
+  /**
+   * Subscribe to server events
+   * @param {string} pattern - Event pattern (supports wildcards)
+   * @param {Function} callback - Event callback
+   * @returns {Function} Unsubscribe function
+   */
+  onEvent(pattern, callback) {
+    this._ensureEventObserver();
+    return this._eventObserver.onEvent(pattern, callback);
+  }
+
+  /**
+   * Subscribe to player join events
+   * @param {Function} callback - Event callback
+   * @returns {Function} Unsubscribe function
+   */
+  onPlayerJoin(callback) {
+    this._ensureEventObserver();
+    return this._eventObserver.onPlayerJoin(callback);
+  }
+
+  /**
+   * Subscribe to player leave events
+   * @param {Function} callback - Event callback
+   * @returns {Function} Unsubscribe function
+   */
+  onPlayerLeave(callback) {
+    this._ensureEventObserver();
+    return this._eventObserver.onPlayerLeave(callback);
+  }
+
+  /**
+   * Subscribe to player death events
+   * @param {Function} callback - Event callback
+   * @returns {Function} Unsubscribe function
+   */
+  onPlayerDeath(callback) {
+    this._ensureEventObserver();
+    return this._eventObserver.onPlayerDeath(callback);
+  }
+
+  /**
+   * Subscribe to command events
+   * @param {Function} callback - Event callback
+   * @returns {Function} Unsubscribe function
+   */
+  onCommand(callback) {
+    this._ensureEventObserver();
+    return this._eventObserver.onCommand(callback);
+  }
+
+  /**
+   * Subscribe to world events
+   * @param {Function} callback - Event callback
+   * @returns {Function} Unsubscribe function
+   */
+  onWorldEvent(callback) {
+    this._ensureEventObserver();
+    return this._eventObserver.onWorldEvent(callback);
+  }
+
+  /**
+   * Start observing server events
+   * @returns {Promise<void>}
+   */
+  async observe() {
+    this._ensureEventObserver();
+    await this._eventObserver.start();
+  }
+
+  /**
+   * Stop observing server events
+   * @returns {void}
+   */
+  unobserve() {
+    if (this._eventObserver) {
+      this._eventObserver.stop();
+    }
+  }
+
+  /**
+   * Check if currently observing events
+   * @returns {boolean}
+   */
+  isObserving() {
+    return this._eventObserver && this._eventObserver.isObserving;
+  }
+
+  /**
+   * Ensure event observer is initialized
+   * @private
+   */
+  _ensureEventObserver() {
+    if (!this._eventObserver) {
+      // Lazy initialization - requires LogMonitor and parser
+      const { LogMonitor } = require('./monitoring/index.js');
+      const { MinecraftLogParser } = require('./parsers/index.js');
+      const { DockerLogCollector } = require('./collectors/index.js');
+      const { UsernameCorrelationStrategy } = require('./monitoring/correlations/index.js');
+
+      // Create log collector for this server
+      const collector = new DockerLogCollector({
+        container: this._host, // Use server host as container name
+        follow: true
+      });
+
+      // Create parser
+      const parser = new MinecraftLogParser();
+
+      // Create log monitor
+      const logMonitor = new LogMonitor({
+        collector,
+        parser,
+        correlation: new UsernameCorrelationStrategy(),
+        bufferSize: 1000
+      });
+
+      // Create event observer
+      this._eventObserver = new EventObserver({
+        logMonitor,
+        parser
+      });
+    }
   }
 
   /**

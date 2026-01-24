@@ -20,16 +20,18 @@
     "url": "https://github.com/cavarest/pilaf.git"
   },
   "scripts": {
+    "postinstall": "node scripts/fix-prismarine-physics.js",
     "test": "jest --testMatch='**/*.pilaf.test.js' --verbose --runInBand",
-    "test:ci": "jest --testMatch='**/*.pilaf.test.js' --ci --testResultsProcessor='jest-junit' --runInBand",
+    "test:ci": "jest --testMatch='**/*.pilaf.test.js' --ci --testResultsProcessor='jest-junit' --runInBand --forceExit",
     "test:unit": "jest --config=jest.config.unit.json",
-    "test:report": "jest --config=jest.config.report.json",
-    "test:examples": "jest --testMatch='<rootDir>/examples/*.example.pilaf.test.js' --runInBand",
+    "test:report": "jest --config=jest.config.report.json --forceExit",
+    "test:examples": "jest --testMatch='<rootDir>/examples/*.example.pilaf.test.js' --runInBand --forceExit",
     "build": "pnpm -r --filter './packages/**' build",
     "lint": "eslint packages/**/*.js",
     "pilaf": "node packages/cli/bin/pilaf.js"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.28.6",
     "eslint": "^8.56.0",
     "jest": "^29.7.0",
     "jest-junit": "^16.0.0"
