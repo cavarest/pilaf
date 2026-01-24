@@ -103,13 +103,36 @@ jobs:
       run: |
         echo "Publishing @pilaf packages v${{ steps.version.outputs.version }} to npm..."
         mkdir -p release-tarballs
+
+        # Use pnpm publish which automatically resolves workspace dependencies
+        pnpm -r --filter './packages/**' publish --access public --no-git-checks --provenance false
+
+        # Create tarballs for GitHub Release
         for pkg in backends reporting framework cli; do
           cd packages/$pkg
-          # Create tarball for GitHub Release
           npm pack --pack-destination ../../release-tarballs
-          # Publish to npm public registry
-          npm publish --access public
           cd ../..
+        done
+
+    - name: Validate published packages
+      if: inputs.bump != 'no-bump'
+      run: |
+        echo "Validating that published packages don't have workspace:* dependencies..."
+        VERSION="${{ steps.version.outputs.version }}"
+
+        # Wait for npm registry to propagate
+        sleep 30
+
+        for pkg in backends reporting framework cli; do
+          echo "Checking @pilaf/$pkg@$VERSION"
+          DEPS=$(npm view @pilaf/$pkg@$VERSION | grep -A 10 "dependencies" || echo "No dependencies found")
+
+          if echo "$DEPS" | grep -q "workspace:\*"; then
+            echo "❌ ERROR: @pilaf/$pkg still has workspace:* dependencies!"
+            echo "$DEPS"
+            exit 1
+          fi
+          echo "✅ @pilaf/$pkg validated successfully"
         done
 
     - name: Create tarballs for GitHub Release (no-bump mode)
