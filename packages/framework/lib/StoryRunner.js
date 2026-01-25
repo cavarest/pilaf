@@ -13,7 +13,7 @@ try {
 const fs = require('fs');
 const { PilafBackendFactory } = require('@pilaf/backends');
 const { CorrelationUtils } = require('./helpers/correlation.js');
-const { EntityUtils } = require('./helpers/entities.js');
+const EntityUtils = require('./helpers/entities.js');
 
 /**
  * StoryRunner executes test stories defined in YAML format
