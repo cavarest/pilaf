@@ -12,6 +12,8 @@ try {
 
 const fs = require('fs');
 const { PilafBackendFactory } = require('@pilaf/backends');
+const { CorrelationUtils } = require('./helpers/correlation.js');
+const { EntityUtils } = require('./helpers/entities.js');
 
 /**
  * StoryRunner executes test stories defined in YAML format
@@ -892,6 +894,48 @@ class StoryRunner {
       this.logger.log('[StoryRunner] Server stopped');
     }
   };
+
+  // ==========================================================================
+  // CORRELATION HELPER METHODS
+  // ==========================================================================
+
+  /**
+   * Wait for server confirmation of a player action
+   *
+   * This is a convenience wrapper around CorrelationUtils.waitForServerConfirmation
+   * that passes the StoryRunner instance automatically.
+   *
+   * @private
+   * @param {Object} options - Options
+   * @param {string} options.pattern - Glob pattern to match in server logs
+   * @param {number} [options.timeout] - Timeout in milliseconds (auto-detected if not specified)
+   * @param {boolean} [options.invert] - If true, wait for ABSENCE of pattern
+   * @param {string} [options.player] - Player name to filter events
+   * @param {string} [options.action] - Action type (for auto-timeout detection)
+   * @returns {Promise<Object|null>} Matching event or null
+   */
+  async _waitForServerConfirmation(options) {
+    const { action, timeout, ...correlationOptions } = options || {};
+
+    // Auto-detect timeout from action type if not specified
+    const effectiveTimeout = timeout || CorrelationUtils.getDefaultTimeout(action);
+
+    return await CorrelationUtils.waitForServerConfirmation(this, {
+      ...correlationOptions,
+      timeout: effectiveTimeout
+    });
+  }
+
+  /**
+   * Get timeout for an action type
+   *
+   * @private
+   * @param {string} action - Action type
+   * @returns {number} Timeout in milliseconds
+   */
+  _getTimeoutForAction(action) {
+    return CorrelationUtils.getDefaultTimeout(action);
+  }
 }
 
 module.exports = { StoryRunner };

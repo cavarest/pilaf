@@ -3,6 +3,8 @@ const { PilafReporter } = require('./reporters/pilaf-reporter');
 const { StoryRunner } = require('./StoryRunner');
 const { waitForEvents, captureEvents } = require('./helpers/events');
 const { captureState, compareStates } = require('./helpers/state');
+const { CorrelationUtils } = require('./helpers/correlation');
+const { EntityUtils } = require('./helpers/entities');
 const { toHaveReceivedLightningStrikes } = require('./matchers/game-matchers');
 const { createTestContext, cleanupTestContext } = require('./test-context');
 
@@ -49,6 +51,8 @@ module.exports = {
   captureEvents,
   captureState,
   compareStates,
+  CorrelationUtils,
+  EntityUtils,
 
   // Matchers
   toHaveReceivedLightningStrikes,
