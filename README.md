@@ -650,6 +650,49 @@ jobs:
 
 ---
 
+## Development Notes
+
+### Third-Party Dependencies
+
+**prismarine-physics Compatibility Patch**
+
+The `prismarine-physics` package (a transitive dependency via Mineflayer) contains a file import bug where it attempts to import `./lib/features` but the actual file is `./lib/features.json`.
+
+Pilaf automatically patches this during installation via a postinstall hook that creates a symlink from `features` to `features.json`.
+
+**Implementation:**
+```javascript
+// scripts/fix-prismarine-physics.js
+// Symlink: node_modules/.pnpm/prismarine-physics@*/node_modules/prismarine-physics/lib/features -> features.json
+```
+
+**Platform Support:**
+- Unix/macOS: Symbolic links (`fs.symlinkSync`)
+- Windows: Junctions (more reliable on Windows)
+
+**Manual invocation (if needed):**
+```bash
+node scripts/fix-prismarine-physics.js
+```
+
+### Roadmap
+
+**Player Simulation Enhancements**
+
+Current implementation supports: chat, player commands, movement, location/entity queries, inventory inspection, login/logout, and death/respawn.
+
+Planned additions:
+
+| Area | Potential Actions |
+|------|-------------------|
+| Block Interaction | Break/place blocks, interact with buttons, doors, chests |
+| Advanced Movement | Strafe, jump, look control, pathfinding navigation |
+| Entity Interaction | Attack, right-click (villagers, animals), mount/dismount |
+| Inventory Management | Drop/consume items, equip gear, container interactions |
+| Advanced Actions | Sneak, sprint, craft, item usage on blocks |
+
+---
+
 ## Releasing
 
 ### Using GitHub Actions (Recommended)
