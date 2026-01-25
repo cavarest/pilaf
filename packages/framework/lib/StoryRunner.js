@@ -724,6 +724,171 @@ class StoryRunner {
     },
 
     /**
+     * Move player backward
+     */
+    async move_backward(params) {
+      const { player, duration = 1 } = params;
+      if (!player) {
+        throw new Error('move_backward requires "player" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      bot.setControlState('back', true);
+      await new Promise(resolve => setTimeout(resolve, duration * 1000));
+      bot.setControlState('back', false);
+
+      this.logger.log(`[StoryRunner] ${player} moved backward for ${duration}s`);
+    },
+
+    /**
+     * Move player left
+     */
+    async move_left(params) {
+      const { player, duration = 1 } = params;
+      if (!player) {
+        throw new Error('move_left requires "player" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      bot.setControlState('left', true);
+      await new Promise(resolve => setTimeout(resolve, duration * 1000));
+      bot.setControlState('left', false);
+
+      this.logger.log(`[StoryRunner] ${player} moved left for ${duration}s`);
+    },
+
+    /**
+     * Move player right
+     */
+    async move_right(params) {
+      const { player, duration = 1 } = params;
+      if (!player) {
+        throw new Error('move_right requires "player" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      bot.setControlState('right', true);
+      await new Promise(resolve => setTimeout(resolve, duration * 1000));
+      bot.setControlState('right', false);
+
+      this.logger.log(`[StoryRunner] ${player} moved right for ${duration}s`);
+    },
+
+    /**
+     * Make player jump
+     */
+    async jump(params) {
+      const { player } = params;
+      if (!player) {
+        throw new Error('jump requires "player" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      bot.setControlState('jump', true);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      bot.setControlState('jump', false);
+
+      this.logger.log(`[StoryRunner] ${player} jumped`);
+    },
+
+    /**
+     * Make player sneak
+     */
+    async sneak(params) {
+      const { player } = params;
+      if (!player) {
+        throw new Error('sneak requires "player" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      bot.setControlState('sneak', true);
+      this.logger.log(`[StoryRunner] ${player} is sneaking`);
+
+      // Return state for potential assertions
+      return { sneaking: true };
+    },
+
+    /**
+     * Make player stop sneaking
+     */
+    async unsneak(params) {
+      const { player } = params;
+      if (!player) {
+        throw new Error('unsneak requires "player" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      bot.setControlState('sneak', false);
+      this.logger.log(`[StoryRunner] ${player} stopped sneaking`);
+
+      return { sneaking: false };
+    },
+
+    /**
+     * Make player sprint
+     */
+    async sprint(params) {
+      const { player } = params;
+      if (!player) {
+        throw new Error('sprint requires "player" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      bot.setControlState('sprint', true);
+      this.logger.log(`[StoryRunner] ${player} is sprinting`);
+
+      return { sprinting: true };
+    },
+
+    /**
+     * Make player stop sprinting (walk)
+     */
+    async walk(params) {
+      const { player } = params;
+      if (!player) {
+        throw new Error('walk requires "player" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      bot.setControlState('sprint', false);
+      this.logger.log(`[StoryRunner] ${player} stopped sprinting`);
+
+      return { sprinting: false };
+    },
+
+    /**
      * Get entities from player's perspective
      * Returns array of entities visible to the player
      */
@@ -884,6 +1049,740 @@ class StoryRunner {
       return distance;
     },
 
+    // ==========================================================================
+    // ENTITY ACTIONS
+    // ==========================================================================
+
+    /**
+     * Attack an entity
+     */
+    async attack_entity(params) {
+      const { player, entity_name, entity_selector } = params;
+      if (!player) {
+        throw new Error('attack_entity requires "player" parameter');
+      }
+      if (!entity_name && !entity_selector) {
+        throw new Error('attack_entity requires "entity_name" or "entity_selector" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      // Find target entity using EntityUtils
+      const target = entity_selector
+        ? bot.entities[entity_selector]
+        : EntityUtils.findEntity(bot, entity_name);
+
+      if (!target) {
+        throw new Error(`Entity "${entity_name || entity_selector}" not found`);
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} attacking ${target.name || target.customName || target.id}`);
+
+      // Execute attack
+      bot.attack(target);
+
+      // Wait for server confirmation (damage/death event)
+      await this._waitForServerConfirmation({
+        action: 'attack_entity',
+        pattern: '*dealt*damage*|*killed*',
+        timeout: 3000
+      });
+
+      this.logger.log(`[StoryRunner] RESPONSE: Attack completed`);
+
+      return {
+        attacked: true,
+        entity: {
+          id: target.id,
+          name: target.name,
+          health: target.health
+        }
+      };
+    },
+
+    /**
+     * Interact with an entity (right-click)
+     */
+    async interact_with_entity(params) {
+      const { player, entity_name, entity_selector, interaction_type } = params;
+      if (!player) {
+        throw new Error('interact_with_entity requires "player" parameter');
+      }
+      if (!entity_name && !entity_selector) {
+        throw new Error('interact_with_entity requires "entity_name" or "entity_selector" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      // Find target entity
+      const target = entity_selector
+        ? bot.entities[entity_selector]
+        : EntityUtils.findEntity(bot, entity_name);
+
+      if (!target) {
+        throw new Error(`Entity "${entity_name || entity_selector}" not found`);
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} interacting with ${target.name || target.customName || target.id}`);
+
+      // Execute interaction (useOn)
+      bot.useOn(target);
+
+      // Wait briefly for interaction to process
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      this.logger.log(`[StoryRunner] RESPONSE: Interaction completed`);
+
+      return {
+        interacted: true,
+        entity_type: target.name,
+        interaction_type: interaction_type || 'default'
+      };
+    },
+
+    /**
+     * Mount an entity (ride horse, boat, minecart)
+     */
+    async mount_entity(params) {
+      const { player, entity_name, entity_selector } = params;
+      if (!player) {
+        throw new Error('mount_entity requires "player" parameter');
+      }
+      if (!entity_name && !entity_selector) {
+        throw new Error('mount_entity requires "entity_name" or "entity_selector" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      // Find target entity
+      const target = entity_selector
+        ? bot.entities[entity_selector]
+        : EntityUtils.findEntity(bot, entity_name);
+
+      if (!target) {
+        throw new Error(`Entity "${entity_name || entity_selector}" not found`);
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} mounting ${target.name || target.id}`);
+
+      // Execute mount
+      bot.mount(target);
+
+      // Wait for mount to process
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      this.logger.log(`[StoryRunner] RESPONSE: Mounted successfully`);
+
+      return {
+        mounted: true,
+        entity_type: target.name
+      };
+    },
+
+    /**
+     * Dismount from current entity
+     */
+    async dismount(params) {
+      const { player } = params;
+      if (!player) {
+        throw new Error('dismount requires "player" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} dismounting`);
+
+      // Execute dismount
+      bot.dismount();
+
+      // Wait for dismount to process
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      this.logger.log(`[StoryRunner] RESPONSE: Dismounted successfully`);
+
+      return {
+        dismounted: true
+      };
+    },
+
+    // ==========================================================================
+    // INVENTORY ACTIONS
+    // ==========================================================================
+
+    /**
+     * Drop item from inventory
+     */
+    async drop_item(params) {
+      const { player, item_name, count = 1 } = params;
+      if (!player) {
+        throw new Error('drop_item requires "player" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} dropping ${count}x ${item_name || 'item'}`);
+
+      // If item_name specified, find and toss that item
+      if (item_name) {
+        const items = bot.inventory.items();
+        const item = items.find(i => i && i.name === item_name);
+
+        if (!item) {
+          throw new Error(`Item "${item_name}" not found in inventory`);
+        }
+
+        // Toss the item
+        bot.toss(item.type, null, count);
+      } else {
+        // Toss currently held item
+        bot.tossStack(bot.inventory.slots[bot.inventory.selectedSlot]);
+      }
+
+      // Wait for drop to process
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      this.logger.log(`[StoryRunner] RESPONSE: Item dropped`);
+
+      return {
+        dropped: true,
+        item: item_name || 'held_item',
+        count
+      };
+    },
+
+    /**
+     * Consume item (eat food, drink potion)
+     */
+    async consume_item(params) {
+      const { player, item_name } = params;
+      if (!player) {
+        throw new Error('consume_item requires "player" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} consuming ${item_name || 'item'}`);
+
+      // If item_name specified, find and equip it first
+      if (item_name) {
+        const items = bot.inventory.items();
+        const item = items.find(i => i && i.name === item_name);
+
+        if (!item) {
+          throw new Error(`Item "${item_name}" not found in inventory`);
+        }
+
+        // Equip to hand
+        await bot.equip(item, 'hand');
+      }
+
+      // Consume the item
+      const consumed = await bot.consume();
+
+      // Wait for consumption to process
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      this.logger.log(`[StoryRunner] RESPONSE: Item consumed`);
+
+      return {
+        consumed: true,
+        item: item_name || 'held_item'
+      };
+    },
+
+    /**
+     * Equip item to slot
+     */
+    async equip_item(params) {
+      const { player, item_name, destination = 'hand' } = params;
+      if (!player) {
+        throw new Error('equip_item requires "player" parameter');
+      }
+      if (!item_name) {
+        throw new Error('equip_item requires "item_name" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} equipping ${item_name} to ${destination}`);
+
+      // Find item in inventory
+      const items = bot.inventory.items();
+      const item = items.find(i => i && i.name === item_name);
+
+      if (!item) {
+        throw new Error(`Item "${item_name}" not found in inventory`);
+      }
+
+      // Equip the item
+      await bot.equip(item, destination);
+
+      // Verify equipped
+      const equipped = destination === 'hand'
+        ? bot.inventory.slots[bot.inventory.selectedSlot]
+        : bot.inventory.slots[bot.inventory.getEquipmentDestSlot(destination)];
+
+      if (!equipped || equipped.name !== item_name) {
+        throw new Error(`Failed to equip "${item_name}"`);
+      }
+
+      this.logger.log(`[StoryRunner] RESPONSE: Item equipped`);
+
+      return {
+        equipped: true,
+        item: item_name,
+        slot: destination
+      };
+    },
+
+    /**
+     * Swap inventory slots
+     */
+    async swap_inventory_slots(params) {
+      const { player, from_slot, to_slot } = params;
+      if (!player) {
+        throw new Error('swap_inventory_slots requires "player" parameter');
+      }
+      if (from_slot === undefined || to_slot === undefined) {
+        throw new Error('swap_inventory_slots requires "from_slot" and "to_slot" parameters');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} swapping slot ${from_slot} to ${to_slot}`);
+
+      // Move item between slots using click window
+      await bot.clickWindow(from_slot, 0, 0);  // Pick up from_slot
+      await bot.clickWindow(to_slot, 0, 0);    // Place in to_slot
+
+      // Wait for swap to process
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      this.logger.log(`[StoryRunner] RESPONSE: Slots swapped`);
+
+      return {
+        swapped: true,
+        from_slot,
+        to_slot
+      };
+    },
+
+    // ==========================================================================
+    // BLOCK ACTIONS
+    // ==========================================================================
+
+    /**
+     * Break a block at location
+     */
+    async break_block(params) {
+      const { player, location, wait_for_drop = true } = params;
+      if (!player) {
+        throw new Error('break_block requires "player" parameter');
+      }
+      if (!location) {
+        throw new Error('break_block requires "location" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} breaking block at ${location.x}, ${location.y}, ${location.z}`);
+
+      // Get target block
+      const target = bot.blockAt(location);
+
+      if (!target) {
+        throw new Error(`No block found at location ${location.x}, ${location.y}, ${location.z}`);
+      }
+
+      // Execute dig (break block)
+      await bot.dig(target, true);  // true = ignore 'aren't you allowed to dig' error
+
+      // Wait for server confirmation (check for "Cannot break" error)
+      await this._waitForServerConfirmation({
+        action: 'break_block',
+        pattern: '*Cannot break block*|*Broken block*',
+        invert: true,  // Wait for ABSENCE of error message
+        timeout: 3000
+      });
+
+      // Optionally wait for item drop
+      if (wait_for_drop) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      this.logger.log(`[StoryRunner] RESPONSE: Block broken`);
+
+      return {
+        broken: true,
+        location
+      };
+    },
+
+    /**
+     * Place a block at location
+     */
+    async place_block(params) {
+      const { player, block, location, face = 'top' } = params;
+      if (!player) {
+        throw new Error('place_block requires "player" parameter');
+      }
+      if (!block) {
+        throw new Error('place_block requires "block" parameter');
+      }
+      if (!location) {
+        throw new Error('place_block requires "location" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} placing ${block} at ${location.x}, ${location.y}, ${location.z}`);
+
+      // Get reference block (adjacent block to place on)
+      const referenceBlock = bot.blockAt(location);
+
+      if (!referenceBlock) {
+        throw new Error(`No reference block found at location ${location.x}, ${location.y}, ${location.z}`);
+      }
+
+      // Calculate face vector
+      const faceVector = this._getFaceVector(face);
+
+      // Get item type from bot inventory
+      const items = bot.inventory.items();
+      const item = items.find(i => i && i.name === block);
+
+      if (!item) {
+        throw new Error(`Block "${block}" not found in inventory`);
+      }
+
+      // Place block
+      await bot.placeBlock(referenceBlock, faceVector);
+
+      // Wait for server confirmation
+      await this._waitForServerConfirmation({
+        action: 'place_block',
+        pattern: '*placed*',
+        timeout: 3000
+      });
+
+      this.logger.log(`[StoryRunner] RESPONSE: Block placed`);
+
+      return {
+        placed: true,
+        block,
+        location
+      };
+    },
+
+    /**
+     * Interact with a block (chest, door, button, lever)
+     */
+    async interact_with_block(params) {
+      const { player, location } = params;
+      if (!player) {
+        throw new Error('interact_with_block requires "player" parameter');
+      }
+      if (!location) {
+        throw new Error('interact_with_block requires "location" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} interacting with block at ${location.x}, ${location.y}, ${location.z}`);
+
+      // Get target block
+      const target = bot.blockAt(location);
+
+      if (!target) {
+        throw new Error(`No block found at location ${location.x}, ${location.y}, ${location.z}`);
+      }
+
+      // Activate block (right-click)
+      bot.activateBlock(target);
+
+      // Wait for interaction to process
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      this.logger.log(`[StoryRunner] RESPONSE: Block interaction completed`);
+
+      return {
+        interacted: true,
+        block_type: target.name
+      };
+    },
+
+    // ==========================================================================
+    // COMPLEX ACTIONS
+    // ==========================================================================
+
+    /**
+     * Look at a specific position or entity
+     */
+    async look_at(params) {
+      const { player, position, entity_name } = params;
+      if (!player) {
+        throw new Error('look_at requires "player" parameter');
+      }
+      if (!position && !entity_name) {
+        throw new Error('look_at requires "position" or "entity_name" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      let targetPosition;
+
+      // If entity_name specified, look at that entity
+      if (entity_name) {
+        const target = EntityUtils.findEntity(bot, entity_name);
+
+        if (!target) {
+          throw new Error(`Entity "${entity_name}" not found`);
+        }
+
+        targetPosition = target.position;
+        this.logger.log(`[StoryRunner] ACTION: ${player} looking at ${entity_name}`);
+      } else {
+        targetPosition = position;
+        this.logger.log(`[StoryRunner] ACTION: ${player} looking at ${position.x}, ${position.y}, ${position.z}`);
+      }
+
+      // Look at the position
+      if (targetPosition.y !== undefined) {
+        // Full 3D position - use lookAt
+        await bot.lookAt(targetPosition);
+      } else {
+        // Only yaw/pitch specified
+        await bot.look(targetPosition.yaw, targetPosition.pitch);
+      }
+
+      // Wait for look to process
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      this.logger.log(`[StoryRunner] RESPONSE: Look completed`);
+
+      // Return actual view direction
+      return {
+        looked: true,
+        yaw: bot.entity.yaw,
+        pitch: bot.entity.pitch
+      };
+    },
+
+    /**
+     * Navigate to a location using pathfinding
+     *
+     * Note: This requires the pathfinder plugin to be loaded on the bot
+     */
+    async navigate_to(params) {
+      const { player, destination, timeout_ms = 10000 } = params;
+      if (!player) {
+        throw new Error('navigate_to requires "player" parameter');
+      }
+      if (!destination) {
+        throw new Error('navigate_to requires "destination" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} navigating to ${destination.x}, ${destination.y}, ${destination.z}`);
+
+      // Check if pathfinder plugin is loaded
+      if (!bot.pathfinder) {
+        throw new Error('Pathfinder plugin not loaded. Use mineflayer-pathfinder plugin.');
+      }
+
+      // Import pathfinder components (lazy load)
+      const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
+
+      // Load pathfinder if not already loaded
+      bot.loadPlugin(pathfinder);
+
+      // Configure movements
+      const mcData = require('minecraft-data')(bot.version);
+      const movements = new Movements(bot, mcData);
+      movements.canDig = false;  // Don't dig while pathfinding
+      movements.allow1by1towers = false;
+
+      // Create goal
+      const goal = new goals.GoalBlock(destination.x, destination.y, destination.z);
+
+      // Navigate
+      try {
+        await bot.pathfinder.goto(goal, { timeout: timeout_ms });
+      } catch (error) {
+        throw new Error(`Navigation failed: ${error.message}`);
+      }
+
+      // Wait for server correlation (anti-cheat check)
+      await this._waitForServerConfirmation({
+        action: 'navigate_to',
+        pattern: '*moved*wrongly!*',
+        invert: true,
+        timeout: 1000
+      });
+
+      // Return actual final position
+      const finalPosition = {
+        x: bot.entity.position.x,
+        y: bot.entity.position.y,
+        z: bot.entity.position.z
+      };
+
+      this.logger.log(`[StoryRunner] RESPONSE: Navigated to ${finalPosition.x.toFixed(2)}, ${finalPosition.y.toFixed(2)}, ${finalPosition.z.toFixed(2)}`);
+
+      return {
+        reached: true,
+        position: finalPosition
+      };
+    },
+
+    /**
+     * Open a container (chest, furnace, etc.)
+     */
+    async open_container(params) {
+      const { player, location } = params;
+      if (!player) {
+        throw new Error('open_container requires "player" parameter');
+      }
+      if (!location) {
+        throw new Error('open_container requires "location" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} opening container at ${location.x}, ${location.y}, ${location.z}`);
+
+      // Get target block
+      const target = bot.blockAt(location);
+
+      if (!target) {
+        throw new Error(`No block found at location ${location.x}, ${location.y}, ${location.z}`);
+      }
+
+      // Open the container
+      const window = await bot.openBlock(target);
+
+      // Wait for window to open
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      this.logger.log(`[StoryRunner] RESPONSE: Container opened (type: ${window.type})`);
+
+      // Get container contents
+      const items = [];
+      for (let i = 0; i < window.count; i++) {
+        const slot = window.slots[i];
+        if (slot) {
+          items.push({
+            slot: i,
+            item: slot.name,
+            count: slot.count
+          });
+        }
+      }
+
+      return {
+        opened: true,
+        container_type: window.type,
+        items
+      };
+    },
+
+    /**
+     * Craft an item
+     *
+     * Note: This is a simplified implementation that only works for basic recipes
+     */
+    async craft_item(params) {
+      const { player, item_name, count = 1 } = params;
+      if (!player) {
+        throw new Error('craft_item requires "player" parameter');
+      }
+      if (!item_name) {
+        throw new Error('craft_item requires "item_name" parameter');
+      }
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} crafting ${count}x ${item_name}`);
+
+      // Get minecraft data
+      const mcData = require('minecraft-data')(bot.version);
+
+      // Find recipe for the item
+      const recipes = bot.recipesFor(item_name, null, 1, false);
+
+      if (!recipes || recipes.length === 0) {
+        throw new Error(`No recipe found for item "${item_name}"`);
+      }
+
+      const recipe = recipes[0];  // Use first available recipe
+
+      // Check if we have required materials
+      // This is a simplified check - full implementation would verify inventory
+      try {
+        // Craft the item
+        await bot.craft(recipe, count);
+      } catch (error) {
+        throw new Error(`Crafting failed: ${error.message}`);
+      }
+
+      // Wait for crafting to complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      this.logger.log(`[StoryRunner] RESPONSE: Item crafted`);
+
+      return {
+        crafted: true,
+        item: item_name,
+        count
+      };
+    },
+
     /**
      * Stop the server
      */
@@ -898,6 +1797,26 @@ class StoryRunner {
   // ==========================================================================
   // CORRELATION HELPER METHODS
   // ==========================================================================
+
+  /**
+   * Get face vector for block placement
+   *
+   * @private
+   * @param {string} face - Face name (top, bottom, north, south, east, west)
+   * @returns {Object} Vec3-like face vector
+   */
+  _getFaceVector(face) {
+    const faceVectors = {
+      top: { x: 0, y: 1, z: 0 },
+      bottom: { x: 0, y: -1, z: 0 },
+      north: { x: 0, y: 0, z: -1 },
+      south: { x: 0, y: 0, z: 1 },
+      east: { x: 1, y: 0, z: 0 },
+      west: { x: -1, y: 0, z: 0 }
+    };
+
+    return faceVectors[face] || faceVectors.top;
+  }
 
   /**
    * Wait for server confirmation of a player action
