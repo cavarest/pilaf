@@ -218,7 +218,7 @@ describe('Movement Control Examples', () => {
         {
           name: 'Verify player moved upward',
           action: 'assert',
-          condition: 'y_greater_than',
+          condition: 'greater_than',
           actual: '{jump_position}',
           expected: '{start_position}'
         },
