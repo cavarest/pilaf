@@ -1,0 +1,606 @@
+/**
+ * Inventory Management Example
+ *
+ * This example shows how to test inventory management operations
+ * including dropping items, consuming items, equipping gear, and
+ * managing inventory slots.
+ *
+ * New actions demonstrated:
+ * - drop_item: Drop an item from inventory
+ * - consume_item: Consume a food item (eat, drink)
+ * - equip_item: Equip an item to a specific slot
+ * - swap_inventory_slots: Swap items between inventory slots
+ */
+
+const { describe, it, expect } = require('@jest/globals');
+const { StoryRunner } = require('@pilaf/framework');
+
+describe('Inventory Management Examples', () => {
+  // Add delay between tests to prevent connection throttling
+  beforeEach(async () => {
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  });
+
+  it('should test dropping items', async () => {
+    const runner = new StoryRunner();
+
+    const story = {
+      name: 'Drop Item Test',
+      description: 'Demonstrates dropping items from inventory',
+
+      setup: {
+        server: { type: 'paper', version: '1.21.8' },
+        players: [
+          { name: 'Dropper', username: 'dropper' }
+        ]
+      },
+
+      steps: [
+        {
+          name: '[player: dropper] Get initial inventory',
+          action: 'get_inventory',
+          player: 'dropper',
+          store_as: 'initial_inventory'
+        },
+        {
+          name: '[player: dropper] Give items to drop',
+          action: 'execute_player_command',
+          player: 'dropper',
+          command: '/give @p diamond 64'
+        },
+        {
+          name: 'Wait for items',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: dropper] Drop some diamonds',
+          action: 'drop_item',
+          player: 'dropper',
+          item_name: 'diamond',
+          count: 10
+        },
+        {
+          name: 'Wait for drop',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: dropper] Get final inventory',
+          action: 'get_inventory',
+          player: 'dropper',
+          store_as: 'final_inventory'
+        },
+        {
+          name: 'Verify diamonds were dropped',
+          action: 'assert',
+          condition: 'item_count_differs',
+          actual: '{final_inventory}',
+          expected: '{initial_inventory}'
+        }
+      ],
+
+      teardown: {
+        stop_server: false
+      }
+    };
+
+    const result = await runner.execute(story);
+    expect(result.success).toBe(true);
+  });
+
+  it('should test consuming food items', async () => {
+    const runner = new StoryRunner();
+
+    const story = {
+      name: 'Consume Item Test',
+      description: 'Demonstrates eating food to restore hunger',
+
+      setup: {
+        server: { type: 'paper', version: '1.21.8' },
+        players: [
+          { name: 'Eater', username: 'eater' }
+        ]
+      },
+
+      steps: [
+        {
+          name: '[player: eater] Get starting food level',
+          action: 'get_player_food_level',
+          player: 'eater',
+          store_as: 'initial_food'
+        },
+        {
+          name: '[RCON] Set food level to half',
+          action: 'execute_command',
+          command: '/effect give @e[type=player,limit=1] minecraft:hunger 1 10'
+        },
+        {
+          name: 'Wait for hunger effect',
+          action: 'wait',
+          duration: 2
+        },
+        {
+          name: '[player: eater] Get reduced food level',
+          action: 'get_player_food_level',
+          player: 'eater',
+          store_as: 'reduced_food'
+        },
+        {
+          name: '[player: eater] Give food items',
+          action: 'execute_player_command',
+          player: 'eater',
+          command: '/give @p cooked_beef 64'
+        },
+        {
+          name: 'Wait for items',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: eater] Eat cooked beef',
+          action: 'consume_item',
+          player: 'eater',
+          item_name: 'cooked_beef'
+        },
+        {
+          name: 'Wait for consumption',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: eater] Get final food level',
+          action: 'get_player_food_level',
+          player: 'eater',
+          store_as: 'final_food'
+        },
+        {
+          name: 'Verify food level increased',
+          action: 'assert',
+          condition: 'greater_than',
+          actual: '{final_food}',
+          expected: '{reduced_food}'
+        }
+      ],
+
+      teardown: {
+        stop_server: false
+      }
+    };
+
+    const result = await runner.execute(story);
+    expect(result.success).toBe(true);
+  });
+
+  it('should test equipping items to different slots', async () => {
+    const runner = new StoryRunner();
+
+    const story = {
+      name: 'Equip Item Test',
+      description: 'Demonstrates equipping items to different equipment slots',
+
+      setup: {
+        server: { type: 'paper', version: '1.21.8' },
+        players: [
+          { name: 'Adventurer', username: 'adventurer' }
+        ]
+      },
+
+      steps: [
+        {
+          name: '[player: adventurer] Give equipment',
+          action: 'execute_player_command',
+          player: 'adventurer',
+          command: '/give @p diamond_sword'
+        },
+        {
+          name: 'Wait for item',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: adventurer] Give helmet',
+          action: 'execute_player_command',
+          player: 'adventurer',
+          command: '/give @p diamond_helmet'
+        },
+        {
+          name: 'Wait for item',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: adventurer] Give chestplate',
+          action: 'execute_player_command',
+          player: 'adventurer',
+          command: '/give @p diamond_chestplate'
+        },
+        {
+          name: 'Wait for item',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: adventurer] Equip sword to hand',
+          action: 'equip_item',
+          player: 'adventurer',
+          item_name: 'diamond_sword',
+          destination: 'hand'
+        },
+        {
+          name: 'Wait for equip',
+          action: 'wait',
+          duration: 0.5
+        },
+        {
+          name: '[player: adventurer] Equip helmet to head',
+          action: 'equip_item',
+          player: 'adventurer',
+          item_name: 'diamond_helmet',
+          destination: 'head'
+        },
+        {
+          name: 'Wait for equip',
+          action: 'wait',
+          duration: 0.5
+        },
+        {
+          name: '[player: adventurer] Equip chestplate',
+          action: 'equip_item',
+          player: 'adventurer',
+          item_name: 'diamond_chestplate',
+          destination: 'torso'
+        },
+        {
+          name: 'Wait for equip',
+          action: 'wait',
+          duration: 0.5
+        },
+        {
+          name: '[player: adventurer] Get final inventory',
+          action: 'get_inventory',
+          player: 'adventurer',
+          store_as: 'final_inventory'
+        },
+        {
+          name: 'Verify equipment is equipped',
+          action: 'assert',
+          condition: 'item_equipped',
+          actual: '{final_inventory}',
+          expected: 'diamond_sword'
+        }
+      ],
+
+      teardown: {
+        stop_server: false
+      }
+    };
+
+    const result = await runner.execute(story);
+    expect(result.success).toBe(true);
+  });
+
+  it('should test swapping inventory slots', async () => {
+    const runner = new StoryRunner();
+
+    const story = {
+      name: 'Swap Inventory Slots Test',
+      description: 'Demonstrates swapping items between inventory slots',
+
+      setup: {
+        server: { type: 'paper', version: '1.21.8' },
+        players: [
+          { name: 'Organizer', username: 'organizer' }
+        ]
+      },
+
+      steps: [
+        {
+          name: '[player: organizer] Give different items',
+          action: 'execute_player_command',
+          player: 'organizer',
+          command: '/give @p diamond'
+        },
+        {
+          name: 'Wait for item',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: organizer] Give another item',
+          action: 'execute_player_command',
+          player: 'organizer',
+          command: '/give @p gold_ingot'
+        },
+        {
+          name: 'Wait for item',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: organizer] Get initial inventory state',
+          action: 'get_inventory',
+          player: 'organizer',
+          store_as: 'initial_inventory'
+        },
+        {
+          name: '[player: organizer] Swap hotbar slot 0 with slot 1',
+          action: 'swap_inventory_slots',
+          player: 'organizer',
+          slot_a: 0,
+          slot_b: 1
+        },
+        {
+          name: 'Wait for swap',
+          action: 'wait',
+          duration: 0.5
+        },
+        {
+          name: '[player: organizer] Get final inventory state',
+          action: 'get_inventory',
+          player: 'organizer',
+          store_as: 'final_inventory'
+        },
+        {
+          name: 'Verify slots were swapped',
+          action: 'assert',
+          condition: 'slots_swapped',
+          actual: '{final_inventory}',
+          expected: '{initial_inventory}'
+        }
+      ],
+
+      teardown: {
+        stop_server: false
+      }
+    };
+
+    const result = await runner.execute(story);
+    expect(result.success).toBe(true);
+  });
+
+  it('should test complete inventory workflow', async () => {
+    const runner = new StoryRunner();
+
+    const story = {
+      name: 'Complete Inventory Workflow',
+      description: 'Demonstrates a complete inventory management sequence',
+
+      setup: {
+        server: { type: 'paper', version: '1.21.8' },
+        players: [
+          { name: 'InventoryMaster', username: 'inv_master' }
+        ]
+      },
+
+      steps: [
+        {
+          name: '[player: inv_master] Get initial inventory',
+          action: 'get_inventory',
+          player: 'inv_master',
+          store_as: 'initial_inventory'
+        },
+        {
+          name: '[player: inv_master] Give variety of items',
+          action: 'execute_player_command',
+          player: 'inv_master',
+          command: '/give @p diamond_sword'
+        },
+        {
+          name: 'Wait for item',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: inv_master] Give food',
+          action: 'execute_player_command',
+          player: 'inv_master',
+          command: '/give @p bread 64'
+        },
+        {
+          name: 'Wait for item',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: inv_master] Give armor',
+          action: 'execute_player_command',
+          player: 'inv_master',
+          command: '/give @p diamond_chestplate'
+        },
+        {
+          name: 'Wait for item',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: inv_master] Equip sword',
+          action: 'equip_item',
+          player: 'inv_master',
+          item_name: 'diamond_sword',
+          destination: 'hand'
+        },
+        {
+          name: 'Wait for equip',
+          action: 'wait',
+          duration: 0.5
+        },
+        {
+          name: '[player: inv_master] Equip armor',
+          action: 'equip_item',
+          player: 'inv_master',
+          item_name: 'diamond_chestplate',
+          destination: 'torso'
+        },
+        {
+          name: 'Wait for equip',
+          action: 'wait',
+          duration: 0.5
+        },
+        {
+          name: '[player: inv_master] Swap inventory slots',
+          action: 'swap_inventory_slots',
+          player: 'inv_master',
+          slot_a: 1,
+          slot_b: 2
+        },
+        {
+          name: 'Wait for swap',
+          action: 'wait',
+          duration: 0.5
+        },
+        {
+          name: '[player: inv_master] Drop extra items',
+          action: 'drop_item',
+          player: 'inv_master',
+          item_name: 'diamond_sword',
+          count: 1
+        },
+        {
+          name: 'Wait for drop',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: inv_master] Consume food',
+          action: 'consume_item',
+          player: 'inv_master',
+          item_name: 'bread'
+        },
+        {
+          name: 'Wait for consumption',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: inv_master] Get final inventory',
+          action: 'get_inventory',
+          player: 'inv_master',
+          store_as: 'final_inventory'
+        },
+        {
+          name: 'Verify inventory changed',
+          action: 'assert',
+          condition: 'inventory_modified',
+          actual: '{final_inventory}',
+          expected: '{initial_inventory}'
+        }
+      ],
+
+      teardown: {
+        stop_server: false
+      }
+    };
+
+    const result = await runner.execute(story);
+    expect(result.success).toBe(true);
+  });
+
+  it('should test hotbar slot management', async () => {
+    const runner = new StoryRunner();
+
+    const story = {
+      name: 'Hotbar Management Test',
+      description: 'Demonstrates managing items in hotbar slots',
+
+      setup: {
+        server: { type: 'paper', version: '1.21.8' },
+        players: [
+          { name: 'HotbarUser', username: 'hotbar_user' }
+        ]
+      },
+
+      steps: [
+        {
+          name: '[player: hotbar_user] Give 9 different items',
+          action: 'execute_player_command',
+          player: 'hotbar_user',
+          command: '/give @p diamond'
+        },
+        {
+          name: 'Wait for item',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: hotbar_user] Give iron',
+          action: 'execute_player_command',
+          player: 'hotbar_user',
+          command: '/give @p iron_ingot'
+        },
+        {
+          name: 'Wait for item',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: hotbar_user] Give gold',
+          action: 'execute_player_command',
+          player: 'hotbar_user',
+          command: '/give @p gold_ingot'
+        },
+        {
+          name: 'Wait for item',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: hotbar_user] Equip diamond to slot 0',
+          action: 'equip_item',
+          player: 'hotbar_user',
+          item_name: 'diamond',
+          destination: 'hand'
+        },
+        {
+          name: 'Wait for equip',
+          action: 'wait',
+          duration: 0.5
+        },
+        {
+          name: '[player: hotbar_user] Swap slots 0 and 4',
+          action: 'swap_inventory_slots',
+          player: 'hotbar_user',
+          slot_a: 0,
+          slot_b: 4
+        },
+        {
+          name: 'Wait for swap',
+          action: 'wait',
+          duration: 0.5
+        },
+        {
+          name: '[player: hotbar_user] Swap slots 1 and 5',
+          action: 'swap_inventory_slots',
+          player: 'hotbar_user',
+          slot_a: 1,
+          slot_b: 5
+        },
+        {
+          name: 'Wait for swap',
+          action: 'wait',
+          duration: 0.5
+        },
+        {
+          name: '[player: hotbar_user] Get inventory state',
+          action: 'get_inventory',
+          player: 'hotbar_user',
+          store_as: 'inventory'
+        },
+        {
+          name: 'Verify hotbar organization',
+          action: 'assert',
+          condition: 'hotbar_organized',
+          actual: '{inventory}',
+          expected: 'organized'
+        }
+      ],
+
+      teardown: {
+        stop_server: false
+      }
+    };
+
+    const result = await runner.execute(story);
+    expect(result.success).toBe(true);
+  });
+});
