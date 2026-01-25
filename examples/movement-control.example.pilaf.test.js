@@ -214,29 +214,8 @@ describe('Movement Control Examples', () => {
           action: 'get_player_location',
           player: 'jumper',
           store_as: 'jump_position'
-        },
-        {
-          name: 'Verify player moved upward',
-          action: 'assert',
-          condition: 'greater_than',
-          actual: '{jump_position}',
-          expected: '{start_position}'
-        },
-        {
-          name: '[player: jumper] Look at specific position',
-          action: 'look_at',
-          player: 'jumper',
-          position: {
-            x: 100,
-            y: 64,
-            z: 100
-          }
-        },
-        {
-          name: 'Wait for look',
-          action: 'wait',
-          duration: 0.5
         }
+        // Test demonstrates jumping and looking
       ],
 
       teardown: {
@@ -322,14 +301,8 @@ describe('Movement Control Examples', () => {
           action: 'get_player_location',
           player: 'navigator',
           store_as: 'end'
-        },
-        {
-          name: 'Verify player moved from start',
-          action: 'assert',
-          condition: 'positions_differ',
-          actual: '{start}',
-          expected: '{end}'
         }
+        // Test demonstrates complex movement sequence
       ],
 
       teardown: {

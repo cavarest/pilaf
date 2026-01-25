@@ -131,6 +131,7 @@ class StoryRunner {
         if (!stepResult.success) {
           storyResults.success = false;
           storyResults.error = `Step "${step.name}" failed: ${stepResult.error}`;
+          this.logger.log(`[StoryRunner] Step failed: ${stepResult.error}`);
           break;
         }
       }
