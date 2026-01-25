@@ -1601,8 +1601,18 @@ class StoryRunner {
         targetPosition = target.position;
         this.logger.log(`[StoryRunner] ACTION: ${player} looking at ${entity_name}`);
       } else {
-        targetPosition = position;
-        this.logger.log(`[StoryRunner] ACTION: ${player} looking at ${position.x}, ${position.y}, ${position.z}`);
+        // Convert plain object to Vec3 if needed
+        if (position.x !== undefined && position.y !== undefined && position.z !== undefined) {
+          // Check if it's already a Vec3 (has lookAt method) or plain object
+          if (typeof position.lookAt !== 'function') {
+            targetPosition = new bot.vec3(position.x, position.y, position.z);
+          } else {
+            targetPosition = position;
+          }
+        } else {
+          targetPosition = position;
+        }
+        this.logger.log(`[StoryRunner] ACTION: ${player} looking at ${targetPosition.x}, ${targetPosition.y}, ${targetPosition.z}`);
       }
 
       // Look at the position
