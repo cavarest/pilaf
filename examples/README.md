@@ -76,6 +76,47 @@ Demonstrates inventory testing:
 - Verifying item presence
 - Multiple item operations
 
+### movement-control.example.pilaf.test.js
+Demonstrates advanced movement controls:
+- Directional movement (backward, left, right)
+- Jumping mechanics
+- Sneaking and sprinting toggles
+- View orientation (look_at)
+- Complex movement sequences
+
+### entity-combat.example.pilaf.test.js
+Demonstrates entity combat and interaction:
+- Attacking entities with weapons
+- Right-click entity interactions (villagers, animals)
+- Mounting rideable entities (boats, horses, minecarts)
+- Dismounting from entities
+- Multi-entity interaction workflows
+
+### block-interaction.example.pilaf.test.js
+Demonstrates block manipulation:
+- Breaking blocks at specific locations
+- Placing blocks with face orientation
+- Interacting with blocks (chests, doors, buttons)
+- Building simple structures
+- Block replacement workflows
+
+### inventory-management.example.pilaf.test.js
+Demonstrates inventory operations:
+- Dropping items from inventory
+- Consuming food items
+- Equipping items to different slots (hand, head, torso)
+- Swapping inventory slots
+- Complete inventory management workflows
+
+### advanced-features.example.pilaf.test.js
+Demonstrates complex player actions:
+- Pathfinding navigation (navigate_to)
+- Container interactions (open_container, take_from_container, put_in_container)
+- Crafting items (craft_item)
+- Navigation around obstacles
+- Multi-container workflows
+- Advanced crafting sequences
+
 ## Key Concepts Demonstrated
 
 ### Story Structure
