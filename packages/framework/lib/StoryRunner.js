@@ -311,14 +311,37 @@ class StoryRunner {
 
     const resolveValue = (value) => {
       if (typeof value === 'string') {
-        // Check for {variableName} pattern
+        // Check for {variableName} or {variable.property} pattern
         const match = value.match(/^\{(.+)\}$/);
         if (match) {
-          const varName = match[1];
-          if (!this.variables.has(varName)) {
-            throw new Error(`Variable "${varName}" not found. Available variables: ${[...this.variables.keys()].join(', ')}`);
+          const varPath = match[1];
+
+          // Check if it contains a dot (nested property access)
+          if (varPath.includes('.')) {
+            const parts = varPath.split('.');
+            const rootVar = parts[0];
+
+            if (!this.variables.has(rootVar)) {
+              throw new Error(`Variable "${rootVar}" not found. Available variables: ${[...this.variables.keys()].join(', ')}`);
+            }
+
+            // Navigate through nested properties
+            let result = this.variables.get(rootVar);
+            for (let i = 1; i < parts.length; i++) {
+              if (result && typeof result === 'object' && parts[i] in result) {
+                result = result[parts[i]];
+              } else {
+                throw new Error(`Property "${parts[i]}" not found in variable "${rootVar}"`);
+              }
+            }
+            return result;
+          } else {
+            // Simple variable access
+            if (!this.variables.has(varPath)) {
+              throw new Error(`Variable "${varPath}" not found. Available variables: ${[...this.variables.keys()].join(', ')}`);
+            }
+            return this.variables.get(varPath);
           }
-          return this.variables.get(varName);
         }
         return value;
       } else if (Array.isArray(value)) {
