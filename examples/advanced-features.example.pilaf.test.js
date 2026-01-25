@@ -188,7 +188,7 @@ describe('Advanced Features Examples', () => {
           },
           {
             name: '[player: crafter] Get inventory before crafting',
-            action: 'get_inventory',
+            action: 'get_player_inventory',
             player: 'crafter',
             store_as: 'inventory_before'
           },
@@ -206,7 +206,7 @@ describe('Advanced Features Examples', () => {
           },
           {
             name: '[player: crafter] Get inventory after crafting',
-            action: 'get_inventory',
+            action: 'get_player_inventory',
             player: 'crafter',
             store_as: 'inventory_after'
           }
