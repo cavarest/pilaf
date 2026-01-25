@@ -160,30 +160,68 @@ const story = {
 | `wait` | Pause execution | `duration` (ms) |
 | `assert` | Make assertion | `condition`, `expected` |
 
-#### Player Actions (Mineflayer only)
+#### Player Movement Actions (Mineflayer only)
 
-| Action | Description | Parameters |
-|--------|-------------|------------|
-| `execute_player_command` | Execute command as player | `player`, `command` |
-| `chat` | Send chat message | `player`, `message` |
-| `move_forward` | Move player forward | `player`, `duration` (ms) |
-| `login` / `logout` | Reconnect/disconnect player | `player` |
-| `respawn` | Respawn player | `player` |
+| Action | Description | Parameters | Returns |
+|--------|-------------|------------|---------|
+| `move_forward` | Move player forward | `player`, `duration` (ms) | - |
+| `move_backward` | Move player backward | `player`, `duration` (ms) | - |
+| `move_left` | Move player left (strafe) | `player`, `duration` (ms) | - |
+| `move_right` | Move player right (strafe) | `player`, `duration` (ms) | - |
+| `jump` | Make player jump | `player` | - |
+| `sneak` | Toggle sneaking on | `player` | `sneaking: true` |
+| `unsneak` | Toggle sneaking off | `player` | `sneaking: false` |
+| `sprint` | Toggle sprinting on | `player` | `sprinting: true` |
+| `walk` | Toggle sprinting off | `player` | `sprinting: false` |
+| `look_at` | Look at position or entity | `player`, `position` or `entity_name` | `yaw`, `pitch` |
 
-#### Entity Actions (Mineflayer only)
+#### Player Control Actions (Mineflayer only)
 
-| Action | Description | Parameters |
-|--------|-------------|------------|
-| `get_entities` | Get nearby entities | `player`, `store_as` |
-| `get_entity_location` | Get entity position | `entity`, `store_as` |
-| `kill_entity` | Kill an entity | `entity` |
+| Action | Description | Parameters | Returns |
+|--------|-------------|------------|---------|
+| `execute_player_command` | Execute command as player | `player`, `command` | - |
+| `chat` | Send chat message | `player`, `message` | - |
+| `login` / `logout` | Reconnect/disconnect player | `player` | - |
+| `respawn` | Respawn player | `player` | - |
+
+#### Entity Interaction Actions (Mineflayer only)
+
+| Action | Description | Parameters | Returns |
+|--------|-------------|------------|---------|
+| `get_entities` | Get nearby entities | `player`, `store_as` | Entity[] |
+| `get_entity_location` | Get entity position | `entity`, `store_as` | `{x, y, z}` |
+| `kill_entity` | Kill an entity | `entity` | - |
+| `attack_entity` | Attack an entity | `player`, `entity_name` or `entity_selector` | `attacked`, `entity` |
+| `interact_with_entity` | Right-click entity (villager, animal) | `player`, `entity_name` or `entity_selector`, `interaction_type` | `interacted`, `entity_type` |
+| `mount_entity` | Mount entity (horse, boat, minecart) | `player`, `entity_name` or `entity_selector` | `mounted`, `entity_type` |
+| `dismount` | Dismount from entity | `player` | `dismounted: true` |
+
+#### Block Actions (Mineflayer only)
+
+| Action | Description | Parameters | Returns |
+|--------|-------------|------------|---------|
+| `break_block` | Break a block | `player`, `location` {x,y,z}, `wait_for_drop` | `broken: true`, `location` |
+| `place_block` | Place a block | `player`, `block`, `location` {x,y,z}, `face` | `placed: true`, `block`, `location` |
+| `interact_with_block` | Interact with block (chest, button, door) | `player`, `location` {x,y,z} | `interacted: true`, `block_type` |
 
 #### Inventory Actions (Mineflayer only)
 
-| Action | Description | Parameters |
-|--------|-------------|------------|
-| `get_player_inventory` | Get inventory contents | `player`, `store_as` |
-| `give_item` | Give item to player | `player`, `item`, `count` |
+| Action | Description | Parameters | Returns |
+|--------|-------------|------------|---------|
+| `get_player_inventory` | Get inventory contents | `player`, `store_as` | Inventory object |
+| `give_item` | Give item to player | `player`, `item`, `count` | - |
+| `drop_item` | Drop item from inventory | `player`, `item_name`, `count` | `dropped: true`, `item`, `count` |
+| `consume_item` | Eat food/drink potion | `player`, `item_name` | `consumed: true`, `item` |
+| `equip_item` | Equip item to slot | `player`, `item_name`, `destination` | `equipped: true`, `item`, `slot` |
+| `swap_inventory_slots` | Move item between slots | `player`, `from_slot`, `to_slot` | `swapped: true`, `from_slot`, `to_slot` |
+
+#### Advanced Actions (Mineflayer only)
+
+| Action | Description | Parameters | Returns |
+|--------|-------------|------------|---------|
+| `navigate_to` | Pathfinding to location | `player`, `destination` {x,y,z}, `timeout_ms` | `reached: true`, `position` |
+| `open_container` | Open chest/furnace | `player`, `location` {x,y,z} | `opened: true`, `container_type`, `items[]` |
+| `craft_item` | Craft item from recipe | `player`, `item_name`, `count` | `crafted: true`, `item`, `count` |
 
 #### State Actions
 
@@ -311,6 +349,245 @@ describe('Teleport Plugin', () => {
 
     expect(result.success).toBe(true);
   });
+});
+```
+
+---
+
+## Action Examples
+
+### Movement Actions
+
+Test player movement in all directions:
+
+```javascript
+const result = await runner.execute({
+  name: 'Movement test',
+  setup: {
+    server: { type: 'paper', version: '1.21.8' },
+    players: [{ name: 'Steve', username: 'Steve', auth: 'offline' }]
+  },
+  steps: [
+    {
+      name: 'Move forward',
+      action: 'move_forward',
+      player: 'Steve',
+      duration: 1
+    },
+    {
+      name: 'Move backward',
+      action: 'move_backward',
+      player: 'Steve',
+      duration: 0.5
+    },
+    {
+      name: 'Strafe left',
+      action: 'move_left',
+      player: 'Steve',
+      duration: 0.5
+    },
+    {
+      name: 'Jump',
+      action: 'jump',
+      player: 'Steve'
+    },
+    {
+      name: 'Sneak up',
+      action: 'sneak',
+      player: 'Steve'
+    },
+    {
+      name: 'Sprint forward',
+      action: 'sprint',
+      player: 'Steve'
+    },
+    {
+      name: 'Walk (stop sprinting)',
+      action: 'walk',
+      player: 'Steve'
+    },
+    {
+      name: 'Look at entity',
+      action: 'look_at',
+      player: 'Steve',
+      entity_name: 'zombie'
+    }
+  ],
+  teardown: { stop_server: false }
+});
+```
+
+### Entity Interaction Actions
+
+Test combat and entity interactions:
+
+```javascript
+const result = await runner.execute({
+  name: 'Entity interaction test',
+  setup: {
+    server: { type: 'paper', version: '1.21.8' },
+    players: [{ name: 'Steve', username: 'Steve', auth: 'offline' }]
+  },
+  steps: [
+    {
+      name: 'Get nearby entities',
+      action: 'get_entities',
+      player: 'Steve',
+      store_as: 'nearby_entities'
+    },
+    {
+      name: 'Attack zombie',
+      action: 'attack_entity',
+      player: 'Steve',
+      entity_name: 'zombie'
+    },
+    {
+      name: 'Trade with villager',
+      action: 'interact_with_entity',
+      player: 'Steve',
+      entity_name: 'villager',
+      interaction_type: 'trade'
+    },
+    {
+      name: 'Mount horse',
+      action: 'mount_entity',
+      player: 'Steve',
+      entity_name: 'horse'
+    },
+    {
+      name: 'Ride forward',
+      action: 'move_forward',
+      player: 'Steve',
+      duration: 2
+    },
+    {
+      name: 'Dismount',
+      action: 'dismount',
+      player: 'Steve'
+    }
+  ],
+  teardown: { stop_server: false }
+});
+```
+
+### Block Interaction Actions
+
+Test block manipulation:
+
+```javascript
+const result = await runner.execute({
+  name: 'Block interaction test',
+  setup: {
+    server: { type: 'paper', version: '1.21.8' },
+    players: [{ name: 'Steve', username: 'Steve', auth: 'offline' }]
+  },
+  steps: [
+    {
+      name: 'Place dirt block',
+      action: 'place_block',
+      player: 'Steve',
+      block: 'dirt',
+      location: { x: 100, y: 64, z: 100 }
+    },
+    {
+      name: 'Break dirt block',
+      action: 'break_block',
+      player: 'Steve',
+      location: { x: 100, y: 64, z: 100 }
+    },
+    {
+      name: 'Open chest',
+      action: 'interact_with_block',
+      player: 'Steve',
+      location: { x: 102, y: 64, z: 100 }
+    }
+  ],
+  teardown: { stop_server: false }
+});
+```
+
+### Inventory Actions
+
+Test inventory management:
+
+```javascript
+const result = await runner.execute({
+  name: 'Inventory test',
+  setup: {
+    server: { type: 'paper', version: '1.21.8' },
+    players: [{ name: 'Steve', username: 'Steve', auth: 'offline' }]
+  },
+  steps: [
+    {
+      name: 'Give diamond sword',
+      action: 'execute_command',
+      command: 'give Steve diamond_sword'
+    },
+    {
+      name: 'Get inventory',
+      action: 'get_player_inventory',
+      player: 'Steve',
+      store_as: 'inventory'
+    },
+    {
+      name: 'Equip sword',
+      action: 'equip_item',
+      player: 'Steve',
+      item_name: 'diamond_sword',
+      destination: 'hand'
+    },
+    {
+      name: 'Eat golden apple',
+      action: 'consume_item',
+      player: 'Steve',
+      item_name: 'golden_apple'
+    },
+    {
+      name: 'Drop dirt',
+      action: 'drop_item',
+      player: 'Steve',
+      item_name: 'dirt',
+      count: 64
+    }
+  ],
+  teardown: { stop_server: false }
+});
+```
+
+### Advanced Actions
+
+Test pathfinding and containers:
+
+```javascript
+const result = await runner.execute({
+  name: 'Advanced actions test',
+  setup: {
+    server: { type: 'paper', version: '1.21.8' },
+    players: [{ name: 'Steve', username: 'Steve', auth: 'offline' }]
+  },
+  steps: [
+    {
+      name: 'Navigate to location',
+      action: 'navigate_to',
+      player: 'Steve',
+      destination: { x: 200, y: 64, z: 200 },
+      timeout_ms: 15000
+    },
+    {
+      name: 'Open chest at location',
+      action: 'open_container',
+      player: 'Steve',
+      location: { x: 200, y: 64, z: 200 }
+    },
+    {
+      name: 'Craft sticks',
+      action: 'craft_item',
+      player: 'Steve',
+      item_name: 'stick',
+      count: 4
+    }
+  ],
+  teardown: { stop_server: false }
 });
 ```
 
