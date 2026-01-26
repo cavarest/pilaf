@@ -52,10 +52,9 @@ describe('Block Interaction Examples', () => {
           duration: 1
         },
         {
-          name: '[player: miner] Give diamond pickaxe',
-          action: 'execute_player_command',
-          player: 'miner',
-          command: '/give @p diamond_pickaxe'
+          name: '[RCON] Give diamond pickaxe to miner',
+          action: 'execute_command',
+          command: 'give miner diamond_pickaxe'
         },
         {
           name: 'Wait for item',
@@ -128,10 +127,9 @@ describe('Block Interaction Examples', () => {
           store_as: 'position'
         },
         {
-          name: '[player: builder] Give building materials',
-          action: 'execute_player_command',
-          player: 'builder',
-          command: '/give @p cobblestone 64'
+          name: '[RCON] Give building materials to builder',
+          action: 'execute_command',
+          command: 'give builder cobblestone 64'
         },
         {
           name: 'Wait for items',
@@ -414,10 +412,9 @@ describe('Block Interaction Examples', () => {
           store_as: 'origin'
         },
         {
-          name: '[player: architect] Give building materials',
-          action: 'execute_player_command',
-          player: 'architect',
-          command: '/give @p stone 64'
+          name: '[RCON] Give building materials to architect',
+          action: 'execute_command',
+          command: 'give architect stone 64'
         },
         {
           name: 'Wait for items',
@@ -518,10 +515,9 @@ describe('Block Interaction Examples', () => {
           duration: 1
         },
         {
-          name: '[player: replacer] Give tools and materials',
-          action: 'execute_player_command',
-          player: 'replacer',
-          command: '/give @p diamond_pickaxe 1'
+          name: '[RCON] Give tools to replacer',
+          action: 'execute_command',
+          command: 'give replacer diamond_pickaxe'
         },
         {
           name: 'Wait for items',
@@ -529,15 +525,9 @@ describe('Block Interaction Examples', () => {
           duration: 1
         },
         {
-          name: '[player: replacer] Give stone',
-          action: 'execute_player_command',
-          player: 'replacer',
-          command: '/give @p stone 64'
-        },
-        {
-          name: 'Wait for items',
-          action: 'wait',
-          duration: 1
+          name: '[RCON] Give stone to replacer',
+          action: 'execute_command',
+          command: 'give replacer stone 64'
         },
         {
           name: '[player: replacer] Equip pickaxe',
