@@ -533,8 +533,6 @@ class StoryRunner {
         // actual: inventory from get_player_inventory
         const hasItem = actual.items.some(item => item && item.name === expected);
         if (!hasItem) {
-          console.log(`[has_item DEBUG] Looking for: "${expected}"`);
-          console.log(`[has_item DEBUG] Available items:`, actual.items.map(i => ({ name: i?.name, count: i?.count })));
           throw new Error(`Assertion failed: player does not have item "${expected}"`);
         }
         this.logger.log(`[StoryRunner] Assertion passed: player has item "${expected}"`);
@@ -1097,21 +1095,9 @@ class StoryRunner {
       }
 
       // Find target entity using EntityUtils
-      console.log(`[attack_entity DEBUG] Searching for entity: "${entity_name || entity_selector}"`);
-      console.log(`[attack_entity DEBUG] Total entities in bot.entities:`, Object.keys(bot.entities).length);
-
       const target = entity_selector
         ? bot.entities[entity_selector]
         : EntityUtils.findEntity(bot, entity_name);
-
-      console.log(`[attack_entity DEBUG] Entity found:`, {
-        found: !!target,
-        id: target?.id,
-        name: target?.name,
-        customName: target?.customName,
-        displayName: target?.displayName,
-        position: target?.position
-      });
 
       if (!target) {
         throw new Error(`Entity "${entity_name || entity_selector}" not found`);
@@ -1202,21 +1188,9 @@ class StoryRunner {
       }
 
       // Find target entity
-      console.log(`[mount_entity DEBUG] Searching for entity: "${entity_name || entity_selector}"`);
-      console.log(`[mount_entity DEBUG] Total entities in bot.entities:`, Object.keys(bot.entities).length);
-
       const target = entity_selector
         ? bot.entities[entity_selector]
         : EntityUtils.findEntity(bot, entity_name);
-
-      console.log(`[mount_entity DEBUG] Entity found:`, {
-        found: !!target,
-        id: target?.id,
-        name: target?.name,
-        customName: target?.customName,
-        displayName: target?.displayName,
-        position: target?.position
-      });
 
       if (!target) {
         throw new Error(`Entity "${entity_name || entity_selector}" not found`);
@@ -1225,18 +1199,10 @@ class StoryRunner {
       this.logger.log(`[StoryRunner] ACTION: ${player} mounting ${target.name || target.id}`);
 
       // Execute mount
-      console.log(`[mount_entity DEBUG] Calling bot.mount()...`);
       bot.mount(target);
 
       // Wait for mount to process
       await new Promise(resolve => setTimeout(resolve, 500));
-
-      // DEBUG: Check if bot is mounted
-      console.log(`[mount_entity DEBUG] After mount - bot.vehicle:`, {
-        isMounted: !!bot.vehicle,
-        vehicleId: bot.vehicle?.id,
-        vehicleName: bot.vehicle?.name
-      });
 
       this.logger.log(`[StoryRunner] RESPONSE: Mounted successfully`);
 
@@ -1298,34 +1264,17 @@ class StoryRunner {
       // If item_name specified, find and toss that item
       if (item_name) {
         const items = bot.inventory.items();
-
-        // DEBUG: Log items to troubleshoot
-        console.log(`[drop_item DEBUG] Searching for: "${item_name}"`);
         const item = items.find(i => i && i.name === item_name);
 
         if (!item) {
-          console.log(`[drop_item DEBUG] Available items:`, items.map(i => ({ name: i?.name, count: i?.count })));
           throw new Error(`Item "${item_name}" not found in inventory`);
         }
 
         // Toss the item
-        console.log(`[drop_item DEBUG] Tossing item:`, {
-          name: item.name,
-          type: item.type,
-          count: count
-        });
         bot.toss(item.type, null, count);
 
         // Wait for drop to process
         await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Verify drop worked
-        const itemsAfter = bot.inventory.items();
-        const itemAfter = itemsAfter.find(i => i && i.name === item_name);
-        console.log(`[drop_item DEBUG] After toss - item still in inventory:`, {
-          found: !!itemAfter,
-          count: itemAfter?.count || 0
-        });
       } else {
         // Toss currently held item
         bot.tossStack(bot.inventory.slots[bot.inventory.selectedSlot]);
@@ -1362,13 +1311,9 @@ class StoryRunner {
       // If item_name specified, find and equip it first
       if (item_name) {
         const items = bot.inventory.items();
-
-        // DEBUG: Log items to troubleshoot
-        console.log(`[consume_item DEBUG] Searching for: "${item_name}"`);
         const item = items.find(i => i && i.name === item_name);
 
         if (!item) {
-          console.log(`[consume_item DEBUG] Available items:`, items.map(i => ({ name: i?.name, count: i?.count })));
           throw new Error(`Item "${item_name}" not found in inventory`);
         }
 
@@ -1411,21 +1356,6 @@ class StoryRunner {
 
       // Find item in inventory
       const items = bot.inventory.items();
-
-      // DEBUG: Log all items to troubleshoot
-      console.log(`[equip_item DEBUG] Searching for: "${item_name}"`);
-      console.log(`[equip_item DEBUG] Total items: ${items.length}`);
-      if (items.length > 0) {
-        items.slice(0, 5).forEach((item, i) => {
-          console.log(`[equip_item DEBUG] Item ${i}:`, {
-            name: item.name,
-            displayName: item.displayName,
-            type: item.type,
-            count: item.count
-          });
-        });
-      }
-
       const item = items.find(i => i && i.name === item_name);
 
       if (!item) {
@@ -1435,34 +1365,14 @@ class StoryRunner {
       // Equip the item
       await bot.equip(item, destination);
 
-      // DEBUG: Log what actually got equipped
+      // Verify the item is equipped
       // For 'hand' destination, use bot.heldItem instead of accessing slots directly
       // because selectedSlot might be undefined if inventory isn't fully initialized
       const equipped = destination === 'hand'
         ? bot.heldItem
         : bot.inventory.slots[bot.getEquipmentDestSlot(destination)];
 
-      console.log(`[equip_item DEBUG] After equip - destination: "${destination}"`);
-      console.log(`[equip_item DEBUG] After equip - equipped item:`, {
-        hasItem: !!equipped,
-        equippedName: equipped?.name,
-        equippedDisplayName: equipped?.displayName,
-        expectedName: item.name,
-        match: equipped?.name === item.name,
-        heldItem: bot.heldItem ? {
-          name: bot.heldItem.name,
-          count: bot.heldItem.count
-        } : null,
-        selectedSlot: bot.inventory.selectedSlot
-      });
-
       if (!equipped || equipped.name !== item.name) {
-        console.log(`[equip_item DEBUG] Equip verification failed!`, {
-          equippedIsNull: !equipped,
-          equippedName: equipped?.name,
-          itemName: item.name,
-          reason: !equipped ? 'Slot is empty' : `Name mismatch: ${equipped.name} !== ${item.name}`
-        });
         throw new Error(`Failed to equip "${item_name}"`);
       }
 
@@ -1494,27 +1404,12 @@ class StoryRunner {
 
       this.logger.log(`[StoryRunner] ACTION: ${player} swapping slot ${from_slot} to ${to_slot}`);
 
-      // DEBUG: Log inventory state before swap
-      console.log(`[swap_inventory_slots DEBUG] Before swap:`, {
-        from_slot: from_slot,
-        to_slot: to_slot,
-        fromSlotItem: bot.inventory.slots[from_slot] ? {
-          name: bot.inventory.slots[from_slot].name,
-          count: bot.inventory.slots[from_slot].count
-        } : null,
-        toSlotItem: bot.inventory.slots[to_slot] ? {
-          name: bot.inventory.slots[to_slot].name,
-          count: bot.inventory.slots[to_slot].count
-        } : null
-      });
-
       // Check if from_slot has an item
       const fromItem = bot.inventory.slots[from_slot];
       const toItem = bot.inventory.slots[to_slot];
 
       // If both slots are empty, nothing to do
       if (!fromItem && !toItem) {
-        console.log(`[swap_inventory_slots DEBUG] Both slots empty, skipping swap`);
         this.logger.log(`[StoryRunner] RESPONSE: Slots swapped (no items to swap)`);
         return {
           swapped: true,
@@ -1526,41 +1421,15 @@ class StoryRunner {
 
       // If only dest slot has item, swap direction
       if (!fromItem && toItem) {
-        console.log(`[swap_inventory_slots DEBUG] From slot empty, moving item from ${to_slot} to ${from_slot}`);
-        try {
-          await bot.moveSlotItem(to_slot, from_slot);
-        } catch (err) {
-          console.log(`[swap_inventory_slots DEBUG] moveSlotItem failed:`, err.message);
-          throw new Error(`Failed to move item from slot ${to_slot} to ${from_slot}: ${err.message}`);
-        }
+        await bot.moveSlotItem(to_slot, from_slot);
       } else {
         // Normal case: move item from from_slot to to_slot
         // If toItem exists, it will be swapped automatically
-        console.log(`[swap_inventory_slots DEBUG] Moving item from ${from_slot} to ${to_slot}`);
-        try {
-          await bot.moveSlotItem(from_slot, to_slot);
-        } catch (err) {
-          console.log(`[swap_inventory_slots DEBUG] moveSlotItem failed:`, err.message);
-          throw new Error(`Failed to move item from slot ${from_slot} to ${to_slot}: ${err.message}`);
-        }
+        await bot.moveSlotItem(from_slot, to_slot);
       }
 
       // Wait for swap to process
       await new Promise(resolve => setTimeout(resolve, 200));
-
-      // DEBUG: Log inventory state after swap
-      console.log(`[swap_inventory_slots DEBUG] After swap:`, {
-        from_slot: from_slot,
-        to_slot: to_slot,
-        fromSlotItem: bot.inventory.slots[from_slot] ? {
-          name: bot.inventory.slots[from_slot].name,
-          count: bot.inventory.slots[from_slot].count
-        } : null,
-        toSlotItem: bot.inventory.slots[to_slot] ? {
-          name: bot.inventory.slots[to_slot].name,
-          count: bot.inventory.slots[to_slot].count
-        } : null
-      });
 
       this.logger.log(`[StoryRunner] RESPONSE: Slots swapped`);
 
