@@ -58,59 +58,125 @@ class StoryRunner {
   }
 
   /**
-   * Wait for inventory update from server
+   * Check if bot's inventory contains expected items (with fuzzy matching)
+   */
+  _hasItems(bot, expectedItems) {
+    const currentItems = bot.inventory.items() || [];
+
+    for (const expected of expectedItems) {
+      const found = currentItems.some(item => {
+        if (!item) return false;
+
+        // Normalize both names for comparison
+        const itemName = item.name || '';
+        const itemDisplayName = item.displayName || '';
+        const expectedNormalized = expected.replace(/^minecraft:/, '').toLowerCase();
+        const nameNormalized = itemName.replace(/^minecraft:/, '').toLowerCase();
+        const displayNormalized = itemDisplayName.toLowerCase();
+
+        // Exact match
+        if (nameNormalized === expectedNormalized) return true;
+        // Display name match
+        if (displayNormalized === expectedNormalized) return true;
+        // Contains match
+        if (nameNormalized.includes(expectedNormalized) || expectedNormalized.includes(nameNormalized)) return true;
+        if (displayNormalized.includes(expectedNormalized)) return true;
+
+        return false;
+      });
+
+      if (!found) return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Get list of items currently in bot's inventory for debugging
+   */
+  _getInventoryItemList(bot) {
+    const currentItems = bot.inventory.items() || [];
+    const itemList = currentItems
+      .filter(item => item != null)
+      .map(item => {
+        const name = item.name || item.displayName || 'unknown';
+        const count = item.count || 1;
+        return `${name} x${count}`;
+      });
+
+    return itemList.length > 0 ? itemList.join(', ') : '(empty)';
+  }
+
+  /**
+   * Wait for inventory update from server using event-based detection
    * Monitors bot inventory for expected items after RCON commands
    */
-  async _waitForInventoryUpdate(player, expectedItems = [], timeoutMs = 10000) {
+  async _waitForInventoryUpdate(player, expectedItems = [], timeoutMs = 8000) {
     const bot = this.bots.get(player);
     if (!bot) {
-      this.logger.log(`[StoryRunner] No bot to wait for inventory update`);
-      return;
+      this.logger.log(`[StoryRunner] ⚠ No bot found for player "${player}"`);
+      return false;
     }
 
     if (expectedItems.length === 0) {
-      return;
+      return true;
     }
 
-    this.logger.log(`[StoryRunner] Waiting for inventory update: ${expectedItems.join(', ')}`);
+    this.logger.log(`[StoryRunner] 🔄 Waiting for ${player} to receive: ${expectedItems.join(', ')}`);
 
-    const startTime = Date.now();
-    const checkInterval = 200;
+    // Check immediately first (might already have items)
+    if (this._hasItems(bot, expectedItems)) {
+      this.logger.log(`[StoryRunner] ✓ ${player} already has: ${expectedItems.join(', ')}`);
+      return true;
+    }
 
-    while (Date.now() - startTime < timeoutMs) {
-      const currentItems = bot.inventory.items() || [];
-      const foundItems = new Set();
+    return new Promise((resolve) => {
+      let resolved = false;
 
-      for (const expected of expectedItems) {
-        const found = currentItems.some(item =>
-          item && (item.name === expected || item.type === expected)
-        );
-        if (found) {
-          foundItems.add(expected);
+      // Set up timeout
+      const timeout = setTimeout(() => {
+        if (resolved) return;
+        resolved = true;
+
+        const currentInventory = this._getInventoryItemList(bot);
+        this.logger.log(`[StoryRunner] ⚠ Inventory sync timeout for ${player}. Expected: ${expectedItems.join(', ')}. Current: ${currentInventory}`);
+        resolve(false);
+      }, timeoutMs);
+
+      // Listen for inventory update event
+      const listener = () => {
+        if (resolved) return;
+
+        if (this._hasItems(bot, expectedItems)) {
+          resolved = true;
+          clearTimeout(timeout);
+          bot.removeListener('inventoryUpdate', listener);
+
+          this.logger.log(`[StoryRunner] ✓ ${player} received: ${expectedItems.join(', ')}`);
+          resolve(true);
         }
-      }
+      };
 
-      if (foundItems.size === expectedItems.length) {
-        this.logger.log(`[StoryRunner] ✓ Inventory update confirmed: ${Array.from(foundItems).join(', ')}`);
-        return true;
-      }
+      bot.on('inventoryUpdate', listener);
 
-      // Wait before checking again
-      await new Promise(resolve => setTimeout(resolve, checkInterval));
-    }
+      // Also set up a fallback poll every 1 second (in case event is missed)
+      const pollInterval = setInterval(() => {
+        if (resolved) {
+          clearInterval(pollInterval);
+          return;
+        }
 
-    // Timeout - log what we actually found
-    const currentItems = bot.inventory.items() || [];
-    const foundItems = new Set();
-    for (const expected of expectedItems) {
-      const found = currentItems.some(item =>
-        item && (item.name === expected || item.type === expected)
-      );
-      if (found) foundItems.add(expected);
-    }
+        if (this._hasItems(bot, expectedItems)) {
+          resolved = true;
+          clearTimeout(timeout);
+          clearInterval(pollInterval);
+          bot.removeListener('inventoryUpdate', listener);
 
-    this.logger.log(`[StoryRunner] ⚠ Inventory update timeout. Found: ${Array.from(foundItems).join(', ') || 'none'}`);
-    return false;
+          this.logger.log(`[StoryRunner] ✓ ${player} received: ${expectedItems.join(', ')} (via poll)`);
+          resolve(true);
+        }
+      }, 1000);
+    });
   }
 
   /**
@@ -553,23 +619,28 @@ class StoryRunner {
 
       this.logger.log(`[StoryRunner] ACTION: RCON ${command}`);
 
-      // Check if this is a 'give' command and extract the item name
+      // Check if this is a 'give' command and extract player and item
+      // Format: give <player> <item> [count]
+      let targetPlayer = null;
       let expectedItems = [];
-      const giveMatch = command.match(/^give\s+\w+\s+(\w+)/);
+      const giveMatch = command.match(/^give\s+(\w+)\s+(\S+)/);
       if (giveMatch) {
-        expectedItems.push(this._normalizeItemName(giveMatch[1]));
+        targetPlayer = giveMatch[1]; // First capture group is player
+        expectedItems.push(this._normalizeItemName(giveMatch[2])); // Second is item
       }
 
       const result = await this.backends.rcon.send(command);
       this.logger.log(`[StoryRunner] RESPONSE: ${result.raw}`);
 
-      // If we gave items, wait for bot inventory to sync
-      if (expectedItems.length > 0) {
-        // Need to determine which player this affects
-        // For now, check all connected bots
-        for (const [username, bot] of this.bots) {
-          this.logger.log(`[StoryRunner] Correlating RCON 'give ${expectedItems.join(', ')}' with ${username}'s bot inventory`);
-          await this._waitForInventoryUpdate(username, expectedItems, 5000);
+      // If we gave items, wait for that specific bot's inventory to sync
+      if (expectedItems.length > 0 && targetPlayer) {
+        this.logger.log(`[StoryRunner] 🔄 RCON gave ${expectedItems.join(', ')} to ${targetPlayer}, waiting for bot inventory sync...`);
+
+        // Only check the target bot's inventory, not all bots
+        const synced = await this._waitForInventoryUpdate(targetPlayer, expectedItems, 8000);
+
+        if (!synced) {
+          this.logger.log(`[StoryRunner] ⚠ Warning: ${targetPlayer} may not have received ${expectedItems.join(', ')} - continuing anyway`);
         }
       }
     },
