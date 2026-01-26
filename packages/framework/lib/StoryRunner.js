@@ -12,7 +12,7 @@ try {
 
 const fs = require('fs');
 const { PilafBackendFactory } = require('@pilaf/backends');
-const { CorrelationUtils } = require('./helpers/correlation.js');
+const { waitForServerConfirmation: waitForServerConfirmationFn, getDefaultTimeout } = require('./helpers/correlation.js');
 const EntityUtils = require('./helpers/entities.js');
 
 /**
@@ -1994,9 +1994,9 @@ class StoryRunner {
     const { action, timeout, ...correlationOptions } = options || {};
 
     // Auto-detect timeout from action type if not specified
-    const effectiveTimeout = timeout || CorrelationUtils.getDefaultTimeout(action);
+    const effectiveTimeout = timeout || getDefaultTimeout(action);
 
-    return await CorrelationUtils.waitForServerConfirmation(this, {
+    return await waitForServerConfirmationFn(this, {
       ...correlationOptions,
       timeout: effectiveTimeout
     });
@@ -2010,7 +2010,7 @@ class StoryRunner {
    * @returns {number} Timeout in milliseconds
    */
   _getTimeoutForAction(action) {
-    return CorrelationUtils.getDefaultTimeout(action);
+    return getDefaultTimeout(action);
   }
 }
 
