@@ -114,6 +114,14 @@ class StoryRunner {
   }
 
   /**
+   * Normalize item names to match between RCON output and bot inventory
+   */
+  _normalizeItemName(itemName) {
+    // RCON uses underscore format (diamond_sword), bot inventory uses same
+    return itemName.replace(/^minecraft:/, '');
+  }
+
+  /**
    * Load a story from a YAML file
    * @param {string} filePath - Path to YAML story file
    * @returns {Object} Parsed story object
@@ -564,14 +572,6 @@ class StoryRunner {
           await this._waitForInventoryUpdate(username, expectedItems, 5000);
         }
       }
-    },
-
-    /**
-     * Normalize item names to match between RCON output and bot inventory
-     */
-    _normalizeItemName(itemName) {
-      // RCON uses underscore format (diamond_sword), bot inventory uses same
-      return itemName.replace(/^minecraft:/, '');
     },
 
     /**
