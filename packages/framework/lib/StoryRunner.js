@@ -14,7 +14,6 @@ const fs = require('fs');
 const { PilafBackendFactory } = require('@pilaf/backends');
 const { CorrelationUtils } = require('./helpers/correlation.js');
 const EntityUtils = require('./helpers/entities.js');
-const Vec3 = require('vec3');
 
 /**
  * StoryRunner executes test stories defined in YAML format
@@ -1639,9 +1638,14 @@ class StoryRunner {
         targetPosition = target.position;
         this.logger.log(`[StoryRunner] ACTION: ${player} looking at ${entity_name}`);
       } else {
-        // Convert plain object to Vec3 (bot.lookAt requires Vec3 instance)
+        // Use bot's Vec3 constructor from its position (if available)
         if (position.x !== undefined && position.y !== undefined && position.z !== undefined) {
-          targetPosition = new Vec3(position.x, position.y, position.z);
+          // Try to use the bot's Vec3 constructor, otherwise use plain object
+          if (bot.position && bot.position.constructor) {
+            targetPosition = new bot.position.constructor(position.x, position.y, position.z);
+          } else {
+            targetPosition = position;
+          }
         } else {
           targetPosition = position;
         }
