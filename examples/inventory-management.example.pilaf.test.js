@@ -53,7 +53,20 @@ describe('Inventory Management Examples', () => {
           duration: 1
         },
         {
-          name: '[player: dropper] Drop some diamonds',
+          name: '[player: dropper] Get inventory with diamonds',
+          action: 'get_player_inventory',
+          player: 'dropper',
+          store_as: 'inventory_with_diamonds'
+        },
+        {
+          name: 'Verify diamonds received',
+          action: 'assert',
+          condition: 'has_item',
+          actual: '{inventory_with_diamonds}',
+          expected: 'diamond'
+        },
+        {
+          name: '[player: dropper] Drop 10 diamonds',
           action: 'drop_item',
           player: 'dropper',
           item_name: 'diamond',
@@ -71,13 +84,13 @@ describe('Inventory Management Examples', () => {
           store_as: 'final_inventory'
         },
         {
-          name: 'Verify diamond count decreased',
+          name: 'Verify diamond count decreased (64 → 54)',
           action: 'assert',
-          condition: 'has_item',
+          condition: 'count_decreased',
           actual: '{final_inventory}',
-          expected: 'diamond'
+          expected: 'diamond',
+          max_expected: 54
         }
-        // Test demonstrates dropping items from inventory
       ],
 
       teardown: {
