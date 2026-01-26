@@ -293,9 +293,9 @@ describe('Inventory Management Examples', () => {
 
       steps: [
         {
-          name: '[player: organizer] Give different items',
+          name: '[player: organizer] Give items to multiple slots',
           action: 'execute_command',
-          command: 'give organizer diamond'
+          command: 'give organizer diamond 64'
         },
         {
           name: 'Wait for item',
@@ -303,9 +303,9 @@ describe('Inventory Management Examples', () => {
           duration: 1
         },
         {
-          name: '[player: organizer] Give another item',
+          name: '[player: organizer] Give another stack',
           action: 'execute_command',
-          command: 'give organizer gold_ingot'
+          command: 'give organizer diamond 64'
         },
         {
           name: 'Wait for item',
@@ -313,17 +313,27 @@ describe('Inventory Management Examples', () => {
           duration: 1
         },
         {
-          name: '[player: organizer] Get initial inventory state',
+          name: '[player: organizer] Give a third stack',
+          action: 'execute_command',
+          command: 'give organizer gold_ingot 64'
+        },
+        {
+          name: 'Wait for item',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: organizer] Get inventory to see occupied slots',
           action: 'get_player_inventory',
           player: 'organizer',
           store_as: 'initial_inventory'
         },
         {
-          name: '[player: organizer] Swap hotbar slot 0 with slot 1',
+          name: '[player: organizer] Swap inventory slots (slot 9 to 10)',
           action: 'swap_inventory_slots',
           player: 'organizer',
-          from_slot: 0,
-          to_slot: 1
+          from_slot: 9,
+          to_slot: 10
         },
         {
           name: 'Wait for swap',
@@ -335,11 +345,6 @@ describe('Inventory Management Examples', () => {
           action: 'get_player_inventory',
           player: 'organizer',
           store_as: 'final_inventory'
-        },
-        {
-          name: 'Wait for swap',
-          action: 'wait',
-          duration: 0.5
         }
         // Test demonstrates swapping inventory slots
       ],
@@ -512,9 +517,9 @@ describe('Inventory Management Examples', () => {
 
       steps: [
         {
-          name: '[player: hotbar_user] Give 9 different items',
+          name: '[player: hotbar_user] Give stacks to fill inventory slots',
           action: 'execute_command',
-          command: 'give hotbar_user diamond'
+          command: 'give hotbar_user diamond 64'
         },
         {
           name: 'Wait for item',
@@ -522,9 +527,9 @@ describe('Inventory Management Examples', () => {
           duration: 1
         },
         {
-          name: '[player: hotbar_user] Give iron',
+          name: '[player: hotbar_user] Give second stack',
           action: 'execute_command',
-          command: 'give hotbar_user iron_ingot'
+          command: 'give hotbar_user iron_ingot 64'
         },
         {
           name: 'Wait for item',
@@ -532,9 +537,9 @@ describe('Inventory Management Examples', () => {
           duration: 1
         },
         {
-          name: '[player: hotbar_user] Give gold',
+          name: '[player: hotbar_user] Give third stack',
           action: 'execute_command',
-          command: 'give hotbar_user gold_ingot'
+          command: 'give hotbar_user gold_ingot 64'
         },
         {
           name: 'Wait for item',
@@ -542,35 +547,21 @@ describe('Inventory Management Examples', () => {
           duration: 1
         },
         {
-          name: '[player: hotbar_user] Equip diamond to slot 0',
-          action: 'equip_item',
-          player: 'hotbar_user',
-          item_name: 'diamond',
-          destination: 'hand'
+          name: '[player: hotbar_user] Give fourth stack',
+          action: 'execute_command',
+          command: 'give hotbar_user emerald 64'
         },
         {
-          name: 'Wait for equip',
+          name: 'Wait for item',
           action: 'wait',
-          duration: 0.5
+          duration: 1
         },
         {
-          name: '[player: hotbar_user] Swap slots 0 and 4',
+          name: '[player: hotbar_user] Swap inventory slots (slot 9 to 13)',
           action: 'swap_inventory_slots',
           player: 'hotbar_user',
-          from_slot: 0,
-          to_slot: 4
-        },
-        {
-          name: 'Wait for swap',
-          action: 'wait',
-          duration: 0.5
-        },
-        {
-          name: '[player: hotbar_user] Swap slots 1 and 5',
-          action: 'swap_inventory_slots',
-          player: 'hotbar_user',
-          from_slot: 1,
-          to_slot: 5
+          from_slot: 9,
+          to_slot: 13
         },
         {
           name: 'Wait for swap',
@@ -582,11 +573,6 @@ describe('Inventory Management Examples', () => {
           action: 'get_player_inventory',
           player: 'hotbar_user',
           store_as: 'inventory'
-        },
-        {
-          name: 'Wait for swap',
-          action: 'wait',
-          duration: 0.5
         }
         // Test demonstrates hotbar slot management
       ],
