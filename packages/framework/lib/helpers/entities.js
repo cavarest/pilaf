@@ -45,12 +45,33 @@ function findEntity(bot, identifier) {
     return bot.entities[identifier] || null;
   }
 
+  // Normalize identifier to handle both 'zombie' and 'minecraft:zombie' formats
+  const normalizedIdentifier = identifier.startsWith('minecraft:') ? identifier : `minecraft:${identifier}`;
+  const legacyIdentifier = identifier.startsWith('minecraft:') ? identifier.substring(10) : identifier;
+
+  // DEBUG: Log all entities to help troubleshoot
+  const allEntities = Object.values(bot.entities).filter(e => e);
+  if (allEntities.length > 0) {
+    // Only log once per search for the first entity
+    if (!findEntity._hasLogged) {
+      console.log(`[EntityUtils DEBUG] Found ${allEntities.length} entities. Examples:`,
+        allEntities.slice(0, 3).map(e => `${e.name || e.type || e.id}`).join(', '));
+      findEntity._hasLogged = true;
+    }
+  }
+
   // Strategy 2: Try custom name (named mobs, nametags)
   let entity = Object.values(bot.entities).find(e => {
     if (!e) return false;
-    // Check both customName string and text component format
-    return e.customName === identifier ||
-           (e.customName && typeof e.customName === 'object' && e.customName.text === identifier);
+    const customName = e.customName;
+    // Check both string and text component formats
+    if (typeof customName === 'string') {
+      return customName === identifier || customName === normalizedIdentifier;
+    }
+    if (customName && typeof customName === 'object' && customName.text) {
+      return customName.text === identifier || customName.text === normalizedIdentifier;
+    }
+    return false;
   });
 
   if (entity) {
@@ -60,19 +81,22 @@ function findEntity(bot, identifier) {
   // Strategy 3: Try display name (players, some entities)
   entity = Object.values(bot.entities).find(e => {
     if (!e) return false;
-    return e.displayName === identifier ||
-           (e.username && e.username === identifier); // For players
+    return e.displayName === identifier || e.displayName === normalizedIdentifier ||
+           (e.username && (e.username === identifier || e.username === normalizedIdentifier));
   });
 
   if (entity) {
     return entity;
   }
 
-  // Strategy 4: Try entity type name (zombie, skeleton, etc.)
+  // Strategy 4: Try entity type name (zombie, skeleton, minecraft:zombie, etc.)
   entity = Object.values(bot.entities).find(e => {
     if (!e) return false;
+    // Match with or without namespace prefix
     return e.name === identifier ||
-           (e.type && e.name === identifier);
+           e.name === normalizedIdentifier ||
+           e.name === legacyIdentifier ||
+           (e.type && (e.type === identifier || e.type === normalizedIdentifier || e.type === legacyIdentifier));
   });
 
   return entity || null;

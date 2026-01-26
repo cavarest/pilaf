@@ -14,6 +14,7 @@ const fs = require('fs');
 const { PilafBackendFactory } = require('@pilaf/backends');
 const { CorrelationUtils } = require('./helpers/correlation.js');
 const EntityUtils = require('./helpers/entities.js');
+const Vec3 = require('vec3');
 
 /**
  * StoryRunner executes test stories defined in YAML format
@@ -531,7 +532,13 @@ class StoryRunner {
       } else if (condition === 'has_item') {
         // expected: item name
         // actual: inventory from get_player_inventory
-        const hasItem = actual.items.some(item => item && item.name === expected);
+        const normalizedName = expected.startsWith('minecraft:') ? expected : `minecraft:${expected}`;
+        const legacyName = expected.startsWith('minecraft:') ? expected.substring(10) : expected;
+        const hasItem = actual.items.some(item => item && (
+          item.name === expected ||
+          item.name === normalizedName ||
+          item.name === legacyName
+        ));
         if (!hasItem) {
           throw new Error(`Assertion failed: player does not have item "${expected}"`);
         }
@@ -539,7 +546,13 @@ class StoryRunner {
       } else if (condition === 'does_not_have_item') {
         // expected: item name
         // actual: inventory from get_player_inventory
-        const hasItem = actual.items.some(item => item && item.name === expected);
+        const normalizedName = expected.startsWith('minecraft:') ? expected : `minecraft:${expected}`;
+        const legacyName = expected.startsWith('minecraft:') ? expected.substring(10) : expected;
+        const hasItem = actual.items.some(item => item && (
+          item.name === expected ||
+          item.name === normalizedName ||
+          item.name === legacyName
+        ));
         if (hasItem) {
           throw new Error(`Assertion failed: player still has item "${expected}"`);
         }
@@ -1264,10 +1277,18 @@ class StoryRunner {
       // If item_name specified, find and toss that item
       if (item_name) {
         const items = bot.inventory.items();
-        const item = items.find(i => i && i.name === item_name);
+        // Normalize item name to handle both 'diamond' and 'minecraft:diamond' formats
+        const normalizedName = item_name.startsWith('minecraft:') ? item_name : `minecraft:${item_name}`;
+        const legacyName = item_name.startsWith('minecraft:') ? item_name.substring(10) : item_name;
+
+        const item = items.find(i => i && (
+          i.name === item_name ||
+          i.name === normalizedName ||
+          i.name === legacyName
+        ));
 
         if (!item) {
-          throw new Error(`Item "${item_name}" not found in inventory`);
+          throw new Error(`Item "${item_name}" not found in inventory (checked: ${item_name}, ${normalizedName}, ${legacyName})`);
         }
 
         // Toss the item
@@ -1308,7 +1329,15 @@ class StoryRunner {
       // If item_name specified, find and equip it first
       if (item_name) {
         const items = bot.inventory.items();
-        const item = items.find(i => i && i.name === item_name);
+        // Normalize item name to handle both 'diamond' and 'minecraft:diamond' formats
+        const normalizedName = item_name.startsWith('minecraft:') ? item_name : `minecraft:${item_name}`;
+        const legacyName = item_name.startsWith('minecraft:') ? item_name.substring(10) : item_name;
+
+        const item = items.find(i => i && (
+          i.name === item_name ||
+          i.name === normalizedName ||
+          i.name === legacyName
+        ));
 
         if (!item) {
           throw new Error(`Item "${item_name}" not found in inventory`);
@@ -1353,7 +1382,15 @@ class StoryRunner {
 
       // Find item in inventory
       const items = bot.inventory.items();
-      const item = items.find(i => i && i.name === item_name);
+      // Normalize item name to handle both 'diamond' and 'minecraft:diamond' formats
+      const normalizedName = item_name.startsWith('minecraft:') ? item_name : `minecraft:${item_name}`;
+      const legacyName = item_name.startsWith('minecraft:') ? item_name.substring(10) : item_name;
+
+      const item = items.find(i => i && (
+        i.name === item_name ||
+        i.name === normalizedName ||
+        i.name === legacyName
+      ));
 
       if (!item) {
         throw new Error(`Item "${item_name}" not found in inventory`);
@@ -1367,7 +1404,7 @@ class StoryRunner {
         ? bot.inventory.slots[bot.inventory.selectedSlot]
         : bot.inventory.slots[bot.inventory.getEquipmentDestSlot(destination)];
 
-      if (!equipped || equipped.name !== item_name) {
+      if (!equipped || equipped.name !== item.name) {
         throw new Error(`Failed to equip "${item_name}"`);
       }
 
@@ -1602,14 +1639,9 @@ class StoryRunner {
         targetPosition = target.position;
         this.logger.log(`[StoryRunner] ACTION: ${player} looking at ${entity_name}`);
       } else {
-        // Convert plain object to Vec3 if needed
+        // Convert plain object to Vec3 (bot.lookAt requires Vec3 instance)
         if (position.x !== undefined && position.y !== undefined && position.z !== undefined) {
-          // Check if it's already a Vec3 (has lookAt method) or plain object
-          if (typeof position.lookAt !== 'function') {
-            targetPosition = new bot.vec3(position.x, position.y, position.z);
-          } else {
-            targetPosition = position;
-          }
+          targetPosition = new Vec3(position.x, position.y, position.z);
         } else {
           targetPosition = position;
         }
