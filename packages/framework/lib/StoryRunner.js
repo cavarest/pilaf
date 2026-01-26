@@ -55,6 +55,7 @@ class StoryRunner {
     this.results = [];
     this.variables = new Map(); // Variable storage for store_as mechanism
     this.pendingInventoryUpdates = new Map(); // username -> Set of expected items
+    this.serverVersion = null; // Store server version for bot creation
   }
 
   /**
@@ -294,6 +295,10 @@ class StoryRunner {
   async executeSetup(setup) {
     // Connect RCON backend
     if (setup.server) {
+      // Store server version for bot creation
+      this.serverVersion = setup.server.version;
+      this.logger.log(`[StoryRunner] Server version: ${this.serverVersion || 'auto-detect'}`);
+
       const rconConfig = {
         host: process.env.RCON_HOST || 'localhost',
         port: parseInt(process.env.RCON_PORT) || 25575,
@@ -391,15 +396,22 @@ class StoryRunner {
     // Wait a bit before creating new bot to avoid connection conflicts
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    // Create player backend
-    const backend = await PilafBackendFactory.create('mineflayer', {
+    // Create player backend with version (critical for proper packet handling)
+    const backendConfig = {
       host: process.env.MC_HOST || 'localhost',
       port: parseInt(process.env.MC_PORT) || 25565,
       auth: 'offline',
       rconHost: process.env.RCON_HOST || 'localhost',
       rconPort: parseInt(process.env.RCON_PORT) || 25575,
       rconPassword: process.env.RCON_PASSWORD || 'cavarest'
-    });
+    };
+
+    // Add version if specified (critical for blockUpdate events to work)
+    if (this.serverVersion) {
+      backendConfig.version = this.serverVersion;
+    }
+
+    const backend = await PilafBackendFactory.create('mineflayer', backendConfig);
 
     // Wait for server to be ready
     await backend.waitForServerReady({ timeout: 60000, interval: 3000 });
@@ -873,14 +885,21 @@ class StoryRunner {
 
       // CRITICAL: Create a FRESH backend instance for reconnection
       // This avoids any residual state issues (like GitHub issue #865)
-      const freshBackend = await PilafBackendFactory.create('mineflayer', {
+      const freshBackendConfig = {
         host,
         port,
         auth,
         rconHost: process.env.RCON_HOST || 'localhost',
         rconPort: parseInt(process.env.RCON_PORT) || 25575,
         rconPassword: process.env.RCON_PASSWORD || 'cavarest'
-      });
+      };
+
+      // Add version if specified (critical for blockUpdate events to work)
+      if (this.serverVersion) {
+        freshBackendConfig.version = this.serverVersion;
+      }
+
+      const freshBackend = await PilafBackendFactory.create('mineflayer', freshBackendConfig);
 
       // Wait for server to be ready (avoid connection throttling)
       await freshBackend.waitForServerReady({ timeout: 60000, interval: 2000 });
