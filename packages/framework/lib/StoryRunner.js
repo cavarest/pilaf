@@ -1549,7 +1549,7 @@ class StoryRunner {
       this.logger.log(`[StoryRunner] ACTION: ${player} breaking block at ${location.x}, ${location.y}, ${location.z}`);
 
       // Convert location to Vec3
-      const vec3 = bot.entity.position.constructor(location.x, location.y, location.z);
+      const vec3 = new (bot.entity.position.constructor)(location.x, location.y, location.z);
 
       // Get target block
       const target = bot.blockAt(vec3);
@@ -1605,7 +1605,7 @@ class StoryRunner {
       this.logger.log(`[StoryRunner] ACTION: ${player} placing ${block} at ${location.x}, ${location.y}, ${location.z}`);
 
       // Convert location to Vec3
-      const vec3 = bot.entity.position.constructor(location.x, location.y, location.z);
+      const vec3 = new (bot.entity.position.constructor)(location.x, location.y, location.z);
 
       // Get reference block (adjacent block to place on)
       const referenceBlock = bot.blockAt(vec3);
@@ -1664,7 +1664,7 @@ class StoryRunner {
       this.logger.log(`[StoryRunner] ACTION: ${player} interacting with block at ${location.x}, ${location.y}, ${location.z}`);
 
       // Convert location to Vec3
-      const vec3 = bot.entity.position.constructor(location.x, location.y, location.z);
+      const vec3 = new (bot.entity.position.constructor)(location.x, location.y, location.z);
 
       // Get target block
       const target = bot.blockAt(vec3);
