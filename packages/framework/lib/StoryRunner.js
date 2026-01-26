@@ -1218,8 +1218,28 @@ class StoryRunner {
       }
 
       this.logger.log(`[StoryRunner] ACTION: ${player} execute command: ${command}`);
+
+      // Check if this is a 'give' command from the bot itself
+      // Format: /give @p <item> [count] or /give <player> <item> [count]
+      let expectedItems = [];
+      const giveMatch = command.match(/\/give\s+(?:@p|@\[username\])\s+(\S+)/);
+      if (giveMatch) {
+        expectedItems.push(this._normalizeItemName(giveMatch[1]));
+      }
+
       bot.chat(command);
       this.logger.log(`[StoryRunner] RESPONSE: Command sent`);
+
+      // If bot gave itself items, wait for inventory sync
+      if (expectedItems.length > 0) {
+        this.logger.log(`[StoryRunner] 🔄 ${player} gave themselves ${expectedItems.join(', ')}, waiting for inventory sync...`);
+
+        const synced = await this._waitForInventoryUpdate(player, expectedItems, 8000);
+
+        if (!synced) {
+          this.logger.log(`[StoryRunner] ⚠ Warning: ${player} may not have received ${expectedItems.join(', ')} - continuing anyway`);
+        }
+      }
     },
 
     /**

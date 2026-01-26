@@ -125,10 +125,10 @@ describe('Inventory Management Examples', () => {
           store_as: 'initial_food'
         },
         {
-          name: '[player: eater] Apply hunger effect to self',
+          name: '[player: eater] Apply strong hunger effect to self',
           action: 'execute_player_command',
           player: 'eater',
-          command: 'effect give @s minecraft:hunger 30 5'
+          command: 'effect give @s minecraft:hunger 60 10'
         },
         {
           name: 'Wait for hunger effect',
@@ -472,10 +472,10 @@ describe('Inventory Management Examples', () => {
           duration: 1
         },
         {
-          name: '[player: inv_master] Apply hunger effect to self',
+          name: '[player: inv_master] Apply strong hunger effect to self',
           action: 'execute_player_command',
           player: 'inv_master',
-          command: 'effect give @s minecraft:hunger 30 5'
+          command: 'effect give @s minecraft:hunger 60 10'
         },
         {
           name: 'Wait for hunger effect',
