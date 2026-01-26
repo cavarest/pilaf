@@ -84,7 +84,6 @@ function _getSearchNames(identifier) {
  */
 function findEntity(bot, identifier) {
   if (!bot || !bot.entities) {
-    console.log(`[EntityUtils] No bot or bot.entities`);
     return null;
   }
 
@@ -94,24 +93,6 @@ function findEntity(bot, identifier) {
   }
 
   const allEntities = Object.values(bot.entities).filter(e => e);
-
-  // COMPREHENSIVE DEBUG: Log entity state on failure
-  const debugLog = () => {
-    console.log(`[EntityUtils DEBUG] Searching for: "${identifier}"`);
-    console.log(`[EntityUtils DEBUG] Total entities: ${allEntities.length}`);
-    if (allEntities.length > 0) {
-      allEntities.slice(0, 5).forEach((e, i) => {
-        console.log(`[EntityUtils DEBUG] Entity ${i}:`, {
-          id: e.id,
-          name: e.name,
-          type: e.type,
-          displayName: e.displayName,
-          username: e.username,
-          customName: e.customName
-        });
-      });
-    }
-  };
 
   // Strategy 2: Try custom name (named mobs, nametags)
   let entity = Object.values(bot.entities).find(e => {
@@ -128,7 +109,6 @@ function findEntity(bot, identifier) {
   });
 
   if (entity) {
-    console.log(`[EntityUtils] Found by customName: "${identifier}"`);
     return entity;
   }
 
@@ -140,13 +120,11 @@ function findEntity(bot, identifier) {
   });
 
   if (entity) {
-    console.log(`[EntityUtils] Found by displayName/username: "${identifier}"`);
     return entity;
   }
 
   // Strategy 4: Try entity type name with alias support
   const searchNames = _getSearchNames(identifier);
-  console.log(`[EntityUtils DEBUG] Searching for entity using names:`, searchNames);
 
   entity = Object.values(bot.entities).find(e => {
     if (!e) return false;
@@ -156,12 +134,9 @@ function findEntity(bot, identifier) {
   });
 
   if (entity) {
-    console.log(`[EntityUtils] Found by name/type: "${identifier}" → actual entity: "${entity.name}"`);
     return entity;
   }
 
-  // NOT FOUND - log debug info
-  debugLog();
   return null;
 }
 
