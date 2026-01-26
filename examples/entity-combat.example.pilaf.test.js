@@ -37,6 +37,16 @@ describe('Entity Combat Examples', () => {
 
       steps: [
         {
+          name: '[RCON] Kill all zombies from previous tests',
+          action: 'execute_command',
+          command: 'kill @e[type=zombie]'
+        },
+        {
+          name: 'Wait for cleanup',
+          action: 'wait',
+          duration: 1
+        },
+        {
           name: '[player: warrior] Equip a weapon',
           action: 'execute_command',
           command: 'give warrior diamond_sword'
@@ -54,26 +64,26 @@ describe('Entity Combat Examples', () => {
           destination: 'hand'
         },
         {
-          name: '[RCON] Spawn a zombie nearby with custom name',
+          name: '[RCON] Spawn a zombie nearby',
           action: 'execute_command',
-          command: 'summon zombie ~ ~5 ~ {CustomName:"test_zombie_warrior"}'
+          command: 'summon zombie ~ ~5 ~'
         },
         {
-          name: 'Wait for spawn',
+          name: 'Wait for spawn and entity load',
           action: 'wait',
-          duration: 2
+          duration: 5
         },
         {
-          name: '[player: warrior] Look at zombie',
+          name: '[player: warrior] Look at and find zombie',
           action: 'look_at',
           player: 'warrior',
-          entity_name: 'test_zombie_warrior'
+          entity_name: 'zombie'
         },
         {
           name: '[player: warrior] Attack the zombie',
           action: 'attack_entity',
           player: 'warrior',
-          entity_name: 'test_zombie_warrior'
+          entity_name: 'zombie'
         },
         {
           name: 'Wait for attack processing',
@@ -108,20 +118,30 @@ describe('Entity Combat Examples', () => {
 
       steps: [
         {
-          name: '[RCON] Spawn a villager with custom name',
+          name: '[RCON] Kill all villagers from previous tests',
           action: 'execute_command',
-          command: 'summon villager ~3 ~ ~ {Profession:1,CustomName:"test_villager_trader"}'
+          command: 'kill @e[type=villager]'
         },
         {
-          name: 'Wait for spawn',
+          name: 'Wait for cleanup',
           action: 'wait',
-          duration: 2
+          duration: 1
+        },
+        {
+          name: '[RCON] Spawn a villager',
+          action: 'execute_command',
+          command: 'summon villager ~3 ~ ~ {Profession:1}'
+        },
+        {
+          name: 'Wait for spawn and entity load',
+          action: 'wait',
+          duration: 5
         },
         {
           name: '[player: trader] Look at villager',
           action: 'look_at',
           player: 'trader',
-          entity_name: 'test_villager_trader'
+          entity_name: 'villager'
         },
         {
           name: '[player: trader] Move closer to villager',
@@ -138,7 +158,7 @@ describe('Entity Combat Examples', () => {
           name: '[player: trader] Interact with villager',
           action: 'interact_with_entity',
           player: 'trader',
-          entity_name: 'test_villager_trader'
+          entity_name: 'villager'
         },
         {
           name: 'Wait for trade window to open',
@@ -172,32 +192,42 @@ describe('Entity Combat Examples', () => {
 
       steps: [
         {
+          name: '[RCON] Kill all boats from previous tests',
+          action: 'execute_command',
+          command: 'kill @e[type=boat]'
+        },
+        {
+          name: 'Wait for cleanup',
+          action: 'wait',
+          duration: 1
+        },
+        {
           name: '[player: sailor] Get starting position',
           action: 'get_player_location',
           player: 'sailor',
           store_as: 'start_position'
         },
         {
-          name: '[RCON] Spawn a boat nearby with custom name',
+          name: '[RCON] Spawn a boat nearby',
           action: 'execute_command',
-          command: 'summon boat ~2 ~ ~ {CustomName:"test_boat_sailor"}'
+          command: 'summon boat ~2 ~ ~'
         },
         {
-          name: 'Wait for spawn',
+          name: 'Wait for spawn and entity load',
           action: 'wait',
-          duration: 2
+          duration: 5
         },
         {
           name: '[player: sailor] Look at boat',
           action: 'look_at',
           player: 'sailor',
-          entity_name: 'test_boat_sailor'
+          entity_name: 'boat'
         },
         {
           name: '[player: sailor] Mount the boat',
           action: 'mount_entity',
           player: 'sailor',
-          entity_name: 'test_boat_sailor'
+          entity_name: 'boat'
         },
         {
           name: 'Wait for mount',
@@ -363,40 +393,50 @@ describe('Entity Combat Examples', () => {
 
       steps: [
         {
-          name: '[RCON] Spawn cow with custom name',
+          name: '[RCON] Kill all animals from previous tests',
           action: 'execute_command',
-          command: 'summon cow ~2 ~ ~ {CustomName:"test_cow_zoo"}'
+          command: 'kill @e[type=cow,pig,sheep]'
         },
         {
-          name: 'Wait for cow spawn',
+          name: 'Wait for cleanup',
           action: 'wait',
           duration: 1
         },
         {
-          name: '[RCON] Spawn pig with custom name',
+          name: '[RCON] Spawn cow',
           action: 'execute_command',
-          command: 'summon pig ~-2 ~ ~ {CustomName:"test_pig_zoo"}'
+          command: 'summon cow ~2 ~ ~'
         },
         {
-          name: 'Wait for pig spawn',
-          action: 'wait',
-          duration: 1
-        },
-        {
-          name: '[RCON] Spawn sheep with custom name',
-          action: 'execute_command',
-          command: 'summon sheep ~ ~ ~3 {CustomName:"test_sheep_zoo"}'
-        },
-        {
-          name: 'Wait for sheep spawn',
+          name: 'Wait for cow spawn and load',
           action: 'wait',
           duration: 2
+        },
+        {
+          name: '[RCON] Spawn pig',
+          action: 'execute_command',
+          command: 'summon pig ~-2 ~ ~'
+        },
+        {
+          name: 'Wait for pig spawn and load',
+          action: 'wait',
+          duration: 2
+        },
+        {
+          name: '[RCON] Spawn sheep',
+          action: 'execute_command',
+          command: 'summon sheep ~ ~ ~3'
+        },
+        {
+          name: 'Wait for sheep spawn and load',
+          action: 'wait',
+          duration: 5
         },
         {
           name: '[player: zookeeper] Interact with cow',
           action: 'interact_with_entity',
           player: 'zookeeper',
-          entity_name: 'test_cow_zoo'
+          entity_name: 'cow'
         },
         {
           name: 'Wait for interaction',
@@ -407,13 +447,13 @@ describe('Entity Combat Examples', () => {
           name: '[player: zookeeper] Turn to pig',
           action: 'look_at',
           player: 'zookeeper',
-          entity_name: 'test_pig_zoo'
+          entity_name: 'pig'
         },
         {
           name: '[player: zookeeper] Interact with pig',
           action: 'interact_with_entity',
           player: 'zookeeper',
-          entity_name: 'test_pig_zoo'
+          entity_name: 'pig'
         },
         {
           name: 'Wait for interaction',
@@ -424,13 +464,13 @@ describe('Entity Combat Examples', () => {
           name: '[player: zookeeper] Turn to sheep',
           action: 'look_at',
           player: 'zookeeper',
-          entity_name: 'test_sheep_zoo'
+          entity_name: 'sheep'
         },
         {
           name: '[player: zookeeper] Interact with sheep',
           action: 'interact_with_entity',
           player: 'zookeeper',
-          entity_name: 'test_sheep_zoo'
+          entity_name: 'sheep'
         },
         {
           name: 'Wait for interaction',
