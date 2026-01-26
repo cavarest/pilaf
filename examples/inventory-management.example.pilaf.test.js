@@ -89,8 +89,8 @@ describe('Inventory Management Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  // Skip consume_item test - requires get_player_food_level action
-  it.skip('should test consuming food items', async () => {
+  // Consume item test - now supported with get_player_food_level action
+  it('should test consuming food items', async () => {
     const runner = new StoryRunner();
 
     const story = {
@@ -358,7 +358,7 @@ describe('Inventory Management Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  it.skip('should test complete inventory workflow', async () => {
+  it('should test complete inventory workflow', async () => {
     const runner = new StoryRunner();
 
     const story = {

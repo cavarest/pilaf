@@ -1064,6 +1064,33 @@ class StoryRunner {
     },
 
     /**
+     * Get player food level
+     * Returns the player's current food level and saturation
+     */
+    async get_player_food_level(params) {
+      const { player } = params;
+      if (!player) {
+        throw new Error('get_player_food_level requires "player" parameter');
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} getFoodLevel()`);
+
+      const bot = this.bots.get(player);
+      if (!bot) {
+        throw new Error(`Player "${player}" not found`);
+      }
+
+      // bot.food contains: food, saturation, saturationExhaustionLevel
+      const foodLevel = {
+        food: bot.food,
+        saturation: bot.saturation
+      };
+
+      this.logger.log(`[StoryRunner] RESPONSE: food=${foodLevel.food}, saturation=${foodLevel.saturation.toFixed(2)}`);
+      return foodLevel;
+    },
+
+    /**
      * Get entity location
      * Returns specific entity's position from the entity list
      */
