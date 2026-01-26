@@ -344,6 +344,53 @@ class StoryRunner {
             return this.variables.get(varPath);
           }
         }
+
+        // Check for expression patterns like "{var.x} + 1" or "{var.y} - 2"
+        const exprMatch = value.match(/^(.+?)\s*([+\-])\s*(\d+)$/);
+        if (exprMatch) {
+          const varPart = exprMatch[1].trim();
+          const operator = exprMatch[2];
+          const operand = parseInt(exprMatch[3], 10);
+
+          // Check if varPart is a variable reference
+          const varMatch = varPart.match(/^\{(.+)\}$/);
+          if (varMatch) {
+            const varPath = varMatch[1];
+            let varValue;
+
+            // Check if it contains a dot (nested property access)
+            if (varPath.includes('.')) {
+              const parts = varPath.split('.');
+              const rootVar = parts[0];
+
+              if (!this.variables.has(rootVar)) {
+                throw new Error(`Variable "${rootVar}" not found`);
+              }
+
+              varValue = this.variables.get(rootVar);
+              for (let i = 1; i < parts.length; i++) {
+                if (varValue && typeof varValue === 'object' && parts[i] in varValue) {
+                  varValue = varValue[parts[i]];
+                } else {
+                  throw new Error(`Property "${parts[i]}" not found in variable "${rootVar}"`);
+                }
+              }
+            } else {
+              if (!this.variables.has(varPath)) {
+                throw new Error(`Variable "${varPath}" not found`);
+              }
+              varValue = this.variables.get(varPath);
+            }
+
+            // Apply the operation
+            if (operator === '+') {
+              return varValue + operand;
+            } else if (operator === '-') {
+              return varValue - operand;
+            }
+          }
+        }
+
         return value;
       } else if (Array.isArray(value)) {
         return value.map(resolveValue);

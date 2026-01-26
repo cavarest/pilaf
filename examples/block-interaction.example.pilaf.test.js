@@ -20,7 +20,7 @@ describe('Block Interaction Examples', () => {
     await new Promise(resolve => setTimeout(resolve, 5000));
   });
 
-  it.skip('should test breaking blocks (requires position calculations)', async () => {
+  it('should test breaking blocks', async () => {
     const runner = new StoryRunner();
 
     const story = {
@@ -106,7 +106,7 @@ describe('Block Interaction Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  it.skip('should test placing blocks (requires position calculations)', async () => {
+  it('should test placing blocks', async () => {
     const runner = new StoryRunner();
 
     const story = {
@@ -200,7 +200,7 @@ describe('Block Interaction Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  it.skip('should test interacting with blocks (requires position calculations)', async () => {
+  it('should test interacting with blocks', async () => {
     const runner = new StoryRunner();
 
     const story = {
@@ -278,7 +278,7 @@ describe('Block Interaction Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  it.skip('should test interacting with blocks (door)', async () => {
+  it('should test interacting with blocks (door)', async () => {
     const runner = new StoryRunner();
 
     const story = {
@@ -392,7 +392,7 @@ describe('Block Interaction Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  it.skip('should test building a simple structure (requires position calculations)', async () => {
+  it('should test building a simple structure', async () => {
     const runner = new StoryRunner();
 
     const story = {
@@ -486,7 +486,7 @@ describe('Block Interaction Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  it.skip('should test breaking and replacing blocks (requires position calculations)', async () => {
+  it('should test breaking and replacing blocks', async () => {
     const runner = new StoryRunner();
 
     const story = {
