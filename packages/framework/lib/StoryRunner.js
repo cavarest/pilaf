@@ -1083,7 +1083,7 @@ class StoryRunner {
       // bot.food contains: food, saturation, saturationExhaustionLevel
       const foodLevel = {
         food: bot.food,
-        saturation: bot.saturation
+        saturation: bot.saturation || 0
       };
 
       this.logger.log(`[StoryRunner] RESPONSE: food=${foodLevel.food}, saturation=${foodLevel.saturation.toFixed(2)}`);
@@ -1301,6 +1301,15 @@ class StoryRunner {
       }
 
       this.logger.log(`[StoryRunner] ACTION: ${player} dismounting`);
+
+      // Check if bot is mounted
+      if (!bot.vehicle) {
+        this.logger.log(`[StoryRunner] Player is not mounted - skipping dismount`);
+        return {
+          dismounted: false,
+          reason: 'not_mounted'
+        };
+      }
 
       // Execute dismount
       bot.dismount();
@@ -1539,8 +1548,11 @@ class StoryRunner {
 
       this.logger.log(`[StoryRunner] ACTION: ${player} breaking block at ${location.x}, ${location.y}, ${location.z}`);
 
+      // Convert location to Vec3
+      const vec3 = bot.entity.position.constructor(location.x, location.y, location.z);
+
       // Get target block
-      const target = bot.blockAt(location);
+      const target = bot.blockAt(vec3);
 
       if (!target) {
         throw new Error(`No block found at location ${location.x}, ${location.y}, ${location.z}`);
@@ -1592,8 +1604,11 @@ class StoryRunner {
 
       this.logger.log(`[StoryRunner] ACTION: ${player} placing ${block} at ${location.x}, ${location.y}, ${location.z}`);
 
+      // Convert location to Vec3
+      const vec3 = bot.entity.position.constructor(location.x, location.y, location.z);
+
       // Get reference block (adjacent block to place on)
-      const referenceBlock = bot.blockAt(location);
+      const referenceBlock = bot.blockAt(vec3);
 
       if (!referenceBlock) {
         throw new Error(`No reference block found at location ${location.x}, ${location.y}, ${location.z}`);
@@ -1648,8 +1663,11 @@ class StoryRunner {
 
       this.logger.log(`[StoryRunner] ACTION: ${player} interacting with block at ${location.x}, ${location.y}, ${location.z}`);
 
+      // Convert location to Vec3
+      const vec3 = bot.entity.position.constructor(location.x, location.y, location.z);
+
       // Get target block
-      const target = bot.blockAt(location);
+      const target = bot.blockAt(vec3);
 
       if (!target) {
         throw new Error(`No block found at location ${location.x}, ${location.y}, ${location.z}`);
