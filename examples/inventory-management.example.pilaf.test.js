@@ -103,7 +103,7 @@ describe('Inventory Management Examples', () => {
   });
 
   // Consume item test - now supported with get_player_food_level action
-  it.skip('should test consuming food items - food full sync issue', async () => {
+  it('should test consuming food items', async () => {
     const runner = new StoryRunner();
 
     const story = {
@@ -125,9 +125,9 @@ describe('Inventory Management Examples', () => {
           store_as: 'initial_food'
         },
         {
-          name: '[RCON] Set food level to half',
+          name: '[RCON] Set food level to half via hunger effect',
           action: 'execute_command',
-          command: '/effect give @e[type=player,limit=1] minecraft:hunger 1 10'
+          command: 'effect give @e[type=player,limit=1] minecraft:hunger 30 5'
         },
         {
           name: 'Wait for hunger effect',
@@ -371,7 +371,7 @@ describe('Inventory Management Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  it.skip('should test complete inventory workflow - food full sync issue', async () => {
+  it('should test complete inventory workflow', async () => {
     const runner = new StoryRunner();
 
     const story = {
@@ -473,7 +473,7 @@ describe('Inventory Management Examples', () => {
         {
           name: '[RCON] Reduce food level to allow consumption',
           action: 'execute_command',
-          command: 'effect give @e[type=player,limit=1,name=inv_master] minecraft:hunger 1 5'
+          command: 'effect give @e[type=player,limit=1,name=inv_master] minecraft:hunger 30 5'
         },
         {
           name: 'Wait for hunger effect',

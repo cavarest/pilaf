@@ -54,6 +54,63 @@ class StoryRunner {
     this.currentStory = null;
     this.results = [];
     this.variables = new Map(); // Variable storage for store_as mechanism
+    this.pendingInventoryUpdates = new Map(); // username -> Set of expected items
+  }
+
+  /**
+   * Wait for inventory update from server
+   * Monitors bot inventory for expected items after RCON commands
+   */
+  async _waitForInventoryUpdate(player, expectedItems = [], timeoutMs = 10000) {
+    const bot = this.bots.get(player);
+    if (!bot) {
+      this.logger.log(`[StoryRunner] No bot to wait for inventory update`);
+      return;
+    }
+
+    if (expectedItems.length === 0) {
+      return;
+    }
+
+    this.logger.log(`[StoryRunner] Waiting for inventory update: ${expectedItems.join(', ')}`);
+
+    const startTime = Date.now();
+    const checkInterval = 200;
+
+    while (Date.now() - startTime < timeoutMs) {
+      const currentItems = bot.inventory.items() || [];
+      const foundItems = new Set();
+
+      for (const expected of expectedItems) {
+        const found = currentItems.some(item =>
+          item && (item.name === expected || item.type === expected)
+        );
+        if (found) {
+          foundItems.add(expected);
+        }
+      }
+
+      if (foundItems.size === expectedItems.length) {
+        this.logger.log(`[StoryRunner] ✓ Inventory update confirmed: ${Array.from(foundItems).join(', ')}`);
+        return true;
+      }
+
+      // Wait before checking again
+      await new Promise(resolve => setTimeout(resolve, checkInterval));
+    }
+
+    // Timeout - log what we actually found
+    const currentItems = bot.inventory.items() || [];
+    const foundItems = new Set();
+    for (const expected of expectedItems) {
+      const found = currentItems.some(item =>
+        item && (item.name === expected || item.type === expected)
+      );
+      if (found) foundItems.add(expected);
+    }
+
+    this.logger.log(`[StoryRunner] ⚠ Inventory update timeout. Found: ${Array.from(foundItems).join(', ') || 'none'}`);
+    return false;
   }
 
   /**
@@ -488,9 +545,34 @@ class StoryRunner {
 
       this.logger.log(`[StoryRunner] ACTION: RCON ${command}`);
 
+      // Check if this is a 'give' command and extract the item name
+      let expectedItems = [];
+      const giveMatch = command.match(/^give\s+\w+\s+(\w+)/);
+      if (giveMatch) {
+        expectedItems.push(this._normalizeItemName(giveMatch[1]));
+      }
+
       const result = await this.backends.rcon.send(command);
       this.logger.log(`[StoryRunner] RESPONSE: ${result.raw}`);
+
+      // If we gave items, wait for bot inventory to sync
+      if (expectedItems.length > 0) {
+        // Need to determine which player this affects
+        // For now, check all connected bots
+        for (const [username, bot] of this.bots) {
+          this.logger.log(`[StoryRunner] Correlating RCON 'give ${expectedItems.join(', ')}' with ${username}'s bot inventory`);
+          await this._waitForInventoryUpdate(username, expectedItems, 5000);
+        }
+      }
     },
+
+    /**
+     * Normalize item names to match between RCON output and bot inventory
+     */
+    _normalizeItemName(itemName) {
+      // RCON uses underscore format (diamond_sword), bot inventory uses same
+      return itemName.replace(/^minecraft:/, '');
+    }
 
     /**
      * Send a chat message from a player
@@ -1426,6 +1508,10 @@ class StoryRunner {
 
       this.logger.log(`[StoryRunner] ACTION: ${player} consuming ${item_name || 'item'}`);
 
+      // Check current food level
+      const currentFood = bot.food || 20;
+      this.logger.log(`[StoryRunner] Current food level: ${currentFood}/20`);
+
       // If item_name specified, find and equip it first
       if (item_name) {
         const items = bot.inventory.items();
@@ -1439,18 +1525,32 @@ class StoryRunner {
         await bot.equip(item, 'hand');
       }
 
-      // Consume the item
-      const consumed = await bot.consume();
+      // Consume the item - handle food full case
+      try {
+        const consumed = await bot.consume();
 
-      // Wait for consumption to process
-      await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait for consumption to process
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-      this.logger.log(`[StoryRunner] RESPONSE: Item consumed`);
+        this.logger.log(`[StoryRunner] RESPONSE: Item consumed`);
 
-      return {
-        consumed: true,
-        item: item_name || 'held_item'
-      };
+        return {
+          consumed: true,
+          item: item_name || 'held_item'
+        };
+      } catch (error) {
+        // Handle case where food is full
+        if (error.message && error.message.includes('food')) {
+          this.logger.log(`[StoryRunner] RESPONSE: Cannot consume - food is full (${currentFood}/20)`);
+          return {
+            consumed: false,
+            reason: 'food_full',
+            food_level: currentFood,
+            item: item_name || 'held_item'
+          };
+        }
+        throw error;
+      }
     },
 
     /**
