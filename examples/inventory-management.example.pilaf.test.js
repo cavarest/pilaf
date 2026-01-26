@@ -329,11 +329,11 @@ describe('Inventory Management Examples', () => {
           store_as: 'initial_inventory'
         },
         {
-          name: '[player: organizer] Swap inventory slots (slot 9 to 10)',
+          name: '[player: organizer] Swap inventory slots (slot 0 to 1)',
           action: 'swap_inventory_slots',
           player: 'organizer',
-          from_slot: 9,
-          to_slot: 10
+          from_slot: 0,
+          to_slot: 1
         },
         {
           name: 'Wait for swap',
@@ -557,11 +557,11 @@ describe('Inventory Management Examples', () => {
           duration: 1
         },
         {
-          name: '[player: hotbar_user] Swap inventory slots (slot 9 to 13)',
+          name: '[player: hotbar_user] Swap inventory slots (slot 0 to 2)',
           action: 'swap_inventory_slots',
           player: 'hotbar_user',
-          from_slot: 9,
-          to_slot: 13
+          from_slot: 0,
+          to_slot: 2
         },
         {
           name: 'Wait for swap',
