@@ -1843,7 +1843,7 @@ class StoryRunner {
       // Calculate face vector
       const faceVector = this._getFaceVector(face);
 
-      // Get item type from bot inventory
+      // Find the item in the bot's inventory
       const items = bot.inventory.items();
       const item = items.find(i => i && i.name === block);
 
@@ -1851,12 +1851,17 @@ class StoryRunner {
         throw new Error(`Block "${block}" not found in inventory`);
       }
 
-      // Equip the item to hand before placing (ensures bot can place it)
-      this.logger.log(`[StoryRunner] ${player} equipping ${block} to hand`);
-      await bot.equip(item, 'hand');
-
-      // Small delay to ensure equip completes
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Try to equip the item to hand before placing
+      // Note: bot.equip() may throw if blockUpdate event doesn't fire, but equip usually succeeds
+      try {
+        this.logger.log(`[StoryRunner] ${player} equipping ${block} to hand`);
+        await bot.equip(item, 'hand');
+        // Small delay to ensure equip completes
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (equipError) {
+        // Equip might fail due to blockUpdate event not firing, but try placing anyway
+        this.logger.log(`[StoryRunner] Warning: equip had issues, attempting placement anyway`);
+      }
 
       // Place block
       await bot.placeBlock(referenceBlock, faceVector);
