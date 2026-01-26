@@ -1857,16 +1857,21 @@ class StoryRunner {
         throw new Error(`Block "${block}" not found in inventory`);
       }
 
-      // Try to equip the item to hand before placing
-      // Note: bot.equip() may throw if blockUpdate event doesn't fire, but equip usually succeeds
-      try {
-        this.logger.log(`[StoryRunner] ${player} equipping ${block} to hand`);
-        await bot.equip(item, 'hand');
-        // Small delay to ensure equip completes
+      // Select the hotbar slot that has the item (simpler than bot.equip())
+      // bot.equip() waits for blockUpdate events that don't fire reliably
+      if (item.slot >= 0 && item.slot <= 8) {  // Check if item is in hotbar
+        bot.setQuickBarSlot(item.slot);
+        // Small delay to ensure slot selection registers
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } else {
+        // Item is not in hotbar, try to move it there
+        this.logger.log(`[StoryRunner] ${player} moving ${block} to hotbar`);
+        try {
+          await bot.equip(item, 'hand');
+        } catch (equipError) {
+          this.logger.log(`[StoryRunner] Warning: equip had issues, attempting placement anyway`);
+        }
         await new Promise(resolve => setTimeout(resolve, 200));
-      } catch (equipError) {
-        // Equip might fail due to blockUpdate event not firing, but try placing anyway
-        this.logger.log(`[StoryRunner] Warning: equip had issues, attempting placement anyway`);
       }
 
       // Place block
