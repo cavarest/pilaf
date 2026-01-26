@@ -1436,19 +1436,24 @@ class StoryRunner {
       await bot.equip(item, destination);
 
       // DEBUG: Log what actually got equipped
+      // For 'hand' destination, use bot.heldItem instead of accessing slots directly
+      // because selectedSlot might be undefined if inventory isn't fully initialized
       const equipped = destination === 'hand'
-        ? bot.inventory.slots[bot.inventory.selectedSlot]
+        ? bot.heldItem
         : bot.inventory.slots[bot.inventory.getEquipmentDestSlot(destination)];
 
       console.log(`[equip_item DEBUG] After equip - destination: "${destination}"`);
-      console.log(`[equip_item DEBUG] After equip - equipped slot:`, {
+      console.log(`[equip_item DEBUG] After equip - equipped item:`, {
         hasItem: !!equipped,
         equippedName: equipped?.name,
         equippedDisplayName: equipped?.displayName,
         expectedName: item.name,
         match: equipped?.name === item.name,
-        selectedSlot: bot.inventory.selectedSlot,
-        equipmentDestSlot: destination !== 'hand' ? bot.inventory.getEquipmentDestSlot(destination) : 'N/A'
+        heldItem: bot.heldItem ? {
+          name: bot.heldItem.name,
+          count: bot.heldItem.count
+        } : null,
+        selectedSlot: bot.inventory.selectedSlot
       });
 
       if (!equipped || equipped.name !== item.name) {
