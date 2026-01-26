@@ -1943,11 +1943,23 @@ class StoryRunner {
       // Get minecraft data
       const mcData = require('minecraft-data')(bot.version);
 
-      // Find recipe for the item
-      const recipes = bot.recipesFor(item_name, null, 1, false);
+      // Convert item_name to item ID for recipe lookup
+      // bot.recipesFor() works better with numeric IDs
+      const itemInfo = mcData.itemsByName[item_name];
+      if (!itemInfo) {
+        throw new Error(`Unknown item: "${item_name}"`);
+      }
+
+      // Find recipe for the item (try both ID and name)
+      let recipes = bot.recipesFor(itemInfo.id, null, 1, false);
+
+      // If no recipes found with ID, try with name
+      if (!recipes || recipes.length === 0) {
+        recipes = bot.recipesFor(item_name, null, 1, false);
+      }
 
       if (!recipes || recipes.length === 0) {
-        throw new Error(`No recipe found for item "${item_name}"`);
+        throw new Error(`No recipe found for item "${item_name}" (ID: ${itemInfo.id})`);
       }
 
       const recipe = recipes[0];  // Use first available recipe

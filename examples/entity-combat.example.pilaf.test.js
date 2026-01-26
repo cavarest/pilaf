@@ -194,7 +194,7 @@ describe('Entity Combat Examples', () => {
         {
           name: '[RCON] Kill all boats from previous tests',
           action: 'execute_command',
-          command: 'kill @e[type=boat]'
+          command: 'kill @e[type=oak_boat]'
         },
         {
           name: 'Wait for cleanup',
@@ -210,7 +210,7 @@ describe('Entity Combat Examples', () => {
         {
           name: '[RCON] Spawn a boat nearby',
           action: 'execute_command',
-          command: 'summon boat ~2 ~ ~'
+          command: 'summon oak_boat ~2 ~ ~'
         },
         {
           name: 'Wait for spawn and entity load',

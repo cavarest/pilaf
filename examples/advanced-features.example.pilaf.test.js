@@ -96,9 +96,15 @@ describe('Advanced Features Examples', () => {
 
         steps: [
           {
-            name: '[RCON] Create a chest with items',
+            name: '[player: looter] Get starting position',
+            action: 'get_player_location',
+            player: 'looter',
+            store_as: 'position'
+          },
+          {
+            name: '[RCON] Create a chest with items at spawn',
             action: 'execute_command',
-            command: 'setblock ~3 ~ ~ chest{Items:[{id:"minecraft:diamond",Count:64}]}'
+            command: 'setblock 0 64 0 chest{Items:[{id:"minecraft:diamond",Count:64}]}'
           },
           {
             name: 'Wait for chest creation',
@@ -106,19 +112,13 @@ describe('Advanced Features Examples', () => {
             duration: 1
           },
           {
-            name: '[player: looter] Get starting position',
-            action: 'get_player_location',
-            player: 'looter',
-            store_as: 'position'
-          },
-          {
             name: '[player: looter] Look at chest position',
             action: 'look_at',
             player: 'looter',
             position: {
-              x: 100,
+              x: 0,
               y: 64,
-              z: 100
+              z: 0
             }
           },
           {
@@ -137,9 +137,9 @@ describe('Advanced Features Examples', () => {
             action: 'interact_with_block',
             player: 'looter',
             location: {
-              x: 100,
+              x: 0,
               y: 64,
-              z: 100
+              z: 0
             }
           },
           {
