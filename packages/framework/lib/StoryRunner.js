@@ -1508,9 +1508,42 @@ class StoryRunner {
         } : null
       });
 
-      // Move item between slots using click window
-      await bot.clickWindow(from_slot, 0, 0);  // Pick up from_slot
-      await bot.clickWindow(to_slot, 0, 0);    // Place in to_slot
+      // Check if from_slot has an item
+      const fromItem = bot.inventory.slots[from_slot];
+      const toItem = bot.inventory.slots[to_slot];
+
+      // If both slots are empty, nothing to do
+      if (!fromItem && !toItem) {
+        console.log(`[swap_inventory_slots DEBUG] Both slots empty, skipping swap`);
+        this.logger.log(`[StoryRunner] RESPONSE: Slots swapped (no items to swap)`);
+        return {
+          swapped: true,
+          from_slot,
+          to_slot,
+          note: 'Both slots empty'
+        };
+      }
+
+      // If only dest slot has item, swap direction
+      if (!fromItem && toItem) {
+        console.log(`[swap_inventory_slots DEBUG] From slot empty, moving item from ${to_slot} to ${from_slot}`);
+        try {
+          await bot.moveSlotItem(to_slot, from_slot);
+        } catch (err) {
+          console.log(`[swap_inventory_slots DEBUG] moveSlotItem failed:`, err.message);
+          throw new Error(`Failed to move item from slot ${to_slot} to ${from_slot}: ${err.message}`);
+        }
+      } else {
+        // Normal case: move item from from_slot to to_slot
+        // If toItem exists, it will be swapped automatically
+        console.log(`[swap_inventory_slots DEBUG] Moving item from ${from_slot} to ${to_slot}`);
+        try {
+          await bot.moveSlotItem(from_slot, to_slot);
+        } catch (err) {
+          console.log(`[swap_inventory_slots DEBUG] moveSlotItem failed:`, err.message);
+          throw new Error(`Failed to move item from slot ${from_slot} to ${to_slot}: ${err.message}`);
+        }
+      }
 
       // Wait for swap to process
       await new Promise(resolve => setTimeout(resolve, 200));
