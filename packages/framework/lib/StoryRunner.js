@@ -1672,7 +1672,13 @@ class StoryRunner {
       }
 
       // Equip the item
-      await bot.equip(item, destination);
+      // Note: bot.equip() may throw if blockUpdate event doesn't fire, but equip usually succeeds
+      try {
+        await bot.equip(item, destination);
+      } catch (equipError) {
+        // Equip might fail due to blockUpdate event not firing, but verify it worked anyway
+        this.logger.log(`[StoryRunner] Warning: equip had issues (blockUpdate event timeout), verifying equip state...`);
+      }
 
       // Verify the item is equipped
       // For 'hand' destination, use bot.heldItem instead of accessing slots directly
