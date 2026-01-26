@@ -11,13 +11,56 @@
  */
 
 /**
+ * Entity alias mappings
+ * Maps generic entity names to their specific Minecraft entity type names
+ * Used when the summon command accepts a generic name but spawns a specific variant
+ *
+ * @private
+ * @constant {Object<string, string[]>}
+ */
+const ENTITY_ALIASES = {
+  // Generic boat → oak_boat (default boat type in Minecraft)
+  'boat': ['oak_boat', 'boat'],
+  // Generic horse → horse (already correct)
+  // Generic minecart → minecart (already correct)
+};
+
+/**
+ * Get all possible entity names to search for an entity
+ * Includes the original name plus any known aliases/variants
+ *
+ * @private
+ * @param {string} identifier - Entity identifier to search for
+ * @returns {Array<string>} Array of possible entity names to search
+ */
+function _getSearchNames(identifier) {
+  // Always include the original identifier
+  const names = [identifier];
+
+  // Check if this is an alias for a specific entity type
+  if (ENTITY_ALIASES[identifier]) {
+    names.push(...ENTITY_ALIASES[identifier]);
+  }
+
+  // For boats, also try all wood variants if searching for generic "boat"
+  if (identifier === 'boat') {
+    const woodTypes = ['oak', 'birch', 'spruce', 'jungle', 'acacia', 'dark_oak', 'mangrove', 'cherry', 'pale_oak'];
+    woodTypes.forEach(wood => {
+      names.push(`${wood}_boat`);
+    });
+  }
+
+  return [...new Set(names)]; // Remove duplicates
+}
+
+/**
  * Find an entity by identifier
  *
  * Searches for an entity using multiple strategies:
  * 1. Direct entity ID (number)
  * 2. Custom name (named entities, mobs with nametags)
  * 3. Display name (player names, entity display names)
- * 4. Entity type name (zombie, skeleton, etc.)
+ * 4. Entity type name (zombie, skeleton, etc.) with alias support
  *
  * @param {Object} bot - Mineflayer bot instance
  * @param {number|string} identifier - Entity ID, name, or custom name
@@ -34,6 +77,10 @@
  * @example
  * // Find by entity type
  * const entity = EntityUtils.findEntity(bot, 'zombie');
+ *
+ * @example
+ * // Find by alias (boat searches for oak_boat, birch_boat, etc.)
+ * const entity = EntityUtils.findEntity(bot, 'boat');
  */
 function findEntity(bot, identifier) {
   if (!bot || !bot.entities) {
@@ -97,16 +144,19 @@ function findEntity(bot, identifier) {
     return entity;
   }
 
-  // Strategy 4: Try entity type name (zombie, skeleton, etc.)
+  // Strategy 4: Try entity type name with alias support
+  const searchNames = _getSearchNames(identifier);
+  console.log(`[EntityUtils DEBUG] Searching for entity using names:`, searchNames);
+
   entity = Object.values(bot.entities).find(e => {
     if (!e) return false;
-    // Direct match on entity name
-    return e.name === identifier ||
-           (e.type && e.type === identifier);
+    // Check if entity name matches any of the search names
+    return searchNames.includes(e.name) ||
+           (e.type && searchNames.includes(e.type));
   });
 
   if (entity) {
-    console.log(`[EntityUtils] Found by name/type: "${identifier}"`);
+    console.log(`[EntityUtils] Found by name/type: "${identifier}" → actual entity: "${entity.name}"`);
     return entity;
   }
 
