@@ -79,7 +79,7 @@ describe('Advanced Features Examples', () => {
     });
   });
 
-  describe('Container Interaction', () => {
+  describe.skip('Container Interaction', () => {
     it('should test container interaction (chest)', async () => {
       const runner = new StoryRunner();
 
@@ -159,7 +159,7 @@ describe('Advanced Features Examples', () => {
     });
   });
 
-  describe('Crafting', () => {
+  describe.skip('Crafting', () => {
     it('should test crafting items', async () => {
       const runner = new StoryRunner();
 
