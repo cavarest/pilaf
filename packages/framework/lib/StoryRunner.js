@@ -631,6 +631,24 @@ class StoryRunner {
           throw new Error(`Assertion failed: ${actualNum} is not less than or equal to ${expectedNum}`);
         }
         this.logger.log(`[StoryRunner] Assertion passed: ${actualNum} <= ${expectedNum}`);
+      } else if (condition === 'count_decreased') {
+        // expected: item name
+        // actual: final inventory from get_player_inventory
+        // Count items in inventory and compare with expected threshold
+        const getItemCount = (inv, itemName) => {
+          if (!inv.items) return 0;
+          return inv.items
+            .filter(item => item && (item.name === itemName || item.type === itemName))
+            .reduce((sum, item) => sum + (item.count || 1), 0);
+        };
+
+        const actualCount = getItemCount(actual, expected);
+        const maxExpected = parseInt(params.max_expected || '999999', 10);
+
+        if (actualCount > maxExpected) {
+          throw new Error(`Assertion failed: item "${expected}" count is ${actualCount}, which exceeds max ${maxExpected}`);
+        }
+        this.logger.log(`[StoryRunner] Assertion passed: item "${expected}" count decreased (${actualCount} <= ${maxExpected})`);
       } else {
         throw new Error(`Unknown assertion condition: ${condition}`);
       }
@@ -1002,10 +1020,27 @@ class StoryRunner {
 
       const inventory = await backend.getPlayerInventory(player);
       const itemCount = inventory.items?.length || 0;
-      const itemSummary = itemCount > 0
-        ? inventory.items.slice(0, 5).map(i => i.type || i.name).join(', ') + (itemCount > 5 ? '...' : '')
-        : 'empty';
-      this.logger.log(`[StoryRunner] RESPONSE: ${itemCount} items (${itemSummary})`);
+
+      // Build better summary with item counts
+      if (itemCount === 0) {
+        this.logger.log(`[StoryRunner] RESPONSE: 0 items (empty)`);
+      } else {
+        // Count items by type
+        const itemCounts = {};
+        inventory.items.forEach(item => {
+          if (item) {
+            const name = item.type || item.name;
+            const count = item.count || 1;
+            itemCounts[name] = (itemCounts[name] || 0) + count;
+          }
+        });
+
+        // Format: "3 items (diamond x64, iron_ingot x64, gold_ingot x32)"
+        const itemSummary = Object.entries(itemCounts)
+          .map(([name, count]) => `${name} x${count}`)
+          .join(', ');
+        this.logger.log(`[StoryRunner] RESPONSE: ${itemCount} item${itemCount > 1 ? 's' : ''} (${itemSummary})`);
+      }
 
       // Return inventory for use in assertions/steps
       return inventory;
