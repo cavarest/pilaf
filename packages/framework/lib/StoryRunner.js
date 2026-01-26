@@ -1758,11 +1758,11 @@ class StoryRunner {
         targetPosition = target.position;
         this.logger.log(`[StoryRunner] ACTION: ${player} looking at ${entity_name}`);
       } else {
-        // Use bot's Vec3 constructor from its position (if available)
+        // Use bot's Vec3 constructor from its entity position (if available)
         if (position.x !== undefined && position.y !== undefined && position.z !== undefined) {
-          // Try to use the bot's Vec3 constructor, otherwise use plain object
-          if (bot.position && bot.position.constructor) {
-            targetPosition = new bot.position.constructor(position.x, position.y, position.z);
+          // Try to use the bot's Vec3 constructor from entity position
+          if (bot.entity && bot.entity.position && bot.entity.position.constructor) {
+            targetPosition = new bot.entity.position.constructor(position.x, position.y, position.z);
           } else {
             targetPosition = position;
           }
