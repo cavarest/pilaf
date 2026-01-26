@@ -1944,13 +1944,12 @@ class StoryRunner {
       const mcData = require('minecraft-data')(bot.version);
 
       // Convert item_name to item ID for recipe lookup
-      // bot.recipesFor() works better with numeric IDs
       const itemInfo = mcData.itemsByName[item_name];
       if (!itemInfo) {
         throw new Error(`Unknown item: "${item_name}"`);
       }
 
-      // Find recipe for the item (try both ID and name)
+      // First try bot.recipesFor() with ID (for more accurate recipe detection)
       let recipes = bot.recipesFor(itemInfo.id, null, 1, false);
 
       // If no recipes found with ID, try with name
@@ -1958,8 +1957,48 @@ class StoryRunner {
         recipes = bot.recipesFor(item_name, null, 1, false);
       }
 
+      // If still no recipes, check if mcData has recipes for this item
+      // This can happen when bot.recipesFor() doesn't have full recipe data
       if (!recipes || recipes.length === 0) {
-        throw new Error(`No recipe found for item "${item_name}" (ID: ${itemInfo.id})`);
+        const mcDataRecipes = mcData.recipes[itemInfo.id.toString()];
+        if (!mcDataRecipes || mcDataRecipes.length === 0) {
+          throw new Error(`No recipe found for item "${item_name}" (ID: ${itemInfo.id})`);
+        }
+
+        // Try to create a Recipe object from mcData recipe
+        try {
+          const Recipe = require('prismarine-recipe')(bot.registry).Recipe;
+          const mcDataRecipe = mcDataRecipes[0];
+
+          // For simple ingredient-based recipes (like planks from logs)
+          if (mcDataRecipe.ingredients && Array.isArray(mcDataRecipe.ingredients)) {
+            // Create a simple recipe object
+            recipes = [{
+              id: itemInfo.id,
+              result: mcDataRecipe.result,
+              inShape: null,
+              ingredients: mcDataRecipe.ingredients.map(ingId => ({
+                id: ingId,
+                count: 1
+              }))
+            }];
+          }
+          // For shaped recipes with inShape
+          else if (mcDataRecipe.inShape) {
+            recipes = [{
+              id: itemInfo.id,
+              result: mcDataRecipe.result,
+              inShape: mcDataRecipe.inShape,
+              ingredients: null
+            }];
+          }
+
+          if (!recipes || recipes.length === 0) {
+            throw new Error(`No recipe found for item "${item_name}" (ID: ${itemInfo.id})`);
+          }
+        } catch (err) {
+          throw new Error(`Failed to create recipe for "${item_name}": ${err.message}`);
+        }
       }
 
       const recipe = recipes[0];  // Use first available recipe
