@@ -531,27 +531,17 @@ class StoryRunner {
       } else if (condition === 'has_item') {
         // expected: item name
         // actual: inventory from get_player_inventory
-        const normalizedName = expected.startsWith('minecraft:') ? expected : `minecraft:${expected}`;
-        const legacyName = expected.startsWith('minecraft:') ? expected.substring(10) : expected;
-        const hasItem = actual.items.some(item => item && (
-          item.name === expected ||
-          item.name === normalizedName ||
-          item.name === legacyName
-        ));
+        const hasItem = actual.items.some(item => item && item.name === expected);
         if (!hasItem) {
+          console.log(`[has_item DEBUG] Looking for: "${expected}"`);
+          console.log(`[has_item DEBUG] Available items:`, actual.items.map(i => ({ name: i?.name, count: i?.count })));
           throw new Error(`Assertion failed: player does not have item "${expected}"`);
         }
         this.logger.log(`[StoryRunner] Assertion passed: player has item "${expected}"`);
       } else if (condition === 'does_not_have_item') {
         // expected: item name
         // actual: inventory from get_player_inventory
-        const normalizedName = expected.startsWith('minecraft:') ? expected : `minecraft:${expected}`;
-        const legacyName = expected.startsWith('minecraft:') ? expected.substring(10) : expected;
-        const hasItem = actual.items.some(item => item && (
-          item.name === expected ||
-          item.name === normalizedName ||
-          item.name === legacyName
-        ));
+        const hasItem = actual.items.some(item => item && item.name === expected);
         if (hasItem) {
           throw new Error(`Assertion failed: player still has item "${expected}"`);
         }
@@ -1276,18 +1266,14 @@ class StoryRunner {
       // If item_name specified, find and toss that item
       if (item_name) {
         const items = bot.inventory.items();
-        // Normalize item name to handle both 'diamond' and 'minecraft:diamond' formats
-        const normalizedName = item_name.startsWith('minecraft:') ? item_name : `minecraft:${item_name}`;
-        const legacyName = item_name.startsWith('minecraft:') ? item_name.substring(10) : item_name;
 
-        const item = items.find(i => i && (
-          i.name === item_name ||
-          i.name === normalizedName ||
-          i.name === legacyName
-        ));
+        // DEBUG: Log items to troubleshoot
+        console.log(`[drop_item DEBUG] Searching for: "${item_name}"`);
+        const item = items.find(i => i && i.name === item_name);
 
         if (!item) {
-          throw new Error(`Item "${item_name}" not found in inventory (checked: ${item_name}, ${normalizedName}, ${legacyName})`);
+          console.log(`[drop_item DEBUG] Available items:`, items.map(i => ({ name: i?.name, count: i?.count })));
+          throw new Error(`Item "${item_name}" not found in inventory`);
         }
 
         // Toss the item
@@ -1328,17 +1314,13 @@ class StoryRunner {
       // If item_name specified, find and equip it first
       if (item_name) {
         const items = bot.inventory.items();
-        // Normalize item name to handle both 'diamond' and 'minecraft:diamond' formats
-        const normalizedName = item_name.startsWith('minecraft:') ? item_name : `minecraft:${item_name}`;
-        const legacyName = item_name.startsWith('minecraft:') ? item_name.substring(10) : item_name;
 
-        const item = items.find(i => i && (
-          i.name === item_name ||
-          i.name === normalizedName ||
-          i.name === legacyName
-        ));
+        // DEBUG: Log items to troubleshoot
+        console.log(`[consume_item DEBUG] Searching for: "${item_name}"`);
+        const item = items.find(i => i && i.name === item_name);
 
         if (!item) {
+          console.log(`[consume_item DEBUG] Available items:`, items.map(i => ({ name: i?.name, count: i?.count })));
           throw new Error(`Item "${item_name}" not found in inventory`);
         }
 
@@ -1381,15 +1363,22 @@ class StoryRunner {
 
       // Find item in inventory
       const items = bot.inventory.items();
-      // Normalize item name to handle both 'diamond' and 'minecraft:diamond' formats
-      const normalizedName = item_name.startsWith('minecraft:') ? item_name : `minecraft:${item_name}`;
-      const legacyName = item_name.startsWith('minecraft:') ? item_name.substring(10) : item_name;
 
-      const item = items.find(i => i && (
-        i.name === item_name ||
-        i.name === normalizedName ||
-        i.name === legacyName
-      ));
+      // DEBUG: Log all items to troubleshoot
+      console.log(`[equip_item DEBUG] Searching for: "${item_name}"`);
+      console.log(`[equip_item DEBUG] Total items: ${items.length}`);
+      if (items.length > 0) {
+        items.slice(0, 5).forEach((item, i) => {
+          console.log(`[equip_item DEBUG] Item ${i}:`, {
+            name: item.name,
+            displayName: item.displayName,
+            type: item.type,
+            count: item.count
+          });
+        });
+      }
+
+      const item = items.find(i => i && i.name === item_name);
 
       if (!item) {
         throw new Error(`Item "${item_name}" not found in inventory`);
