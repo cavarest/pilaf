@@ -125,9 +125,10 @@ describe('Inventory Management Examples', () => {
           store_as: 'initial_food'
         },
         {
-          name: '[RCON] Set food level to half via hunger effect',
-          action: 'execute_command',
-          command: 'effect give @e[type=player,limit=1] minecraft:hunger 30 5'
+          name: '[player: eater] Apply hunger effect to self',
+          action: 'execute_player_command',
+          player: 'eater',
+          command: 'effect give @s minecraft:hunger 30 5'
         },
         {
           name: 'Wait for hunger effect',
@@ -471,9 +472,10 @@ describe('Inventory Management Examples', () => {
           duration: 1
         },
         {
-          name: '[RCON] Reduce food level to allow consumption',
-          action: 'execute_command',
-          command: 'effect give @e[type=player,limit=1,name=inv_master] minecraft:hunger 30 5'
+          name: '[player: inv_master] Apply hunger effect to self',
+          action: 'execute_player_command',
+          player: 'inv_master',
+          command: 'effect give @s minecraft:hunger 30 5'
         },
         {
           name: 'Wait for hunger effect',
