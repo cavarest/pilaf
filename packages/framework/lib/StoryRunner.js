@@ -1857,22 +1857,16 @@ class StoryRunner {
         throw new Error(`Block "${block}" not found in inventory`);
       }
 
-      // Select the hotbar slot that has the item (simpler than bot.equip())
-      // bot.equip() waits for blockUpdate events that don't fire reliably
+      // Try to select the hotbar slot that has the item (instant, no events)
+      // If item is not in hotbar, bot.placeBlock() will handle it
       if (item.slot >= 0 && item.slot <= 8) {  // Check if item is in hotbar
         bot.setQuickBarSlot(item.slot);
         // Small delay to ensure slot selection registers
         await new Promise(resolve => setTimeout(resolve, 100));
-      } else {
-        // Item is not in hotbar, try to move it there
-        this.logger.log(`[StoryRunner] ${player} moving ${block} to hotbar`);
-        try {
-          await bot.equip(item, 'hand');
-        } catch (equipError) {
-          this.logger.log(`[StoryRunner] Warning: equip had issues, attempting placement anyway`);
-        }
-        await new Promise(resolve => setTimeout(resolve, 200));
       }
+      // Note: We don't use bot.equip() because it waits for blockUpdate events
+      // that don't fire reliably. bot.placeBlock() can place items even if
+      // they're not in the hotbar, or we can let mineflayer handle the equip.
 
       // Place block
       await bot.placeBlock(referenceBlock, faceVector);
