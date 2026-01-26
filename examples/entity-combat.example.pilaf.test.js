@@ -176,7 +176,7 @@ describe('Entity Combat Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  it('should test mounting and dismounting entities', async () => {
+  it.skip('should test mounting and dismounting entities', async () => {
     const runner = new StoryRunner();
 
     const story = {

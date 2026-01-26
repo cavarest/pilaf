@@ -453,6 +453,16 @@ describe('Inventory Management Examples', () => {
           duration: 1
         },
         {
+          name: '[RCON] Reduce food level to allow consumption',
+          action: 'execute_command',
+          command: 'effect give @e[type=player,limit=1,name=inv_master] minecraft:hunger 1 5'
+        },
+        {
+          name: 'Wait for hunger effect',
+          action: 'wait',
+          duration: 2
+        },
+        {
           name: '[player: inv_master] Consume food',
           action: 'consume_item',
           player: 'inv_master',
