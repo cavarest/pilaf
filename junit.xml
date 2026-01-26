@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="47" failures="37" errors="0" time="422.449">
+  <testsuite name="Block Interaction Examples" errors="0" failures="0" skipped="6" timestamp="2026-01-26T04:51:15" time="0.495" tests="6">
+    <testcase classname="Block Interaction Examples should test breaking blocks (requires position calculations)" name="Block Interaction Examples should test breaking blocks (requires position calculations)" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Block Interaction Examples should test placing blocks (requires position calculations)" name="Block Interaction Examples should test placing blocks (requires position calculations)" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Block Interaction Examples should test interacting with blocks (requires position calculations)" name="Block Interaction Examples should test interacting with blocks (requires position calculations)" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Block Interaction Examples should test interacting with blocks (door)" name="Block Interaction Examples should test interacting with blocks (door)" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Block Interaction Examples should test building a simple structure (requires position calculations)" name="Block Interaction Examples should test building a simple structure (requires position calculations)" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Block Interaction Examples should test breaking and replacing blocks (requires position calculations)" name="Block Interaction Examples should test breaking and replacing blocks (requires position calculations)" time="0">
+      <skipped/>
+    </testcase>
+  </testsuite>
+  <testsuite name="Entity Combat Examples" errors="0" failures="4" skipped="1" timestamp="2026-01-26T04:51:16" time="68.223" tests="5">
+    <testcase classname="Entity Combat Examples should test attacking entities" name="Entity Combat Examples should test attacking entities" time="17.063">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/entity-combat.example.pilaf.test.js:92:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Entity Combat Examples should test right-click entity interaction" name="Entity Combat Examples should test right-click entity interaction" time="17.031">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/entity-combat.example.pilaf.test.js:156:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Entity Combat Examples should test mounting and dismounting entities" name="Entity Combat Examples should test mounting and dismounting entities" time="17.026">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/entity-combat.example.pilaf.test.js:238:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Entity Combat Examples should test horse mounting and riding" name="Entity Combat Examples should test horse mounting and riding" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Entity Combat Examples should test multiple entity interactions" name="Entity Combat Examples should test multiple entity interactions" time="17.038">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/entity-combat.example.pilaf.test.js:448:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Inventory Management Examples" errors="0" failures="5" skipped="1" timestamp="2026-01-26T04:52:24" time="85.258" tests="6">
+    <testcase classname="Inventory Management Examples should test dropping items" name="Inventory Management Examples should test dropping items" time="17.049">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/inventory-management.example.pilaf.test.js:89:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Inventory Management Examples should test consuming food items" name="Inventory Management Examples should test consuming food items" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Inventory Management Examples should test equipping items to different slots" name="Inventory Management Examples should test equipping items to different slots" time="17.028">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/inventory-management.example.pilaf.test.js:277:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Inventory Management Examples should test swapping inventory slots" name="Inventory Management Examples should test swapping inventory slots" time="17.032">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/inventory-management.example.pilaf.test.js:353:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Inventory Management Examples should test complete inventory workflow" name="Inventory Management Examples should test complete inventory workflow" time="17.029">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/inventory-management.example.pilaf.test.js:486:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Inventory Management Examples should test hotbar slot management" name="Inventory Management Examples should test hotbar slot management" time="17.024">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/inventory-management.example.pilaf.test.js:590:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Entity Interaction Examples" errors="0" failures="2" skipped="0" timestamp="2026-01-26T04:53:49" time="34.162" tests="2">
+    <testcase classname="Entity Interaction Examples should test entity spawning and querying" name="Entity Interaction Examples should test entity spawning and querying" time="17.046">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/entity-interaction.example.pilaf.test.js:69:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Entity Interaction Examples should test entity lifecycle" name="Entity Interaction Examples should test entity lifecycle" time="17.027">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/entity-interaction.example.pilaf.test.js:147:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Advanced Features Examples" errors="0" failures="2" skipped="1" timestamp="2026-01-26T04:54:24" time="34.151" tests="3">
+    <testcase classname="Advanced Features Examples Pathfinding (requires mineflayer-pathfinder) should test pathfinding navigation" name="Advanced Features Examples Pathfinding (requires mineflayer-pathfinder) should test pathfinding navigation" time="0">
+      <skipped/>
+    </testcase>
+    <testcase classname="Advanced Features Examples Container Interaction should test container interaction (chest)" name="Advanced Features Examples Container Interaction should test container interaction (chest)" time="17.038">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/advanced-features.example.pilaf.test.js:158:30)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Advanced Features Examples Crafting should test crafting items" name="Advanced Features Examples Crafting should test crafting items" time="17.025">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/advanced-features.example.pilaf.test.js:221:30)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Player Interaction Examples" errors="0" failures="2" skipped="0" timestamp="2026-01-26T04:54:58" time="34.155" tests="2">
+    <testcase classname="Player Interaction Examples should test player chat and commands" name="Player Interaction Examples should test player chat and commands" time="17.043">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/player-interaction.example.pilaf.test.js:62:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Player Interaction Examples should test player movement and position" name="Player Interaction Examples should test player movement and position" time="17.021">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/player-interaction.example.pilaf.test.js:125:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Basic RCON Examples" errors="0" failures="2" skipped="0" timestamp="2026-01-26T04:55:32" time="24.139" tests="2">
+    <testcase classname="Basic RCON Examples should execute simple RCON commands" name="Basic RCON Examples should execute simple RCON commands" time="12.034">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/basic-rcon.example.pilaf.test.js:52:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Basic RCON Examples should change server settings via RCON" name="Basic RCON Examples should change server settings via RCON" time="12.016">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/basic-rcon.example.pilaf.test.js:95:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Player Integration Tests" errors="0" failures="9" skipped="1" timestamp="2026-01-26T04:55:56" time="17.192" tests="10">
+    <testcase classname="Player Integration Tests Connection and Lifecycle should connect and spawn successfully" name="Player Integration Tests Connection and Lifecycle should connect and spawn successfully" time="0">
+      <failure>Error: Failed to connect to RCON after 5 attempts: Authentication failed
+    at RconBackend.connect (/Users/mulgogi/src/cavarest/pilaf/packages/backends/lib/rcon-backend.js:77:11)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/Users/mulgogi/src/cavarest/pilaf/tests/player-integration.pilaf.test.js:20:19)</failure>
+    </testcase>
+    <testcase classname="Player Integration Tests Connection and Lifecycle should be visible via RCON" name="Player Integration Tests Connection and Lifecycle should be visible via RCON" time="0">
+      <failure>Error: Failed to connect to RCON after 5 attempts: Authentication failed
+    at RconBackend.connect (/Users/mulgogi/src/cavarest/pilaf/packages/backends/lib/rcon-backend.js:77:11)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/Users/mulgogi/src/cavarest/pilaf/tests/player-integration.pilaf.test.js:20:19)</failure>
+    </testcase>
+    <testcase classname="Player Integration Tests Movement and Physics should have initial position" name="Player Integration Tests Movement and Physics should have initial position" time="0">
+      <failure>Error: Failed to connect to RCON after 5 attempts: Authentication failed
+    at RconBackend.connect (/Users/mulgogi/src/cavarest/pilaf/packages/backends/lib/rcon-backend.js:77:11)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/Users/mulgogi/src/cavarest/pilaf/tests/player-integration.pilaf.test.js:20:19)</failure>
+    </testcase>
+    <testcase classname="Player Integration Tests Movement and Physics should move forward" name="Player Integration Tests Movement and Physics should move forward" time="0">
+      <failure>Error: Failed to connect to RCON after 5 attempts: Authentication failed
+    at RconBackend.connect (/Users/mulgogi/src/cavarest/pilaf/packages/backends/lib/rcon-backend.js:77:11)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/Users/mulgogi/src/cavarest/pilaf/tests/player-integration.pilaf.test.js:20:19)</failure>
+    </testcase>
+    <testcase classname="Player Integration Tests Movement and Physics should turn around" name="Player Integration Tests Movement and Physics should turn around" time="0">
+      <failure>Error: Failed to connect to RCON after 5 attempts: Authentication failed
+    at RconBackend.connect (/Users/mulgogi/src/cavarest/pilaf/packages/backends/lib/rcon-backend.js:77:11)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/Users/mulgogi/src/cavarest/pilaf/tests/player-integration.pilaf.test.js:20:19)</failure>
+    </testcase>
+    <testcase classname="Player Integration Tests Movement and Physics should jump" name="Player Integration Tests Movement and Physics should jump" time="0">
+      <failure>Error: Failed to connect to RCON after 5 attempts: Authentication failed
+    at RconBackend.connect (/Users/mulgogi/src/cavarest/pilaf/packages/backends/lib/rcon-backend.js:77:11)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/Users/mulgogi/src/cavarest/pilaf/tests/player-integration.pilaf.test.js:20:19)</failure>
+    </testcase>
+    <testcase classname="Player Integration Tests Chat Messages should send chat message and verify no errors" name="Player Integration Tests Chat Messages should send chat message and verify no errors" time="0">
+      <failure>Error: Failed to connect to RCON after 5 attempts: Authentication failed
+    at RconBackend.connect (/Users/mulgogi/src/cavarest/pilaf/packages/backends/lib/rcon-backend.js:77:11)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/Users/mulgogi/src/cavarest/pilaf/tests/player-integration.pilaf.test.js:20:19)</failure>
+    </testcase>
+    <testcase classname="Player Integration Tests Chat Messages should handle multiple rapid chat messages" name="Player Integration Tests Chat Messages should handle multiple rapid chat messages" time="0">
+      <failure>Error: Failed to connect to RCON after 5 attempts: Authentication failed
+    at RconBackend.connect (/Users/mulgogi/src/cavarest/pilaf/packages/backends/lib/rcon-backend.js:77:11)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/Users/mulgogi/src/cavarest/pilaf/tests/player-integration.pilaf.test.js:20:19)</failure>
+    </testcase>
+    <testcase classname="Player Integration Tests Chat Messages should listen for chat events from server" name="Player Integration Tests Chat Messages should listen for chat events from server" time="0">
+      <failure>Error: Failed to connect to RCON after 5 attempts: Authentication failed
+    at RconBackend.connect (/Users/mulgogi/src/cavarest/pilaf/packages/backends/lib/rcon-backend.js:77:11)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/Users/mulgogi/src/cavarest/pilaf/tests/player-integration.pilaf.test.js:20:19)</failure>
+    </testcase>
+    <testcase classname="Player Integration Tests Disconnect and Reconnect should disconnect and reconnect successfully" name="Player Integration Tests Disconnect and Reconnect should disconnect and reconnect successfully" time="0">
+      <skipped/>
+    </testcase>
+  </testsuite>
+  <testsuite name="Inventory Testing Examples" errors="0" failures="2" skipped="0" timestamp="2026-01-26T04:56:13" time="34.163" tests="2">
+    <testcase classname="Inventory Testing Examples should test giving items to player" name="Inventory Testing Examples should test giving items to player" time="17.043">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/inventory-testing.example.pilaf.test.js:86:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Inventory Testing Examples should test multiple item operations" name="Inventory Testing Examples should test multiple item operations" time="17.025">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/inventory-testing.example.pilaf.test.js:164:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Story-Based Tests" errors="0" failures="1" skipped="0" timestamp="2026-01-26T04:56:47" time="12.131" tests="1">
+    <testcase classname="Story-Based Tests session-persistence should execute story: session-persistence" name="Story-Based Tests session-persistence should execute story: session-persistence" time="12.042">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/tests/story-runner.pilaf.test.js:41:32)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Basic RCON Commands" errors="0" failures="4" skipped="0" timestamp="2026-01-26T04:57:00" time="10.082" tests="4">
+    <testcase classname="Basic RCON Commands should execute time set command" name="Basic RCON Commands should execute time set command" time="0">
+      <failure>Error: thrown: &quot;Exceeded timeout of 10000 ms for a hook.
+Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout.&quot;
+    at beforeAll (/Users/mulgogi/src/cavarest/pilaf/tests/rcon-basic.pilaf.test.js:7:3)
+    at _dispatchDescribe (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-circus@29.7.0/node_modules/jest-circus/build/index.js:91:26)
+    at describe (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-circus@29.7.0/node_modules/jest-circus/build/index.js:55:5)
+    at Object.describe (/Users/mulgogi/src/cavarest/pilaf/tests/rcon-basic.pilaf.test.js:4:1)
+    at Runtime._execModule (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runtime@29.7.0/node_modules/jest-runtime/build/index.js:1439:24)
+    at Runtime._loadModule (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runtime@29.7.0/node_modules/jest-runtime/build/index.js:1022:12)
+    at Runtime.requireModule (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runtime@29.7.0/node_modules/jest-runtime/build/index.js:882:12)
+    at jestAdapter (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-circus@29.7.0/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:77:13)
+    at runTestInternal (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runner@29.7.0/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runner@29.7.0/node_modules/jest-runner/build/runTest.js:444:34)</failure>
+    </testcase>
+    <testcase classname="Basic RCON Commands should get server version" name="Basic RCON Commands should get server version" time="0">
+      <failure>Error: thrown: &quot;Exceeded timeout of 10000 ms for a hook.
+Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout.&quot;
+    at beforeAll (/Users/mulgogi/src/cavarest/pilaf/tests/rcon-basic.pilaf.test.js:7:3)
+    at _dispatchDescribe (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-circus@29.7.0/node_modules/jest-circus/build/index.js:91:26)
+    at describe (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-circus@29.7.0/node_modules/jest-circus/build/index.js:55:5)
+    at Object.describe (/Users/mulgogi/src/cavarest/pilaf/tests/rcon-basic.pilaf.test.js:4:1)
+    at Runtime._execModule (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runtime@29.7.0/node_modules/jest-runtime/build/index.js:1439:24)
+    at Runtime._loadModule (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runtime@29.7.0/node_modules/jest-runtime/build/index.js:1022:12)
+    at Runtime.requireModule (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runtime@29.7.0/node_modules/jest-runtime/build/index.js:882:12)
+    at jestAdapter (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-circus@29.7.0/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:77:13)
+    at runTestInternal (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runner@29.7.0/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runner@29.7.0/node_modules/jest-runner/build/runTest.js:444:34)</failure>
+    </testcase>
+    <testcase classname="Basic RCON Commands should list online players" name="Basic RCON Commands should list online players" time="0.001">
+      <failure>Error: thrown: &quot;Exceeded timeout of 10000 ms for a hook.
+Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout.&quot;
+    at beforeAll (/Users/mulgogi/src/cavarest/pilaf/tests/rcon-basic.pilaf.test.js:7:3)
+    at _dispatchDescribe (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-circus@29.7.0/node_modules/jest-circus/build/index.js:91:26)
+    at describe (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-circus@29.7.0/node_modules/jest-circus/build/index.js:55:5)
+    at Object.describe (/Users/mulgogi/src/cavarest/pilaf/tests/rcon-basic.pilaf.test.js:4:1)
+    at Runtime._execModule (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runtime@29.7.0/node_modules/jest-runtime/build/index.js:1439:24)
+    at Runtime._loadModule (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runtime@29.7.0/node_modules/jest-runtime/build/index.js:1022:12)
+    at Runtime.requireModule (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runtime@29.7.0/node_modules/jest-runtime/build/index.js:882:12)
+    at jestAdapter (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-circus@29.7.0/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:77:13)
+    at runTestInternal (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runner@29.7.0/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runner@29.7.0/node_modules/jest-runner/build/runTest.js:444:34)</failure>
+    </testcase>
+    <testcase classname="Basic RCON Commands should send server broadcast" name="Basic RCON Commands should send server broadcast" time="0">
+      <failure>Error: thrown: &quot;Exceeded timeout of 10000 ms for a hook.
+Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout.&quot;
+    at beforeAll (/Users/mulgogi/src/cavarest/pilaf/tests/rcon-basic.pilaf.test.js:7:3)
+    at _dispatchDescribe (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-circus@29.7.0/node_modules/jest-circus/build/index.js:91:26)
+    at describe (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-circus@29.7.0/node_modules/jest-circus/build/index.js:55:5)
+    at Object.describe (/Users/mulgogi/src/cavarest/pilaf/tests/rcon-basic.pilaf.test.js:4:1)
+    at Runtime._execModule (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runtime@29.7.0/node_modules/jest-runtime/build/index.js:1439:24)
+    at Runtime._loadModule (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runtime@29.7.0/node_modules/jest-runtime/build/index.js:1022:12)
+    at Runtime.requireModule (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runtime@29.7.0/node_modules/jest-runtime/build/index.js:882:12)
+    at jestAdapter (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-circus@29.7.0/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:77:13)
+    at runTestInternal (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runner@29.7.0/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/mulgogi/src/cavarest/pilaf/node_modules/.pnpm/jest-runner@29.7.0/node_modules/jest-runner/build/runTest.js:444:34)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Movement Control Examples" errors="0" failures="4" skipped="0" timestamp="2026-01-26T04:57:10" time="68.23" tests="4">
+    <testcase classname="Movement Control Examples should test directional movement and strafing" name="Movement Control Examples should test directional movement and strafing" time="17.053">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/movement-control.example.pilaf.test.js:111:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Movement Control Examples should test player state controls (sneak and sprint)" name="Movement Control Examples should test player state controls (sneak and sprint)" time="17.033">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/movement-control.example.pilaf.test.js:178:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Movement Control Examples should test jumping and view control" name="Movement Control Examples should test jumping and view control" time="17.029">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/movement-control.example.pilaf.test.js:227:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Movement Control Examples should test complex movement sequence" name="Movement Control Examples should test complex movement sequence" time="17.026">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+    at Object.toBe (/Users/mulgogi/src/cavarest/pilaf/examples/movement-control.example.pilaf.test.js:314:28)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+  </testsuite>
+</testsuites>
