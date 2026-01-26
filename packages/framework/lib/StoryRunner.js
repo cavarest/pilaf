@@ -1440,7 +1440,7 @@ class StoryRunner {
       // because selectedSlot might be undefined if inventory isn't fully initialized
       const equipped = destination === 'hand'
         ? bot.heldItem
-        : bot.inventory.slots[bot.inventory.getEquipmentDestSlot(destination)];
+        : bot.inventory.slots[bot.getEquipmentDestSlot(destination)];
 
       console.log(`[equip_item DEBUG] After equip - destination: "${destination}"`);
       console.log(`[equip_item DEBUG] After equip - equipped item:`, {
