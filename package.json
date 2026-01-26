@@ -57,6 +57,13 @@
           "outputDirectory": "test-results",
           "outputName": "junit.xml"
         }
+      ],
+      [
+        "<rootDir>/packages/framework/lib/reporters/pilaf-reporter.js",
+        {
+          "outputPath": "target/pilaf-reports/index.html",
+          "suiteName": "Pilaf Integration Tests"
+        }
       ]
     ]
   },
