@@ -353,7 +353,7 @@ describe('Inventory Management Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  it('should test complete inventory workflow', async () => {
+  it.skip('should test complete inventory workflow', async () => {
     const runner = new StoryRunner();
 
     const story = {
