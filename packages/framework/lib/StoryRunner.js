@@ -1851,6 +1851,13 @@ class StoryRunner {
         throw new Error(`Block "${block}" not found in inventory`);
       }
 
+      // Equip the item to hand before placing (ensures bot can place it)
+      this.logger.log(`[StoryRunner] ${player} equipping ${block} to hand`);
+      await bot.equip(item, 'hand');
+
+      // Small delay to ensure equip completes
+      await new Promise(resolve => setTimeout(resolve, 200));
+
       // Place block
       await bot.placeBlock(referenceBlock, faceVector);
 
