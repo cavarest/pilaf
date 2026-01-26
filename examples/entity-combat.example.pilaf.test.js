@@ -54,9 +54,9 @@ describe('Entity Combat Examples', () => {
           destination: 'hand'
         },
         {
-          name: '[RCON] Spawn a zombie nearby',
+          name: '[RCON] Spawn a zombie nearby with custom name',
           action: 'execute_command',
-          command: 'summon zombie ~ ~5 ~'
+          command: 'summon zombie ~ ~5 ~ {CustomName:"test_zombie_warrior"}'
         },
         {
           name: 'Wait for spawn',
@@ -67,13 +67,13 @@ describe('Entity Combat Examples', () => {
           name: '[player: warrior] Look at zombie',
           action: 'look_at',
           player: 'warrior',
-          entity_name: 'zombie'
+          entity_name: 'test_zombie_warrior'
         },
         {
           name: '[player: warrior] Attack the zombie',
           action: 'attack_entity',
           player: 'warrior',
-          entity_name: 'zombie'
+          entity_name: 'test_zombie_warrior'
         },
         {
           name: 'Wait for attack processing',
@@ -108,9 +108,9 @@ describe('Entity Combat Examples', () => {
 
       steps: [
         {
-          name: '[RCON] Spawn a villager',
+          name: '[RCON] Spawn a villager with custom name',
           action: 'execute_command',
-          command: 'summon villager ~3 ~ ~ {Profession:1}'
+          command: 'summon villager ~3 ~ ~ {Profession:1,CustomName:"test_villager_trader"}'
         },
         {
           name: 'Wait for spawn',
@@ -121,7 +121,7 @@ describe('Entity Combat Examples', () => {
           name: '[player: trader] Look at villager',
           action: 'look_at',
           player: 'trader',
-          entity_name: 'villager'
+          entity_name: 'test_villager_trader'
         },
         {
           name: '[player: trader] Move closer to villager',
@@ -138,7 +138,7 @@ describe('Entity Combat Examples', () => {
           name: '[player: trader] Interact with villager',
           action: 'interact_with_entity',
           player: 'trader',
-          entity_name: 'villager'
+          entity_name: 'test_villager_trader'
         },
         {
           name: 'Wait for trade window to open',
@@ -178,9 +178,9 @@ describe('Entity Combat Examples', () => {
           store_as: 'start_position'
         },
         {
-          name: '[RCON] Spawn a boat nearby',
+          name: '[RCON] Spawn a boat nearby with custom name',
           action: 'execute_command',
-          command: 'summon boat ~2 ~ ~'
+          command: 'summon boat ~2 ~ ~ {CustomName:"test_boat_sailor"}'
         },
         {
           name: 'Wait for spawn',
@@ -191,13 +191,13 @@ describe('Entity Combat Examples', () => {
           name: '[player: sailor] Look at boat',
           action: 'look_at',
           player: 'sailor',
-          entity_name: 'boat'
+          entity_name: 'test_boat_sailor'
         },
         {
           name: '[player: sailor] Mount the boat',
           action: 'mount_entity',
           player: 'sailor',
-          entity_name: 'boat'
+          entity_name: 'test_boat_sailor'
         },
         {
           name: 'Wait for mount',
@@ -363,9 +363,9 @@ describe('Entity Combat Examples', () => {
 
       steps: [
         {
-          name: '[RCON] Spawn multiple animals',
+          name: '[RCON] Spawn cow with custom name',
           action: 'execute_command',
-          command: 'summon cow ~2 ~ ~'
+          command: 'summon cow ~2 ~ ~ {CustomName:"test_cow_zoo"}'
         },
         {
           name: 'Wait for cow spawn',
@@ -373,9 +373,9 @@ describe('Entity Combat Examples', () => {
           duration: 1
         },
         {
-          name: '[RCON] Spawn pig',
+          name: '[RCON] Spawn pig with custom name',
           action: 'execute_command',
-          command: 'summon pig ~-2 ~ ~'
+          command: 'summon pig ~-2 ~ ~ {CustomName:"test_pig_zoo"}'
         },
         {
           name: 'Wait for pig spawn',
@@ -383,9 +383,9 @@ describe('Entity Combat Examples', () => {
           duration: 1
         },
         {
-          name: '[RCON] Spawn sheep',
+          name: '[RCON] Spawn sheep with custom name',
           action: 'execute_command',
-          command: 'summon sheep ~ ~ ~3'
+          command: 'summon sheep ~ ~ ~3 {CustomName:"test_sheep_zoo"}'
         },
         {
           name: 'Wait for sheep spawn',
@@ -396,7 +396,7 @@ describe('Entity Combat Examples', () => {
           name: '[player: zookeeper] Interact with cow',
           action: 'interact_with_entity',
           player: 'zookeeper',
-          entity_name: 'cow'
+          entity_name: 'test_cow_zoo'
         },
         {
           name: 'Wait for interaction',
@@ -407,13 +407,13 @@ describe('Entity Combat Examples', () => {
           name: '[player: zookeeper] Turn to pig',
           action: 'look_at',
           player: 'zookeeper',
-          entity_name: 'pig'
+          entity_name: 'test_pig_zoo'
         },
         {
           name: '[player: zookeeper] Interact with pig',
           action: 'interact_with_entity',
           player: 'zookeeper',
-          entity_name: 'pig'
+          entity_name: 'test_pig_zoo'
         },
         {
           name: 'Wait for interaction',
@@ -424,13 +424,13 @@ describe('Entity Combat Examples', () => {
           name: '[player: zookeeper] Turn to sheep',
           action: 'look_at',
           player: 'zookeeper',
-          entity_name: 'sheep'
+          entity_name: 'test_sheep_zoo'
         },
         {
           name: '[player: zookeeper] Interact with sheep',
           action: 'interact_with_entity',
           player: 'zookeeper',
-          entity_name: 'sheep'
+          entity_name: 'test_sheep_zoo'
         },
         {
           name: 'Wait for interaction',
