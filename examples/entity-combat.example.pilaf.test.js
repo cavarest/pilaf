@@ -176,7 +176,7 @@ describe('Entity Combat Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  it.skip('should test mounting and dismounting entities', async () => {
+  it('should test mounting and dismounting entities', async () => {
     const runner = new StoryRunner();
 
     const story = {
@@ -268,7 +268,7 @@ describe('Entity Combat Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  it.skip('should test horse mounting and riding', async () => {
+  it('should test horse mounting and riding', async () => {
     const runner = new StoryRunner();
 
     const story = {

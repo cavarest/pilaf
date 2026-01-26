@@ -797,7 +797,7 @@ describe('New Player Actions Integration Tests', () => {
   describe('Advanced Features', () => {
     // Note: navigate_to requires mineflayer-pathfinder plugin
     // This test may be skipped if the plugin is not available
-    it.skip('should execute navigate_to action', async () => {
+    it('should execute navigate_to action', async () => {
       const story = {
         name: 'Navigate To Test',
         description: 'Test navigate_to action',
@@ -842,7 +842,7 @@ describe('New Player Actions Integration Tests', () => {
 
     // Note: craft_item requires proper recipe setup and inventory management
     // This test may be skipped depending on server configuration
-    it.skip('should execute craft_item action', async () => {
+    it('should execute craft_item action', async () => {
       const story = {
         name: 'Craft Item Test',
         description: 'Test craft_item action',
