@@ -1408,15 +1408,9 @@ class StoryRunner {
       const fromItem = bot.inventory.slots[from_slot];
       const toItem = bot.inventory.slots[to_slot];
 
-      // If both slots are empty, nothing to do
+      // If both slots are empty, nothing to swap
       if (!fromItem && !toItem) {
-        this.logger.log(`[StoryRunner] RESPONSE: Slots swapped (no items to swap)`);
-        return {
-          swapped: true,
-          from_slot,
-          to_slot,
-          note: 'Both slots empty'
-        };
+        throw new Error(`Cannot swap empty slots ${from_slot} and ${to_slot}`);
       }
 
       // If only dest slot has item, swap direction
