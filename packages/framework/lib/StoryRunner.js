@@ -572,7 +572,7 @@ class StoryRunner {
     _normalizeItemName(itemName) {
       // RCON uses underscore format (diamond_sword), bot inventory uses same
       return itemName.replace(/^minecraft:/, '');
-    }
+    },
 
     /**
      * Send a chat message from a player
