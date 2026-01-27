@@ -56,7 +56,7 @@ jobs:
 
           # === ENTITY SPAWNING FOR TESTING ===
           SPAWN_ANIMALS: 'true'     # Enable for entity testing
-          SPAWN_MONSTERS: 'false'   # Disable hostile mobs
+          SPAWN_MONSTERS: 'true'    # Enable for entity combat testing
           SPAWN_NPCS: 'false'
 
           # === CUSTOM FLAT WORLD LAYERS ===
