@@ -4,6 +4,7 @@
  */
 
 const mineflayer = require('mineflayer');
+const pathfinder = require('mineflayer-pathfinder');
 const { PilafBackend } = require('./backend.js');
 const { BotPool } = require('./BotPool.js');
 const { BotLifecycleManager } = require('./BotLifecycleManager.js');
@@ -171,7 +172,12 @@ class MineflayerBackend extends PilafBackend {
 
     // Create and spawn bot using lifecycle manager
     const { bot } = await BotLifecycleManager.createAndSpawnBot(
-      () => mineflayer.createBot(botConfig),
+      () => {
+        const botInstance = mineflayer.createBot(botConfig);
+        // Load pathfinder plugin for navigation support
+        botInstance.loadPlugin(pathfinder.pathfinder);
+        return botInstance;
+      },
       botConfig
     );
 

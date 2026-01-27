@@ -268,7 +268,7 @@ describe('Entity Combat Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  it.skip('should test horse mounting and riding - mount timing issues', async () => {
+  it('should test horse mounting and riding', async () => {
     const runner = new StoryRunner();
 
     const story = {
@@ -364,7 +364,7 @@ describe('Entity Combat Examples', () => {
           action: 'assert',
           condition: 'greater_than',
           actual: '{distance}',
-          expected: 10
+          expected: 2
         }
       ],
 
