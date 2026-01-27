@@ -66,7 +66,7 @@ describe('Entity Combat Examples', () => {
         {
           name: '[RCON] Spawn a zombie nearby',
           action: 'execute_command',
-          command: 'summon zombie ~ ~5 ~'
+          command: 'summon zombie ~ ~ ~'
         },
         {
           name: 'Wait for spawn and entity load',
@@ -130,7 +130,7 @@ describe('Entity Combat Examples', () => {
         {
           name: '[RCON] Spawn a villager',
           action: 'execute_command',
-          command: 'summon villager ~3 ~ ~ {Profession:1}'
+          command: 'summon villager ~ ~ ~'
         },
         {
           name: 'Wait for spawn and entity load',
@@ -359,7 +359,7 @@ describe('Entity Combat Examples', () => {
           {
             name: '[RCON] Spawn cow at player position',
             action: 'execute_command',
-            command: 'summon cow {pos.x} {pos.y} {pos.z}'
+            command: 'summon cow ~ ~ ~'
           },
           {
             name: 'Wait for cow spawn and load',
@@ -369,7 +369,7 @@ describe('Entity Combat Examples', () => {
           {
             name: '[RCON] Spawn pig near player',
             action: 'execute_command',
-            command: 'summon pig {pos.x} {pos.y} {pos.z}'
+            command: 'summon pig ~2 ~ ~'
           },
           {
             name: 'Wait for pig spawn and load',
@@ -379,7 +379,7 @@ describe('Entity Combat Examples', () => {
           {
             name: '[RCON] Spawn sheep near player',
             action: 'execute_command',
-            command: 'summon sheep {pos.x} {pos.y} {pos.z}'
+            command: 'summon sheep ~-2 ~ ~'
           },
           {
             name: 'Wait for sheep spawn and load',
