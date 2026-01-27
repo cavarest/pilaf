@@ -216,29 +216,29 @@ describe('Player Integration Tests', () => {
   // For production-ready session persistence testing, use the story-based
   // testing framework (StoryRunner) which handles real TCP disconnect/reconnect
   // with proper delays and cleanup. See tests/story-runner.pilaf.test.js
-  // NOTE: Disconnect/reconnect test has protocol timing issues with Paper 1.21.8
+  // NOTE: Disconnect/reconnect test - improved with RCON cleanup
   // The server kicks the bot with "Failed to decode packet" errors during reconnection
-  // This appears to be a server-side throttling/protocol issue, not a mineflayer bug
-  describe.skip('Disconnect and Reconnect - protocol timing issues', () => {
+  // Fixed by: RCON kick + longer delay + unique username
+  describe('Disconnect and Reconnect', () => {
     it('should disconnect and reconnect successfully', async () => {
       // Disconnect - quitBot waits for 'end' event
       const result1 = await playerBackend.quitBot(player);
       expect(result1.success).toBe(true);
 
+      // IMPORTANT: Use RCON to kick the player from server side
+      // This ensures the server knows the player is gone and cleans up session state
+      await rconBackend.send('kick pilaf_tester Server cleanup');
+
       // IMPORTANT: Disconnect the original backend to ensure clean state
-      // This ensures no residual connections or state remain
       await playerBackend.disconnect();
       player = null;
       playerBackend = null;
 
-      // IMPORTANT: Wait for server to fully process the disconnect
-      // The Minecraft server needs time to clean up player state and clear the connection throttle
-      // Connection throttle prevents rapid reconnections to prevent spam/abuse
-      await new Promise(resolve => setTimeout(resolve, 15000));
+      // IMPORTANT: Wait longer for server to fully process the disconnect
+      // Paper 1.21.8 has aggressive connection throttling that needs time to clear
+      await new Promise(resolve => setTimeout(resolve, 25000));
 
       // CRITICAL: Create a FRESH backend instance for reconnection
-      // This ensures we get a clean state with proper bot references
-      // (Unlike issue #865 where they kept referencing the old bot)
       const freshPlayerBackend = await PilafBackendFactory.create('mineflayer', {
         host: process.env.MC_HOST || 'localhost',
         port: parseInt(process.env.MC_PORT) || 25565,
@@ -252,9 +252,9 @@ describe('Player Integration Tests', () => {
         interval: 2000
       });
 
-      // Reconnect with new username using the FRESH backend instance
-      // The new bot is properly scoped to the fresh backend
-      player = await freshPlayerBackend.createBot({ username: 'pilaf_tester_reconnect', spawnTimeout: 60000 });
+      // Reconnect with timestamp-based username for uniqueness
+      const uniqueUsername = `pilaf_tester_${Date.now()}`;
+      player = await freshPlayerBackend.createBot({ username: uniqueUsername, spawnTimeout: 60000 });
       expect(player).toBeDefined();
       expect(player.health).toBeGreaterThan(0);
 
@@ -262,7 +262,7 @@ describe('Player Integration Tests', () => {
       const verifyReconnected = async () => {
         for (let i = 0; i < 20; i++) {
           const listResult = await rconBackend.send('list');
-          if (listResult.raw.includes('pilaf_tester_reconnect')) {
+          if (listResult.raw.includes(uniqueUsername)) {
             return true;
           }
           await new Promise(resolve => setTimeout(resolve, 250));
@@ -275,6 +275,6 @@ describe('Player Integration Tests', () => {
       // Clean up: disconnect the fresh backend's bot and the backend itself
       await freshPlayerBackend.quitBot(player);
       await freshPlayerBackend.disconnect();
-    }, 90000); // 90s timeout for local testing
+    }, 120000); // 120s timeout for reconnection test
   });
 });
