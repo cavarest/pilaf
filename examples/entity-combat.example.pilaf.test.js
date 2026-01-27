@@ -47,6 +47,12 @@ describe('Entity Combat Examples', () => {
           duration: 1
         },
         {
+          name: '[player: warrior] Get player position',
+          action: 'get_player_location',
+          player: 'warrior',
+          store_as: 'pos'
+        },
+        {
           name: '[player: warrior] Equip a weapon',
           action: 'execute_command',
           command: 'give warrior diamond_sword'
@@ -64,9 +70,9 @@ describe('Entity Combat Examples', () => {
           destination: 'hand'
         },
         {
-          name: '[RCON] Spawn a zombie nearby',
+          name: '[RCON] Spawn a zombie at player position',
           action: 'execute_command',
-          command: 'summon zombie ~ ~ ~'
+          command: 'execute at @p run summon minecraft:zombie ^ ^ ^'
         },
         {
           name: 'Wait for spawn and entity load',
@@ -128,9 +134,9 @@ describe('Entity Combat Examples', () => {
           duration: 1
         },
         {
-          name: '[RCON] Spawn a villager',
+          name: '[RCON] Spawn a villager at player position',
           action: 'execute_command',
-          command: 'summon villager ~ ~ ~'
+          command: 'execute at @p run summon minecraft:villager ^ ^ ^'
         },
         {
           name: 'Wait for spawn and entity load',
@@ -208,9 +214,9 @@ describe('Entity Combat Examples', () => {
           store_as: 'start_position'
         },
         {
-          name: '[RCON] Spawn a boat nearby',
+          name: '[RCON] Spawn a boat at player position',
           action: 'execute_command',
-          command: 'summon oak_boat ~2 ~ ~'
+          command: 'execute at @p run summon minecraft:oak_boat ^ ^ ^'
         },
         {
           name: 'Wait for spawn and entity load',
@@ -284,9 +290,9 @@ describe('Entity Combat Examples', () => {
 
       steps: [
         {
-          name: '[RCON] Spawn a tamed horse with saddle',
+          name: '[RCON] Spawn a tamed horse with saddle at player position',
           action: 'execute_command',
-          command: 'summon horse ~3 ~ ~ {Tame:1b,SaddleItem:{id:"minecraft:saddle",Count:1b}}'
+          command: 'execute at @p run summon minecraft:horse ^ ^ ^ {Tame:1b,SaddleItem:{id:"minecraft:saddle",Count:1b}}'
         },
         {
           name: 'Wait for spawn',
@@ -359,7 +365,7 @@ describe('Entity Combat Examples', () => {
           {
             name: '[RCON] Spawn cow at player position',
             action: 'execute_command',
-            command: 'summon cow ~ ~ ~'
+            command: 'execute at @p run summon minecraft:cow ^ ^ ^'
           },
           {
             name: 'Wait for cow spawn and load',
@@ -367,9 +373,9 @@ describe('Entity Combat Examples', () => {
             duration: 3
           },
           {
-            name: '[RCON] Spawn pig near player',
+            name: '[RCON] Spawn pig at offset position',
             action: 'execute_command',
-            command: 'summon pig ~2 ~ ~'
+            command: 'execute at @p run summon minecraft:pig ^2 ^ ^'
           },
           {
             name: 'Wait for pig spawn and load',
@@ -377,9 +383,9 @@ describe('Entity Combat Examples', () => {
             duration: 3
           },
           {
-            name: '[RCON] Spawn sheep near player',
+            name: '[RCON] Spawn sheep at offset position',
             action: 'execute_command',
-            command: 'summon sheep ~-2 ~ ~'
+            command: 'execute at @p run summon minecraft:sheep ^-2 ^ ^'
           },
           {
             name: 'Wait for sheep spawn and load',
