@@ -66,6 +66,9 @@ importers:
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.1
+      mineflayer-pathfinder:
+        specifier: ^2.4.5
+        version: 2.4.5
     devDependencies:
       '@jest/globals':
         specifier: ^29.7.0

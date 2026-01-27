@@ -21,7 +21,8 @@
     "@pilaf/backends": "workspace:*",
     "@pilaf/reporting": "workspace:*",
     "jest": "^29.7.0",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "mineflayer-pathfinder": "^2.4.5"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0"
