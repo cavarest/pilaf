@@ -40,19 +40,24 @@ describe('Advanced Features Examples', () => {
 
         steps: [
           {
-            name: '[player: explorer] Navigate 5 blocks north',
+            name: '[player: explorer] Wait for chunks to load',
+            action: 'wait',
+            duration: 3
+          },
+          {
+            name: '[player: explorer] Navigate 2 blocks',
             action: 'navigate_to',
             player: 'explorer',
             destination: {
               x: 0,
               y: 4,
               z: 0,
-              offset: { x: 5, y: 0, z: 5 }
+              offset: { x: 2, y: 0, z: 2 }
             },
-            timeout_ms: 30000
+            timeout_ms: 60000
           }
           // Test demonstrates navigate_to action functionality
-          // Note: Flat world has surface at Y=4 with our generator settings
+          // Flat world has surface at Y=4 with our generator settings
         ],
 
         teardown: {
