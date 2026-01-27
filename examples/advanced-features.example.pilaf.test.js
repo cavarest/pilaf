@@ -40,24 +40,30 @@ describe('Advanced Features Examples', () => {
 
         steps: [
           {
+            name: '[player: explorer] Get spawn position',
+            action: 'get_player_location',
+            player: 'explorer',
+            store_as: 'spawn'
+          },
+          {
             name: '[player: explorer] Wait for chunks to load',
             action: 'wait',
             duration: 3
           },
           {
-            name: '[player: explorer] Navigate 2 blocks',
+            name: '[player: explorer] Navigate 2 blocks from spawn',
             action: 'navigate_to',
             player: 'explorer',
             destination: {
-              x: 0,
-              y: 4,
-              z: 0,
+              x: '{spawn.x}',
+              y: '{spawn.y}',
+              z: '{spawn.z}',
               offset: { x: 2, y: 0, z: 2 }
             },
             timeout_ms: 60000
           }
           // Test demonstrates navigate_to action functionality
-          // Flat world has surface at Y=4 with our generator settings
+          // Uses relative navigation from actual spawn position
         ],
 
         teardown: {
