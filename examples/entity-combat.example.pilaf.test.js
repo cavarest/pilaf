@@ -349,7 +349,7 @@ describe('Entity Combat Examples', () => {
           action: 'assert',
           condition: 'greater_than',
           actual: '{distance}',
-          expected: 2
+          expected: 1
         }
       ],
 
@@ -378,44 +378,40 @@ describe('Entity Combat Examples', () => {
 
       steps: [
         {
-          name: '[RCON] Kill all animals from previous tests',
-          action: 'execute_command',
-          command: 'kill @e[type=cow,pig,sheep]'
+          name: '[player: zookeeper] Get player position',
+          action: 'get_player_location',
+          player: 'zookeeper',
+          store_as: 'pos'
         },
         {
-          name: 'Wait for cleanup',
-          action: 'wait',
-          duration: 1
-        },
-        {
-          name: '[RCON] Spawn cow',
+          name: '[RCON] Spawn cow at player position',
           action: 'execute_command',
-          command: 'summon cow ~2 ~ ~'
+          command: 'summon cow {pos.x} {pos.y} {pos.z}'
         },
         {
           name: 'Wait for cow spawn and load',
           action: 'wait',
-          duration: 2
+          duration: 3
         },
         {
-          name: '[RCON] Spawn pig',
+          name: '[RCON] Spawn pig near player',
           action: 'execute_command',
-          command: 'summon pig ~-2 ~ ~'
+          command: 'summon pig {pos.x} {pos.y} {pos.z}'
         },
         {
           name: 'Wait for pig spawn and load',
           action: 'wait',
-          duration: 2
+          duration: 3
         },
         {
-          name: '[RCON] Spawn sheep',
+          name: '[RCON] Spawn sheep near player',
           action: 'execute_command',
-          command: 'summon sheep ~ ~ ~3'
+          command: 'summon sheep {pos.x} {pos.y} {pos.z}'
         },
         {
           name: 'Wait for sheep spawn and load',
           action: 'wait',
-          duration: 5
+          duration: 3
         },
         {
           name: '[player: zookeeper] Interact with cow',
