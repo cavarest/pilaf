@@ -37,9 +37,9 @@ describe('Entity Combat Examples', () => {
 
       steps: [
         {
-          name: '[RCON] Kill all zombies from previous tests',
+          name: '[RCON] Kill all test pigs from previous tests',
           action: 'execute_command',
-          command: 'kill @e[type=zombie]'
+          command: 'kill @e[type=pig,name=test_pig]'
         },
         {
           name: 'Wait for cleanup',
@@ -70,26 +70,26 @@ describe('Entity Combat Examples', () => {
           destination: 'hand'
         },
         {
-          name: '[RCON] Spawn a zombie at player position (slightly above)',
+          name: '[RCON] Spawn a named stationary pig for testing',
           action: 'execute_command',
-          command: 'summon zombie {pos.x} {pos.y} + 2 {pos.z}'
+          command: 'summon pig {pos.x} {pos.y} + 1 {pos.z} {CustomName:\'{"text":"test_pig"}\',NoAI:1b}'
         },
         {
           name: 'Wait for spawn and entity load',
           action: 'wait',
-          duration: 10
+          duration: 5
         },
         {
-          name: '[player: warrior] Look at and find zombie',
+          name: '[player: warrior] Look at and find test_pig',
           action: 'look_at',
           player: 'warrior',
-          entity_name: 'zombie'
+          entity_name: 'test_pig'
         },
         {
-          name: '[player: warrior] Attack the zombie',
+          name: '[player: warrior] Attack the test_pig',
           action: 'attack_entity',
           player: 'warrior',
-          entity_name: 'zombie'
+          entity_name: 'test_pig'
         },
         {
           name: 'Wait for attack processing',
