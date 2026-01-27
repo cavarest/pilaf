@@ -23,7 +23,7 @@ describe('Advanced Features Examples', () => {
   });
 
   // Skip navigation tests - requires mineflayer-pathfinder plugin
-  describe.skip('Pathfinding (requires mineflayer-pathfinder)', () => {
+  describe('Pathfinding (requires mineflayer-pathfinder)', () => {
     it('should test pathfinding navigation', async () => {
       const runner = new StoryRunner();
 
@@ -79,7 +79,7 @@ describe('Advanced Features Examples', () => {
     });
   });
 
-  describe.skip('Container Interaction', () => {
+  describe('Container Interaction', () => {
     it('should test container interaction (chest)', async () => {
       const runner = new StoryRunner();
 
@@ -159,7 +159,7 @@ describe('Advanced Features Examples', () => {
     });
   });
 
-  describe.skip('Crafting', () => {
+  describe('Crafting', () => {
     it('should test crafting items', async () => {
       const runner = new StoryRunner();
 
