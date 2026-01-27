@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-01-27
+
+### Added
+- **CorrelationUtils** - RCON inventory correlation system
+  - Tracks command-response pairs for inventory changes
+  - Enables reliable inventory verification after RCON commands
+- **EntityUtils** - Entity helper functions
+  - Normalizes entity names for consistent lookups
+  - Handles entity type aliases (boat → oak_boat)
+
+### Fixed
+- Entity spawning at exact player position using `execute at @p`
+- Fixed Vec3 constructor usage (bot.entity.position.constructor)
+- Fixed entity alias handling for proper entity lookups
+- Fixed equipment slot handling with bot.getEquipmentDestSlot
+- Fixed swap_inventory_slots using bot.moveSlotItem()
+- Added empty slot tolerance to swap_inventory_slots
+
 ## [1.2.3] - 2025-01-27
 
 ### Added

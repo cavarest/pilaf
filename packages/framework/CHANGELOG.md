@@ -5,6 +5,85 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-01-27
+
+### Added
+
+#### Entity Combat Actions
+- **attack_entity** - Attack an entity (deals damage)
+  - Supports entity_name and entity_selector parameters
+  - Returns attacked status and entity information
+- **interact_with_entity** - Right-click entity interactions
+  - Supports villagers (trade), animals, and other interactable entities
+  - Returns interacted status and entity type
+- **mount_entity** - Mount rideable entities
+  - Supports horses, boats, and minecarts
+  - Returns mounted status and entity type
+- **dismount** - Dismount from currently mounted entity
+  - Returns dismounted status
+
+#### Advanced Navigation
+- **navigate_to** - Pathfinding navigation using mineflayer-pathfinder
+  - Uses GoalNear for flexible pathfinding (within 1 block of target)
+  - Supports relative navigation via `offset` parameter
+  - Returns reached status and final position
+  - Configurable timeout via `timeout_ms` parameter
+
+#### New Helper Utilities
+- **CorrelationUtils** - RCON inventory correlation system
+  - Tracks command-response pairs for inventory changes
+  - Enables reliable inventory verification after RCON commands
+- **EntityUtils** - Entity helper functions
+  - Normalizes entity names for consistent lookups
+  - Handles entity type aliases (boat → oak_boat)
+
+### Changed
+
+#### Crafting Improvements
+- **craft_item** now supports `minecraft:` prefixed item names
+  - Automatic normalization for mcData lookup
+  - Consistent behavior regardless of namespace prefix
+
+#### Block Interaction Enhancements
+- **place_block** uses event-based confirmation with RCON verification
+  - Listens for blockUpdate events from Mineflayer
+  - Falls back to RCON command verification on timeout
+- **interact_with_block** improved for container interactions
+
+#### Movement Actions
+- Look_at action supports both position and entity_name parameters
+- Consistent position handling using Vec3 from bot instance
+
+### Fixed
+
+#### CI Stability
+- Configured flat world for deterministic testing
+  - Fixed SPAWN_MONSTERS for entity combat tests
+  - Fixed SPAWN_ANIMALS for passive entity spawning
+- Entity spawning at exact player position using `execute at @p`
+- Fixed Vec3 constructor usage (bot.entity.position.constructor)
+- Fixed entity alias handling (boat → oak_boat)
+
+#### Mineflayer Compatibility
+- Updated to mineflayer 4.34.0 for Minecraft 1.21.9/1.21.10 support
+- Proper blockUpdate event handling with server version detection
+- Fixed equipment slot handling with bot.getEquipmentDestSlot
+
+#### Inventory Management
+- Fixed swap_inventory_slots using bot.moveSlotItem()
+- Added empty slot tolerance to swap_inventory_slots
+- Fixed equipment verification using bot.heldItem
+
+#### Test Reliability
+- Added entity cleanup between tests using unique names
+- Increased wait times for entity spawn loading
+- Fixed horse spawning with NBT data for tamed horse with saddle
+
+### Removed
+
+- Removed debug logging from production code
+- Removed duplicate test runner script
+
 ## [1.2.3] - 2025-01-27
 
 ### Added
