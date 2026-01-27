@@ -2092,6 +2092,9 @@ class StoryRunner {
       movements.canDig = false;  // Don't dig while pathfinding
       movements.allow1by1towers = false;
 
+      // Set movements on the pathfinder (required for pathfinding to work)
+      bot.pathfinder.setMovements(movements);
+
       // Use GoalNear for flexible navigation (within 1 block is close enough)
       // GoalNear is more reliable than GoalBlock which requires exact positioning
       const goal = new goals.GoalNear(targetX, targetY, targetZ, 1);
