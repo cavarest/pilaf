@@ -102,15 +102,13 @@ describe('Inventory Management Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  // Consume item test - skip due to sprint mechanics complexity
-  // The bot starts with full food (20/20) and sprinting doesn't reliably
-  // burn enough food in the test environment due to potential obstacles.
-  it.skip('should test consuming food items - requires open space for sprint', async () => {
+  // Consume item test - fixed with /effect hunger command
+  it('should test consuming food items', async () => {
     const runner = new StoryRunner();
 
     const story = {
       name: 'Consume Item Test',
-      description: 'Demonstrates eating food after burning calories with extended sprint',
+      description: 'Demonstrates eating food after reducing hunger with effect command',
 
       setup: {
         server: { type: 'paper', version: '1.21.8' },
@@ -131,20 +129,15 @@ describe('Inventory Management Examples', () => {
           duration: 1
         },
         {
-          name: '[player: eater] Start sprinting',
-          action: 'sprint',
-          player: 'eater'
-        },
-        {
-          name: '[player: eater] Sprint for 20 seconds to burn food',
-          action: 'move_forward',
+          name: '[player: eater] Apply strong hunger effect to drain food',
+          action: 'execute_player_command',
           player: 'eater',
-          duration: 20  // Extended to burn 8-10 food points
+          command: 'effect give @s hunger 60 3 true'
         },
         {
-          name: 'Wait for food level to drop',
+          name: 'Wait for hunger to drain food level',
           action: 'wait',
-          duration: 1
+          duration: 5
         },
         {
           name: '[player: eater] Eat cooked beef',
