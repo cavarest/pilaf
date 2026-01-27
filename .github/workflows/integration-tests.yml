@@ -60,15 +60,7 @@ jobs:
           SPAWN_NPCS: 'false'
 
           # === CUSTOM FLAT WORLD LAYERS ===
-          GENERATOR_SETTINGS: >-
-            {
-              "layers": [
-                {"block": "minecraft:bedrock", "height": 1},
-                {"block": "minecraft:dirt", "height": 2},
-                {"block": "minecraft:grass_block", "height": 1}
-              ],
-              "biome": "minecraft:plains"
-            }
+          GENERATOR_SETTINGS: '{"layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}],"biome":"minecraft:plains"}'
         options: >-
           --name pilaf-minecraft
           --health-cmd "mc-health"

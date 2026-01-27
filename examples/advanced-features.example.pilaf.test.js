@@ -45,15 +45,14 @@ describe('Advanced Features Examples', () => {
             player: 'explorer',
             destination: {
               x: 0,
-              y: 64,
+              y: 4,
               z: 0,
               offset: { x: 5, y: 0, z: 5 }
             },
             timeout_ms: 30000
           }
           // Test demonstrates navigate_to action functionality
-          // Note: Server may move bot after navigation due to anti-cheat or physics
-          // The navigate_to action completes successfully when pathfinding finishes
+          // Note: Flat world has surface at Y=4 with our generator settings
         ],
 
         teardown: {
