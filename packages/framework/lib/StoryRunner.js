@@ -534,6 +534,44 @@ class StoryRunner {
           }
         }
 
+        // Handle embedded variables in strings (e.g., "summon zombie {pos.x} {pos.y} {pos.z}")
+        if (value.includes('{') && value.includes('}')) {
+          // Replace all {variable} occurrences
+          let result = value.replace(/\{([^}]+)\}/g, (match, varPath) => {
+            // Check if it contains a dot (nested property access)
+            if (varPath.includes('.')) {
+              const parts = varPath.split('.');
+              const rootVar = parts[0];
+
+              if (!this.variables.has(rootVar)) {
+                throw new Error(`Variable "${rootVar}" not found. Available variables: ${[...this.variables.keys()].join(', ')}`);
+              }
+
+              // Navigate through nested properties
+              let result = this.variables.get(rootVar);
+              for (let i = 1; i < parts.length; i++) {
+                if (result && typeof result === 'object' && parts[i] in result) {
+                  result = result[parts[i]];
+                } else {
+                  throw new Error(`Property "${parts[i]}" not found in variable "${rootVar}"`);
+                }
+              }
+              return result;
+            } else {
+              // Simple variable access
+              if (!this.variables.has(varPath)) {
+                throw new Error(`Variable "${varPath}" not found. Available variables: ${[...this.variables.keys()].join(', ')}`);
+              }
+              return this.variables.get(varPath);
+            }
+          });
+
+          // If the string was modified, return the resolved version
+          if (result !== value) {
+            return result;
+          }
+        }
+
         return value;
       } else if (Array.isArray(value)) {
         return value.map(resolveValue);
