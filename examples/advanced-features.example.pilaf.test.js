@@ -23,11 +23,8 @@ describe('Advanced Features Examples', () => {
   });
 
   // Pathfinding tests - mineflayer-pathfinder plugin loaded and functional
-  // Test skipped because destination reachability requires complex position calculation
-  // Plugin is loaded correctly in MineflayerBackend with mcData version support
-  // Movements are configured properly for the server version
-  // To enable: Use relative destination from bot's current position or GoalNear
-  describe.skip('Pathfinding - plugin functional, needs destination calculation', () => {
+  // Uses GoalNear for flexible navigation to nearby locations
+  describe('Pathfinding', () => {
     it('should test pathfinding navigation', async () => {
       const runner = new StoryRunner();
 
@@ -50,13 +47,14 @@ describe('Advanced Features Examples', () => {
             store_as: 'start_position'
           },
           {
-            name: '[player: explorer] Navigate to nearby location',
+            name: '[player: explorer] Navigate 5 blocks north',
             action: 'navigate_to',
             player: 'explorer',
             destination: {
-              x: 10,
-              y: 64,
-              z: 10
+              x: '{start_position.x}',
+              y: '{start_position.y}',
+              z: '{start_position.z}',
+              offset: { x: 0, y: 0, z: -5 }
             },
             timeout_ms: 30000
           },
@@ -70,6 +68,20 @@ describe('Advanced Features Examples', () => {
             action: 'get_player_location',
             player: 'explorer',
             store_as: 'end_position'
+          },
+          {
+            name: 'Calculate distance traveled',
+            action: 'calculate_distance',
+            from: '{start_position}',
+            to: '{end_position}',
+            store_as: 'distance'
+          },
+          {
+            name: 'Verify bot moved at least 3 blocks',
+            action: 'assert',
+            condition: 'greater_than',
+            actual: '{distance}',
+            expected: 3
           }
         ],
 
