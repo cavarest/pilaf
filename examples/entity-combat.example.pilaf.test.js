@@ -70,9 +70,9 @@ describe('Entity Combat Examples', () => {
           destination: 'hand'
         },
         {
-          name: '[RCON] Spawn a zombie at exact player position',
+          name: '[RCON] Spawn a zombie at player position (slightly above)',
           action: 'execute_command',
-          command: 'summon zombie {pos.x} {pos.y} {pos.z}'
+          command: 'summon zombie {pos.x} {pos.y:plus:2} {pos.z}'
         },
         {
           name: 'Wait for spawn and entity load',
