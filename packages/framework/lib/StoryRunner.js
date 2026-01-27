@@ -534,11 +534,50 @@ class StoryRunner {
           }
         }
 
-        // Handle embedded variables in strings (e.g., "summon zombie {pos.x} {pos.y} {pos.z}")
+        // Handle embedded variables in strings (e.g., "summon zombie {pos.x} {pos.y} + 2 {pos.z}")
         if (value.includes('{') && value.includes('}')) {
-          // Replace all {variable} occurrences - but only valid variable names
+          // Replace all {variable} occurrences and expressions like {var.x} + 1
           // This avoids replacing NBT data like {Items:[{id:"minecraft:diamond"}]}
-          let result = value.replace(/\{([a-zA-Z_][a-zA-Z0-9_.]*)\}/g, (match, varPath) => {
+          let result = value.replace(/\{([a-zA-Z_][a-zA-Z0-9_.]*)\}(?:\s*([+\-])\s*(\d+))?/g, (match, varPath, operator, operand) => {
+            // Check if there's an operator (expression like {pos.y} + 2)
+            if (operator !== undefined && operand !== undefined) {
+              // This is an expression
+              let varValue;
+
+              // Check if varPath contains a dot (nested property access)
+              if (varPath.includes('.')) {
+                const parts = varPath.split('.');
+                const rootVar = parts[0];
+
+                if (!this.variables.has(rootVar)) {
+                  throw new Error(`Variable "${rootVar}" not found. Available variables: ${[...this.variables.keys()].join(', ')}`);
+                }
+
+                varValue = this.variables.get(rootVar);
+                for (let i = 1; i < parts.length; i++) {
+                  if (varValue && typeof varValue === 'object' && parts[i] in varValue) {
+                    varValue = varValue[parts[i]];
+                  } else {
+                    throw new Error(`Property "${parts[i]}" not found in variable "${rootVar}"`);
+                  }
+                }
+              } else {
+                // Simple variable access
+                if (!this.variables.has(varPath)) {
+                  throw new Error(`Variable "${varPath}" not found. Available variables: ${[...this.variables.keys()].join(', ')}`);
+                }
+                varValue = this.variables.get(varPath);
+              }
+
+              // Apply the operation
+              if (operator === '+') {
+                return varValue + parseInt(operand, 10);
+              } else if (operator === '-') {
+                return varValue - parseInt(operand, 10);
+              }
+            }
+
+            // This is a simple variable reference
             // Check if it contains a dot (nested property access)
             if (varPath.includes('.')) {
               const parts = varPath.split('.');
