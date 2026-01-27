@@ -1888,11 +1888,43 @@ class StoryRunner {
       // they're not in the hotbar, or we can let mineflayer handle the equip.
 
       // Place block
-      await bot.placeBlock(referenceBlock, faceVector);
+      // Note: bot.placeBlock() may throw due to blockUpdate event timeout in Paper 1.21.8
+      // but the block placement usually succeeds on the server side.
+      // We catch the error and verify placement via RCON.
+      let placementSucceeded = false;
+      try {
+        await bot.placeBlock(referenceBlock, faceVector);
+        placementSucceeded = true;
+      } catch (placeError) {
+        // blockUpdate event timeout is expected with Paper 1.21.8
+        // The block placement likely succeeded server-side, so we continue
+        this.logger.log(`[StoryRunner] Note: blockUpdate event timeout (expected with Paper 1.21.8), verifying placement...`);
+      }
 
-      // Wait for server to process block placement (using fixed delay instead of event)
-      // blockUpdate events don't fire reliably, but the placement itself succeeds
+      // Wait for server to process block placement
       await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verify block placement via RCON
+      if (this.backends.rcon) {
+        const destX = Math.floor(location.x + faceVector.x);
+        const destY = Math.floor(location.y + faceVector.y);
+        const destZ = Math.floor(location.z + faceVector.z);
+
+        try {
+          const verifyResponse = await this.backends.rcon.send(`data get block ${destX} ${destY} ${destZ}`);
+          // Check if the block was placed (response contains the block name)
+          if (verifyResponse.raw && verifyResponse.raw.toLowerCase().includes(block.toLowerCase())) {
+            placementSucceeded = true;
+          }
+        } catch (verifyError) {
+          // If RCON verification fails, assume placement succeeded (optimistic)
+          this.logger.log(`[StoryRunner] Note: Could not verify block placement via RCON`);
+        }
+      }
+
+      if (!placementSucceeded) {
+        throw new Error(`Block placement may have failed for "${block}" at ${location.x}, ${location.y}, ${location.z}`);
+      }
 
       this.logger.log(`[StoryRunner] RESPONSE: Block placed`);
 
