@@ -536,8 +536,9 @@ class StoryRunner {
 
         // Handle embedded variables in strings (e.g., "summon zombie {pos.x} {pos.y} {pos.z}")
         if (value.includes('{') && value.includes('}')) {
-          // Replace all {variable} occurrences
-          let result = value.replace(/\{([^}]+)\}/g, (match, varPath) => {
+          // Replace all {variable} occurrences - but only valid variable names
+          // This avoids replacing NBT data like {Items:[{id:"minecraft:diamond"}]}
+          let result = value.replace(/\{([a-zA-Z_][a-zA-Z0-9_.]*)\}/g, (match, varPath) => {
             // Check if it contains a dot (nested property access)
             if (varPath.includes('.')) {
               const parts = varPath.split('.');
