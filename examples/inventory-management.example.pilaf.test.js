@@ -129,15 +129,15 @@ describe('Inventory Management Examples', () => {
           duration: 1
         },
         {
-          name: '[player: eater] Apply strong hunger effect to drain food',
+          name: '[player: eater] Apply strong hunger effect (drains food)',
           action: 'execute_player_command',
           player: 'eater',
-          command: 'effect give @s hunger 60 3 true'
+          command: 'effect give @s minecraft:hunger 3 200'
         },
         {
           name: 'Wait for hunger to drain food level',
           action: 'wait',
-          duration: 5
+          duration: 3
         },
         {
           name: '[player: eater] Eat cooked beef',
