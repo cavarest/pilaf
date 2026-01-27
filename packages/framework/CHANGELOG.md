@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2025-01-27
+
+### Added
+- **mineflayer-pathfinder** (v2.4.5) dependency for navigate_to action
+
+### Changed
+- **navigate_to** action now supports relative navigation via `offset` parameter
+  - Use `{x, y, z, offset: {x, y, z}}` for relative movement from stored position
+  - Changed from GoalBlock to GoalNear for flexible pathfinding (within 1 block)
+- **craft_item** action now supports `minecraft:` prefixed item names
+  - Automatically normalizes item names for mcData lookup
+
+### Fixed
+- Fixed food consumption test - use RCON for hunger effect (bot lacks operator permissions)
+- Fixed crafting test - item name normalization handles namespace prefix
+- Fixed horse riding test - spawn tamed horse with saddle via NBT data
+- Enabled pathfinding test (was previously skipped)
+
 ## [1.1.0] - 2025-01-24
 
 ### Added

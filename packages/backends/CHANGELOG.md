@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2025-01-27
+
+### Added
+- **mineflayer-pathfinder** (v2.4.5) plugin support for pathfinding navigation
+  - Loaded automatically in MineflayerBackend.createBot()
+  - Enables navigate_to action with GoalNear for flexible pathfinding
+
+### Changed
+- Upgraded mineflayer from 4.20.0 to 4.34.0 (latest stable)
+  - Fixed blockUpdate event handling issues
+  - Improved player simulation reliability
+
+### Fixed
+- Fixed pathfinding navigation with relative coordinates and offset support
+- Fixed horse riding test by spawning tamed horses with saddles via NBT data
+
 ## [1.1.0] - 2025-01-24
 
 ### Added
