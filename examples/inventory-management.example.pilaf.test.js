@@ -102,13 +102,13 @@ describe('Inventory Management Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  // Consume item test - hunger effect doesn't reliably lower food level
-  it.skip('should test consuming food items - hunger effect inconsistent', async () => {
+  // Consume item test - fixed by sprinting to burn food before eating
+  it('should test consuming food items', async () => {
     const runner = new StoryRunner();
 
     const story = {
       name: 'Consume Item Test',
-      description: 'Demonstrates eating food (will fail if food is full)',
+      description: 'Demonstrates eating food after burning calories',
 
       setup: {
         server: { type: 'paper', version: '1.21.8' },
@@ -119,23 +119,28 @@ describe('Inventory Management Examples', () => {
 
       steps: [
         {
-          name: '[player: eater] Apply strong hunger effect to self',
-          action: 'execute_player_command',
-          player: 'eater',
-          command: 'effect give @s minecraft:hunger 60 10'
-        },
-        {
-          name: 'Wait for hunger effect',
-          action: 'wait',
-          duration: 3
-        },
-        {
           name: '[player: eater] Give food items',
           action: 'execute_command',
           command: 'give eater cooked_beef 64'
         },
         {
           name: 'Wait for items',
+          action: 'wait',
+          duration: 1
+        },
+        {
+          name: '[player: eater] Start sprinting to burn food',
+          action: 'sprint',
+          player: 'eater'
+        },
+        {
+          name: '[player: eater] Sprint forward to burn calories',
+          action: 'move_forward',
+          player: 'eater',
+          duration: 8
+        },
+        {
+          name: 'Wait for food level to drop',
           action: 'wait',
           duration: 1
         },
