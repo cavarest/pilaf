@@ -102,13 +102,13 @@ describe('Inventory Management Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  // Consume item test - sprint approach insufficient to burn enough food
-  it.skip('should test consuming food items - needs longer sprint duration', async () => {
+  // Consume item test - fixed with 20s sprint to burn enough food
+  it('should test consuming food items', async () => {
     const runner = new StoryRunner();
 
     const story = {
       name: 'Consume Item Test',
-      description: 'Demonstrates eating food after burning calories',
+      description: 'Demonstrates eating food after burning calories with extended sprint',
 
       setup: {
         server: { type: 'paper', version: '1.21.8' },
@@ -129,15 +129,15 @@ describe('Inventory Management Examples', () => {
           duration: 1
         },
         {
-          name: '[player: eater] Start sprinting to burn food',
+          name: '[player: eater] Start sprinting',
           action: 'sprint',
           player: 'eater'
         },
         {
-          name: '[player: eater] Sprint forward to burn calories',
+          name: '[player: eater] Sprint for 20 seconds to burn food',
           action: 'move_forward',
           player: 'eater',
-          duration: 8
+          duration: 20  // Extended to burn 8-10 food points
         },
         {
           name: 'Wait for food level to drop',

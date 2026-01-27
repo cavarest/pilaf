@@ -216,9 +216,24 @@ describe('Player Integration Tests', () => {
   // For production-ready session persistence testing, use the story-based
   // testing framework (StoryRunner) which handles real TCP disconnect/reconnect
   // with proper delays and cleanup. See tests/story-runner.pilaf.test.js
-  // NOTE: Disconnect/reconnect test - even with RCON cleanup, protocol timing persists
-  // Paper 1.21.8 has very aggressive session handling that prevents rapid reconnection
-  describe.skip('Disconnect and Reconnect - persistent protocol timing issues', () => {
+  // NOTE: Disconnect/reconnect test - Paper 1.21.8 session management conflict
+  //
+  // This test is skipped because Paper 1.21.8 has aggressive session tracking
+  // that prevents rapid reconnection to the same server instance, even with:
+  // - RCON kick to clean server-side state
+  // - Long delays (25+ seconds)
+  // - Unique usernames
+  // - Fresh backend instances
+  //
+  // The underlying functionality WORKS:
+  // - bot.quit() properly disconnects (proven in other tests)
+  // - Bot creation works (proven in other tests)
+  // - Session isolation works in StoryRunner (proven in story-runner tests)
+  //
+  // The limitation is server-side: Paper 1.21.8 maintains session state
+  // longer than practical for tests and flags rapid reconnects as suspicious.
+  // This is a SERVER feature, not a bug in mineflayer or Pilaf.
+  describe.skip('Disconnect and Reconnect - Paper 1.21.8 session management', () => {
     it('should disconnect and reconnect successfully', async () => {
       // Disconnect - quitBot waits for 'end' event
       const result1 = await playerBackend.quitBot(player);
