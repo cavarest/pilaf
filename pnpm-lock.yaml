@@ -27,8 +27,8 @@ importers:
         specifier: ^4.0.0
         version: 4.0.9
       mineflayer:
-        specifier: ^4.20.1
-        version: 4.33.0
+        specifier: ^4.34.0
+        version: 4.34.0
       rcon-client:
         specifier: ^4.2.5
         version: 4.2.5
@@ -1735,12 +1735,12 @@ packages:
   minecraft-folder-path@1.2.0:
     resolution: {integrity: sha512-qaUSbKWoOsH9brn0JQuBhxNAzTDMwrOXorwuRxdJKKKDYvZhtml+6GVCUrY5HRiEsieBEjCUnhVpDuQiKsiFaw==}
 
-  minecraft-protocol@1.62.0:
-    resolution: {integrity: sha512-+Rm7DdwgDiiq5ASXLNixs6TA7tsNn8zJAlhmOh0ccfuMYnlr/5+FliKacf87ZO6MPs5p/mJitIAwONbfqiX2+A==}
+  minecraft-protocol@1.63.0:
+    resolution: {integrity: sha512-7siaKT9Up16p8fSgk4MYgH9EDjSZDZjRj0ZillF5vfVDheY2nyskjQ7NFmqucjTsSWSfKqAoBhNnIHut/aa0Nw==}
     engines: {node: '>=22'}
 
-  mineflayer@4.33.0:
-    resolution: {integrity: sha512-tysUKVhUpEvHKDn8Awex/wz8WYyRGYrl6EujOVLJsGOU775AwKcapBVAS1BrP0UbM2di6MDwb74muGAFytY+TQ==}
+  mineflayer@4.34.0:
+    resolution: {integrity: sha512-TRrIcZFLwXEGo5SL3uBsywCCTmS+FDkrzg5wYVaziedCyL1Bj5D6RbXPfxTEbxYwR5rLKo28MkhyFb2Oveus2g==}
     engines: {node: '>=22'}
 
   minimatch@3.1.2:
@@ -4450,7 +4450,7 @@ snapshots:
 
   minecraft-folder-path@1.2.0: {}
 
-  minecraft-protocol@1.62.0:
+  minecraft-protocol@1.63.0:
     dependencies:
       '@types/node-rsa': 1.1.4
       '@types/readable-stream': 4.0.23
@@ -4475,10 +4475,10 @@ snapshots:
       - encoding
       - supports-color
 
-  mineflayer@4.33.0:
+  mineflayer@4.34.0:
     dependencies:
       minecraft-data: 3.102.3
-      minecraft-protocol: 1.62.0
+      minecraft-protocol: 1.63.0
       prismarine-biome: 1.3.0(minecraft-data@3.102.3)(prismarine-registry@1.11.0)
       prismarine-block: 1.22.0
       prismarine-chat: 1.12.0
@@ -4493,6 +4493,7 @@ snapshots:
       prismarine-world: 3.6.3
       protodef: 1.19.0
       typed-emitter: 1.4.0
+      uuid-1345: 1.0.2
       vec3: 0.1.10
     transitivePeerDependencies:
       - encoding
