@@ -24,6 +24,7 @@
   "dependencies": {
     "dockerode": "^4.0.0",
     "mineflayer": "^4.34.0",
+    "mineflayer-pathfinder": "^2.4.5",
     "rcon-client": "^4.2.5"
   }
 }

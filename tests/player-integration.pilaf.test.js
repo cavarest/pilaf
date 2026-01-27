@@ -216,7 +216,7 @@ describe('Player Integration Tests', () => {
   // For production-ready session persistence testing, use the story-based
   // testing framework (StoryRunner) which handles real TCP disconnect/reconnect
   // with proper delays and cleanup. See tests/story-runner.pilaf.test.js
-  describe.skip('Disconnect and Reconnect - protocol timing issues', () => {
+  describe('Disconnect and Reconnect', () => {
     it('should disconnect and reconnect successfully', async () => {
       // Disconnect - quitBot waits for 'end' event
       const result1 = await playerBackend.quitBot(player);
@@ -231,7 +231,7 @@ describe('Player Integration Tests', () => {
       // IMPORTANT: Wait for server to fully process the disconnect
       // The Minecraft server needs time to clean up player state and clear the connection throttle
       // Connection throttle prevents rapid reconnections to prevent spam/abuse
-      await new Promise(resolve => setTimeout(resolve, 10000));
+      await new Promise(resolve => setTimeout(resolve, 15000));
 
       // CRITICAL: Create a FRESH backend instance for reconnection
       // This ensures we get a clean state with proper bot references

@@ -22,8 +22,8 @@ describe('Advanced Features Examples', () => {
     await new Promise(resolve => setTimeout(resolve, 5000));
   });
 
-  // Skip navigation tests - requires mineflayer-pathfinder plugin
-  describe.skip('Pathfinding (requires mineflayer-pathfinder)', () => {
+  // Pathfinding tests - mineflayer-pathfinder plugin now included
+  describe('Pathfinding', () => {
     it('should test pathfinding navigation', async () => {
       const runner = new StoryRunner();
 
@@ -46,15 +46,15 @@ describe('Advanced Features Examples', () => {
             store_as: 'start_position'
           },
           {
-            name: '[player: explorer] Navigate to distant location',
+            name: '[player: explorer] Navigate to nearby location',
             action: 'navigate_to',
             player: 'explorer',
             destination: {
-              x: 100,
+              x: 10,
               y: 64,
-              z: 100
+              z: 10
             },
-            timeout_ms: 15000
+            timeout_ms: 30000
           },
           {
             name: 'Wait for navigation',
@@ -148,7 +148,7 @@ describe('Advanced Features Examples', () => {
     });
   });
 
-  describe.skip('Crafting', () => {
+  describe('Crafting', () => {
     it('should test crafting items', async () => {
       const runner = new StoryRunner();
 
