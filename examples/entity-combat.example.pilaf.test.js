@@ -72,7 +72,7 @@ describe('Entity Combat Examples', () => {
         {
           name: '[RCON] Spawn a zombie at player position',
           action: 'execute_command',
-          command: 'execute at @p run summon minecraft:zombie ^ ^ ^'
+          command: 'execute at @p run summon zombie ^ ^ ^'
         },
         {
           name: 'Wait for spawn and entity load',
@@ -136,7 +136,7 @@ describe('Entity Combat Examples', () => {
         {
           name: '[RCON] Spawn a villager at player position',
           action: 'execute_command',
-          command: 'execute at @p run summon minecraft:villager ^ ^ ^'
+          command: 'execute at @p run summon villager ^ ^ ^'
         },
         {
           name: 'Wait for spawn and entity load',
@@ -216,7 +216,7 @@ describe('Entity Combat Examples', () => {
         {
           name: '[RCON] Spawn a boat at player position',
           action: 'execute_command',
-          command: 'execute at @p run summon minecraft:oak_boat ^ ^ ^'
+          command: 'execute at @p run summon oak_boat ^ ^ ^'
         },
         {
           name: 'Wait for spawn and entity load',
@@ -292,7 +292,7 @@ describe('Entity Combat Examples', () => {
         {
           name: '[RCON] Spawn a tamed horse with saddle at player position',
           action: 'execute_command',
-          command: 'execute at @p run summon minecraft:horse ^ ^ ^ {Tame:1b,SaddleItem:{id:"minecraft:saddle",Count:1b}}'
+          command: 'execute at @p run summon horse ^ ^ ^ {Tame:1b,SaddleItem:{id:"minecraft:saddle",Count:1b}}'
         },
         {
           name: 'Wait for spawn',
@@ -365,7 +365,7 @@ describe('Entity Combat Examples', () => {
           {
             name: '[RCON] Spawn cow at player position',
             action: 'execute_command',
-            command: 'execute at @p run summon minecraft:cow ^ ^ ^'
+            command: 'execute at @p run summon cow ^ ^ ^'
           },
           {
             name: 'Wait for cow spawn and load',
@@ -375,7 +375,7 @@ describe('Entity Combat Examples', () => {
           {
             name: '[RCON] Spawn pig at offset position',
             action: 'execute_command',
-            command: 'execute at @p run summon minecraft:pig ^2 ^ ^'
+            command: 'execute at @p run summon pig ^2 ^ ^'
           },
           {
             name: 'Wait for pig spawn and load',
@@ -385,7 +385,7 @@ describe('Entity Combat Examples', () => {
           {
             name: '[RCON] Spawn sheep at offset position',
             action: 'execute_command',
-            command: 'execute at @p run summon minecraft:sheep ^-2 ^ ^'
+            command: 'execute at @p run summon sheep ^-2 ^ ^'
           },
           {
             name: 'Wait for sheep spawn and load',
