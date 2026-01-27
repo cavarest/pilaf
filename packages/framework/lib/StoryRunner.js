@@ -2061,7 +2061,19 @@ class StoryRunner {
         throw new Error(`Player "${player}" not found`);
       }
 
-      this.logger.log(`[StoryRunner] ACTION: ${player} navigating to ${destination.x}, ${destination.y}, ${destination.z}`);
+      // Resolve base coordinates (already resolved by resolveVariables, but may need offset)
+      let targetX = destination.x;
+      let targetY = destination.y;
+      let targetZ = destination.z;
+
+      // Apply offset if provided (for relative navigation)
+      if (destination.offset) {
+        targetX += (destination.offset.x || 0);
+        targetY += (destination.offset.y || 0);
+        targetZ += (destination.offset.z || 0);
+      }
+
+      this.logger.log(`[StoryRunner] ACTION: ${player} navigating to ${targetX}, ${targetY}, ${targetZ}`);
 
       // Check if pathfinder plugin is loaded
       if (!bot.pathfinder) {
@@ -2080,8 +2092,9 @@ class StoryRunner {
       movements.canDig = false;  // Don't dig while pathfinding
       movements.allow1by1towers = false;
 
-      // Create goal
-      const goal = new goals.GoalBlock(destination.x, destination.y, destination.z);
+      // Use GoalNear for flexible navigation (within 1 block is close enough)
+      // GoalNear is more reliable than GoalBlock which requires exact positioning
+      const goal = new goals.GoalNear(targetX, targetY, targetZ, 1);
 
       // Navigate
       try {
