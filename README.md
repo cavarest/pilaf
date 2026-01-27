@@ -18,6 +18,8 @@ Testing PaperMC plugins traditionally requires writing complex Java integration 
 - **Testing against real servers** - Mineflayer bot players or RCON for command execution
 - **Getting instant feedback** - Run tests locally while developing
 - **Beautiful HTML reports** - Share test results with your team
+- **Comprehensive action support** - 40+ actions for movement, entities, inventory, crafting, pathfinding, and more
+- **Event-based testing** - Monitor server logs and react to game events in real-time
 
 ## Quick Start
 
@@ -219,9 +221,9 @@ const story = {
 
 | Action | Description | Parameters | Returns |
 |--------|-------------|------------|---------|
-| `navigate_to` | Pathfinding to location | `player`, `destination` {x,y,z}, `timeout_ms` | `reached: true`, `position` |
+| `navigate_to` | Pathfinding to location (supports relative navigation) | `player`, `destination` {x,y,z, offset:{x,y,z}}, `timeout_ms` | `reached: true`, `position` |
 | `open_container` | Open chest/furnace | `player`, `location` {x,y,z} | `opened: true`, `container_type`, `items[]` |
-| `craft_item` | Craft item from recipe | `player`, `item_name`, `count` | `crafted: true`, `item`, `count` |
+| `craft_item` | Craft item from recipe (supports `minecraft:` prefix) | `player`, `item_name`, `count` | `crafted: true`, `item`, `count` |
 
 #### State Actions
 
@@ -556,7 +558,7 @@ const result = await runner.execute({
 
 ### Advanced Actions
 
-Test pathfinding and containers:
+Test pathfinding with relative navigation, containers, and crafting:
 
 ```javascript
 const result = await runner.execute({
@@ -567,23 +569,34 @@ const result = await runner.execute({
   },
   steps: [
     {
-      name: 'Navigate to location',
+      name: 'Get starting position',
+      action: 'get_player_location',
+      player: 'Steve',
+      store_as: 'start'
+    },
+    {
+      name: 'Navigate 5 blocks north (relative)',
       action: 'navigate_to',
       player: 'Steve',
-      destination: { x: 200, y: 64, z: 200 },
+      destination: {
+        x: '{start.x}',
+        y: '{start.y}',
+        z: '{start.z}',
+        offset: { x: 0, y: 0, z: -5 }
+      },
       timeout_ms: 15000
     },
     {
       name: 'Open chest at location',
       action: 'open_container',
       player: 'Steve',
-      location: { x: 200, y: 64, z: 200 }
+      location: { x: '{start.x}', y: '{start.y}', z: '{start.z}' }
     },
     {
-      name: 'Craft sticks',
+      name: 'Craft sticks from planks',
       action: 'craft_item',
       player: 'Steve',
-      item_name: 'stick',
+      item_name: 'minecraft:stick',  // Supports minecraft: prefix
       count: 4
     }
   ],
