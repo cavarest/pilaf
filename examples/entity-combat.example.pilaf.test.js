@@ -284,24 +284,14 @@ describe('Entity Combat Examples', () => {
 
       steps: [
         {
-          name: '[RCON] Spawn a horse',
+          name: '[RCON] Spawn a tamed horse with saddle',
           action: 'execute_command',
-          command: 'summon horse ~3 ~ ~'
+          command: 'summon horse ~3 ~ ~ {Tame:1b,SaddleItem:{id:"minecraft:saddle",Count:1b}}'
         },
         {
           name: 'Wait for spawn',
           action: 'wait',
           duration: 2
-        },
-        {
-          name: '[RCON] Tame the horse',
-          action: 'execute_command',
-          command: 'ride @e[type=horse] tame @e[type=horse]'
-        },
-        {
-          name: 'Wait for tame',
-          action: 'wait',
-          duration: 1
         },
         {
           name: '[player: rider] Get starting position',
@@ -319,11 +309,6 @@ describe('Entity Combat Examples', () => {
           name: 'Wait for mount',
           action: 'wait',
           duration: 1
-        },
-        {
-          name: '[player: rider] Sprint while riding',
-          action: 'sprint',
-          player: 'rider'
         },
         {
           name: '[player: rider] Move forward on horse',
