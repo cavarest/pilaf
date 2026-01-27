@@ -2188,13 +2188,16 @@ class StoryRunner {
 
       this.logger.log(`[StoryRunner] ACTION: ${player} crafting ${count}x ${item_name}`);
 
+      // Normalize item name (remove minecraft: prefix if present)
+      const normalizedItemName = this._normalizeItemName(item_name);
+
       // Get minecraft data
       const mcData = require('minecraft-data')(bot.version);
 
       // Convert item_name to item ID for recipe lookup
-      const itemInfo = mcData.itemsByName[item_name];
+      const itemInfo = mcData.itemsByName[normalizedItemName];
       if (!itemInfo) {
-        throw new Error(`Unknown item: "${item_name}"`);
+        throw new Error(`Unknown item: "${normalizedItemName}"`);
       }
 
       // First try bot.recipesFor() with ID (for more accurate recipe detection)

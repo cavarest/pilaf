@@ -129,10 +129,9 @@ describe('Inventory Management Examples', () => {
           duration: 1
         },
         {
-          name: '[player: eater] Apply strong hunger effect (drains food)',
-          action: 'execute_player_command',
-          player: 'eater',
-          command: 'effect give @s minecraft:hunger 3 200'
+          name: '[RCON] Apply strong hunger effect to eater (drains food)',
+          action: 'execute_command',
+          command: 'effect give eater minecraft:hunger 3 200'
         },
         {
           name: 'Wait for hunger to drain food level',
