@@ -333,8 +333,8 @@ describe('Entity Combat Examples', () => {
     expect(result.success).toBe(true);
   });
 
-  // Multiple entity interaction test skipped due to entity spawning issues in CI
-  describe.skip('Multiple Entity Interaction', () => {
+  // Multiple entity interaction test
+  describe('Multiple Entity Interaction', () => {
     it('should test multiple entity interactions', async () => {
       const runner = new StoryRunner();
 

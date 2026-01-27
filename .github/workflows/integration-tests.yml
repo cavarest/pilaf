@@ -38,6 +38,37 @@ jobs:
           # Reduce connection throttling for testing
           # Allow faster reconnections by increasing the login timeout
           CONNECTION_TIMEOUT_THRESHOLD: '120000'
+
+          # === DETERMINISTIC FLAT WORLD FOR TESTING ===
+          LEVEL: 'pilaf-test'
+          LEVEL_TYPE: 'FLAT'
+          SEED: '1234567890'
+          GENERATE_STRUCTURES: 'false'
+          MAX_WORLD_SIZE: '50'
+          MODE: 'creative'
+          DIFFICULTY: 'peaceful'
+          PVP: 'false'
+          ALLOW_NETHER: 'false'
+
+          # === PERFORMANCE FOR TESTING ===
+          VIEW_DISTANCE: '4'
+          SIMULATION_DISTANCE: '4'
+
+          # === ENTITY SPAWNING FOR TESTING ===
+          SPAWN_ANIMALS: 'true'     # Enable for entity testing
+          SPAWN_MONSTERS: 'false'   # Disable hostile mobs
+          SPAWN_NPCS: 'false'
+
+          # === CUSTOM FLAT WORLD LAYERS ===
+          GENERATOR_SETTINGS: >-
+            {
+              "layers": [
+                {"block": "minecraft:bedrock", "height": 1},
+                {"block": "minecraft:dirt", "height": 2},
+                {"block": "minecraft:grass_block", "height": 1}
+              ],
+              "biome": "minecraft:plains"
+            }
         options: >-
           --name pilaf-minecraft
           --health-cmd "mc-health"
